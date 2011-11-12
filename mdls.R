@@ -16,7 +16,7 @@ get_parallel_library()$activate()
 preprocess_data <- function(x,log=NULL){x}
 
 make_model_def <- function(id, target_gen, fit, features, params, predict){
-  hash(id=id,
+  list(id=id,
        target_gen=target_gen,
        fit=fit,
        features=features,
@@ -24,7 +24,18 @@ make_model_def <- function(id, target_gen, fit, features, params, predict){
        predict=predict)
 }
 
+model_def_properties <- function(){
+  names(make_model_def(NA,NA,NA,NA,NA,NA))
+}
+
+is_model_def <- function(md){
+  (length(setdiff(union(names(md),model_def_properties()),
+                 intersect(names(md),model_def_properties())))==0)
+}
+
 mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
+  datasets <- if(is.data.frame(datasets))(list(datasets))else{datasets}
+  modelDefs <- if(is_model_def(modelDefs)){list(modelDefs)}else{modelDefs}
   models <- flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{1:length(datasets)},
                                 datasets),
                            function(x){
@@ -112,7 +123,7 @@ mdls_predict <- function(models, datasets, log=NULL){
                                    features <- x[[2]]$features
                                    predict <- x[[2]]$predict
                                    if(is.null(x[[2]]$predictions)){
-                                     x[[2]]$predictions <- hash()
+                                     x[[2]]$predictions <- list()
                                    }
 
                                    write_log(log,'predicting with "%s"', id)
