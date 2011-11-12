@@ -71,7 +71,7 @@ mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
                                                                          NA
                                                                        })
                                                          if(!any(is.na(m))){
-                                                           z <- list(hash(target=t,
+                                                           z <- list(list(target=t,
                                                                           model=m,
                                                                           predict=md$predict,
                                                                           features=md$features))

@@ -41,7 +41,6 @@ make_log <- function(id, level=c('info','warning','error'), availableLevels=NULL
 
 write_log <- function(log,...,level='info',sep=' - '){
   if(!is.null(log) && !suppressWarnings(is.na(log))){
-
     check <- TRUE
     if(level %in% log$level){
       check <- all(sapply(log$outputs,
