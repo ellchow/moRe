@@ -47,7 +47,8 @@ write_log <- function(log,...,level='info',sep=' - '){
                           function(o){
                             sapply(intersect(level,log$level),
                                    function(lvl){
-                                     msg <- paste(log$id, lvl, sprintf(...), sep=sep)
+                                     msg <- do.call(paste,c(as.list(keep_if(c(log$id, lvl, sprintf(...)),
+                                                                            function(i){!is.null(i)})), sep=sep))
                                      tryCatch(is.null(cat(msg,'\n', file=o, append=TRUE)), error=function(e){FALSE})
                                    })
                           }))
@@ -137,6 +138,11 @@ zip_to_named <- function(x){
                      names(z) <- y[[1]]
                      z
                    }))
+}
+
+keep_if <- function(x,f){
+  mask <- sapply(x,f)
+  x[mask]
 }
 
 flatten <- function(x){

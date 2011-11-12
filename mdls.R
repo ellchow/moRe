@@ -15,13 +15,14 @@ get_parallel_library()$activate()
 
 preprocess_data <- function(x,log=NULL){x}
 
-make_model_def <- function(id, target_gen, fit, features, params, predict){
+make_model_def <- function(id, target_gen, fit, features, params, predict, check=function(md,d,l){list()}){
   list(id=id,
        target_gen=target_gen,
        fit=fit,
        features=features,
        params=params,
-       predict=predict)
+       predict=predict,
+       check=check)
 }
 
 model_def_properties <- function(){
@@ -29,13 +30,15 @@ model_def_properties <- function(){
 }
 
 is_model_def <- function(md){
-  (length(setdiff(union(names(md),model_def_properties()),
-                 intersect(names(md),model_def_properties())))==0)
+  x <- setdiff(union(names(md),model_def_properties()),
+                 intersect(names(md),model_def_properties()))
+  (length(x)==0)
 }
 
 mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
   datasets <- if(is.data.frame(datasets))(list(datasets))else{datasets}
   modelDefs <- if(is_model_def(modelDefs)){list(modelDefs)}else{modelDefs}
+
   models <- flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{1:length(datasets)},
                                 datasets),
                            function(x){
@@ -70,8 +73,18 @@ mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
                                                                                  level='error')
                                                                        NA
                                                                      })
-                                                       if(!any(is.na(t))){
-                                                       write_log(log, 'training "%s"', id)
+                                                       problems <- md$check(md,t,data)
+                                                       if(length(problems) > 0){
+                                                         lapply(lzip(names(problems),problems),
+                                                                function(p){
+                                                                  write_log(log,'problem with "%s" (%s)',
+                                                                            id,
+                                                                            p[[1]],
+                                                                            if(is.na(p[[2]])){''}else{p[[2]]},
+                                                                            level='warning')
+                                                                })
+                                                       }else{
+                                                         write_log(log, 'training "%s"', id)
                                                          m <- tryCatch(do.call(md$fit,
                                                                                c(list(data[,md$features],
                                                                                       t),
@@ -163,10 +176,10 @@ check_gbm_model_def <- function(modelDef, target, data){
   if(any(all_na)){problems$all_na <- available[all_na]}
 
   monotonicity <- if('var.monotone' %in% names(modelDef$params)){(length(modelDef$params$var.monotone) != length(modelDef$features)) || !all(modelDef$params$var.monotone %in% (-1:1))}else{FALSE}
-  if(monotonicity){problems$monotonicity <- NULL}
+  if(monotonicity){problems$monotonicity <- NA}
 
   invalid_target <- any(is.na(target)) || ((modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1))))
-  if(invalid_target){problems$invalid_target <- NULL}
+  if(invalid_target){problems$invalid_target <- NA}
 
   problems
 }
