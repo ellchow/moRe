@@ -9,6 +9,10 @@ dump <- sapply(c('gdata',
 
 get_parallel_library()$activate()
 
+##############################################
+#### Model Building
+##############################################
+
 preprocess_data <- function(x,log=NULL){x}
 
 make_model_def <- function(id, target_gen, fit, features, params, predict){
@@ -124,23 +128,35 @@ mdls_predict <- function(models, datasets, log=NULL){
           )
 }
 
-mdls_evaluate <- function(){
-}
-
-
-
-
-
-
-
 #####################################
-#### gbm modifications
+#### gbm modifications and helpers
 #####################################
 
-better.predict.gbm <- function(object,newdata,n.trees=NULL,type='response',...){
+gbm_predict <- function(object,newdata,n.trees=NULL,type='response',...){
   trees = if(is.null(n.trees)) gbm.perf(object,method='test',plot.it=FALSE) else n.trees
   predict.gbm(object,newdata,n.trees=trees,type=type,...)
 }
 
+check_gbm_model_def <- function(modelDef, target, data){
+  problems <- list()
 
+  missing <- setdiff(modelDef$features, names(data))
+  available <- setdiff(modelDef$features, missing)
+  if(length(missing) != 0){problems$missing_factors <- missing}
+
+  gt1024levels <- sapply(available,
+                         function(f){is.factor(data[[f]]) && (length(levels(data[[f]])) > 1024)})
+  if(any(gt1024levels)){problems$too_many_levels <- available[gt1024levels]}
+
+  all_na <- sapply(available, function(f){all(is.na(data[[f]]))})
+  if(any(all_na)){problems$all_na <- available[all_na]}
+
+  monotonicity <- if('var.monotone' %in% names(modelDef$params)){(length(modelDef$params$var.monotone) != length(modelDef$features)) || !all(modelDef$params$var.monotone %in% (-1:1))}else{FALSE}
+  if(monotonicity){problems$monotonicity <- NULL}
+
+  invalid_target <- any(is.na(target)) || ((modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1))))
+  if(invalid_target){problems$invalid_target <- NULL}
+
+  problems
+}
 
