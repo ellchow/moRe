@@ -1,8 +1,9 @@
 source('utils.R', chdir=TRUE)
 
-better.library('stringr')
+dump <- sapply(c('stringr'),better.library)
 
 parse_args <- function(filename, arglist, args){
+  ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
   args <- do.call(paste,as.list(c(args,'')))
   success <- TRUE
   ## add help option
@@ -58,7 +59,8 @@ parse_args <- function(filename, arglist, args){
                                  NULL
                                }else{
                                  y<-str_split(x,' ')[[1]]
-                                 z <- list(y[2])
+
+                                 z <- list(str_trim(do.call(paste,as.list(y[2:length(y)]))))
                                  if(!(y[1] %in% argnames)){
                                    ## cat(sprintf('ERROR: unknown argument "%s"\n', y[1]))
                                    return(NA)
@@ -96,13 +98,16 @@ parse_args <- function(filename, arglist, args){
 
     ## check types
     invalidTypes <- is.na(parsed)
-    success <- !any(invalidTypes)
+    if(any(invalidTypes)){
+      ## cat(sprintf('ERROR: invalid types %s\n', do.call(paste,as.list(c(names(parsed)[invalidTypes],sep=', ')))))
+      success <- FALSE
+    }
   }
-  z <- list(success=success,args=parsed,usage=make_usage_string(filename, arglist))
   if(parsed$help || (!success)){
-    cat(z$usage)
+    cat(make_usage_string(filename, arglist))
+    return(NULL)
   }
-  z
+  list(args=parsed,usage=make_usage_string(filename, arglist))
 }
 
 make_usage_string <- function(filename, arglist){
@@ -124,22 +129,30 @@ make_usage_string <- function(filename, arglist){
 
 
 
-parse_list <- function(v,sep=',',def='=', requireNames=FALSE){
-  z <- do.call(c,lapply(str_split(v,sep)[[1]],
-                   function(x){
-                     y <- str_split(x,def)[[1]]
-                     if(length(y) == 1){
-                       list(y[1])
-                     }else{
-                       z <- list(y[2])
-                       names(z) <- y[1]
+parse_list <- function(v,sep=',',def='=', useDefaultNames=TRUE){
+  if(!is.null(v)){
+    vv <- str_split(v,sep)[[1]]
+
+    z <- do.call(c,sapply(lzip(1:length(vv), vv),
+                     function(e){
+                       i <- e[[1]]
+                       x <- e[[2]]
+                       y <- str_split(x,def)[[1]]
+
+                       if(length(y) == 1){
+                         key <- if(useDefaultNames){i}else{''}
+                         val <- y[1]
+                       }else{
+                         key <- y[1]
+                         val <- y[2]
+                       }
+                       z <- list(val)
+                       names(z) <- key
                        z
                      }
-                   }
-                 ))
-  if(!requireNames || !is.null(names(z))){
-    z
+                     ))
   }else{
-    NULL
+    z <- NULL
   }
+  z
 }
