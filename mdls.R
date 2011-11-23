@@ -56,8 +56,8 @@ mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
                    write_log(log,'preprocessing data')
                    data <- preprocess_data(data,log)
 
-                   write_log(log,'randomize data')
-                   data <- data[sample(1:nrow(data)),]
+                   ## write_log(log,'randomize data')
+                   ## data <- data[sample(1:nrow(data)),]
 
                    t0 <- timer_start(log, 'train models on "%s"', dsId)
                    models <- flatten(llply(modelDefs,

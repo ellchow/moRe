@@ -1,3 +1,13 @@
+system_os <- function(){.Platform$OS.type}
+
+get_parallel_library <- function(){
+  if(system_os() == 'windows'){
+    list(lib='doSMP',activate=function(cores){eval(parse(text=sprintf('registerDoSMP(%d)',cores)))})
+  }else{
+    list(lib='doMC',activate=function(cores="NULL"){eval(parse(text=sprintf('registerDoMC(%s)',cores)))})
+  }
+}
+
 better.library <- function(pkg,repos='http://cran.cnr.Berkeley.edu/',lib=.Library,attempt=1){
   ## set number of attempts for installation
   attempt <- max(0,attempt)
@@ -21,7 +31,9 @@ better.library <- function(pkg,repos='http://cran.cnr.Berkeley.edu/',lib=.Librar
 dump <- sapply(c('gdata',
                  'stringr',
                  'plyr',
-                 'hash'),
+                 'hash',
+                 get_parallel_library()$lib
+                 ),
                better.library)
 
 ####################
@@ -77,42 +89,25 @@ timer_stop <- function(t0, log, level='info'){
 rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
   path <- gsub('/( )*$','',path)
   isDir <- file.info(path)$isdir
-  printv(paste('At', path), msgLevel=-1, displayLevel=displayLevel)
-  printv(paste(path,'is dir?',isDir), msgLevel=-1, displayLevel=displayLevel)
   if(!is.na(isDir) && isDir){
     for(i in dir(path)){
-      printv("Recurse %s",file.path(path,i),msgLevel=-1,displayLevel=displayLevel)
       rrmdir(file.path(path,i),FALSE,displayLevel=displayLevel)
     }
   }
   if(!rmContentsOnly){
     file.remove(path)
   }
-  printv(paste('Removed', path), msgLevel=-1, displayLevel=displayLevel)
 }
 
 ####################
 #### Misc
 ####################
 
-system_os <- function(){.Platform$OS.type}
-
-get_parallel_library <- function(){
-  if(system_os() == 'windows'){
-    list(lib='doSMP',activate=function(cores){eval(parse(text=sprintf('registerDoSMP(%d)',cores)))})
-  }else{
-    list(lib='doMC',activate=function(cores="NULL"){eval(parse(text=sprintf('registerDoMC(%s)',cores)))})
-  }
-}
-
 stat_sum_df <- function(fun, geom="crossbar", colour='steelblue',...) {
   stat_summary(fun.data=fun, colour=colour, geom=geom, width=0.4, ...)
 }
 
 linear_norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, rm_na=TRUE, displayLevel=0){
-  if(any(lb == ub)){
-    printv('WARNING: denominator is 0 in linear_norm\n',msgLevel=1,displayLevel=displayLevel)
-  }
   if(clipMin){
     x <- max(x,lb)
   }
@@ -124,18 +119,30 @@ linear_norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, rm_na=TRUE, dis
   y
 }
 
-lzip <- function(x,y){
-  lapply(1:min(length(x),length(y)),
+lzip <- function(...){
+  args <- list(...)
+  n <- min(sapply(args,length))
+  if(n == 0){
+    return(NULL)
+  }
+  lapply(1:n,
          function(i){
-           list(x[i],if(typeof(y) == 'list') y[[i]] else y[i])
+           lapply(1:length(args),
+                  function(j){
+                    y <- args[[j]]
+                    if(typeof(y) == 'list')
+                      y[[i]]
+                    else
+                      y[i]
+                  })
          })
 }
 
-zip_to_named <- function(x){
+zip_to_named <- function(x,nameCol=1,valCol=2){
   do.call(c,lapply(x,
                    function(y){
-                     z <- list(y[[2]])
-                     names(z) <- y[[1]]
+                     z <- list(y[[valCol]])
+                     names(z) <- y[[nameCol]]
                      z
                    }))
 }
@@ -153,10 +160,9 @@ save_plots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
   llply(plots,function(x){
     tryCatch(ggsave(filename=paste(outputPath,'/',x$name,'.',ext,sep=''),plot=x$plot,...),
              error=function(e){
-               printv('WARNING: failed to save plot "%s" - skipped\n', x)
+               NA
              })
   }, .parallel=.parallel)
-  NA
 }
 
 merge_lists <- function(all,FUN=function(n,x){x}){
@@ -174,18 +180,19 @@ merge_lists <- function(all,FUN=function(n,x){x}){
   z
 }
 
-max_element_length <- function(data){
-  maxLengths <- lapply(names(data),
+max_element_str_length <- function(data,.parallel=FALSE){
+  maxLengths <- llply(names(data),
                        function(i){
                          max(str_length(i),
                              max(sapply(data[[i]],
                                         function(j) str_length(j)
-                                        )))})
+                                        )))},
+                      .parallel=.parallel)
   names(maxLengths) <- names(data)
   maxLengths
 }
 
-str_align <- function(data, maxLengths){
+str_align <- function(data, maxLengths, .parallel=FALSE){
   result <- llply(names(maxLengths),
                   function(i){
                     sapply(data[[i]],
@@ -202,17 +209,18 @@ str_align <- function(data, maxLengths){
                                fmtd <- sprintf('%s%s',x,do.call(paste,c(as.list(rep(' ',n)),sep='')))
                              }
                              fmtd
-                           })})
+                           })},
+                  .parallel=.parallel)
   names(result) <- names(maxLengths)
   result
 }
 
 
-pprint_dataframe <- function(data,sep='  |  '){
-  maxLengths <- max_element_length(data)
+pprint_dataframe <- function(data,sep='  |  ',.parallel=FALSE){
+  maxLengths <- max_element_str_length(data,.parallel=.parallel)
   header <- as.list(names(maxLengths))
   names(header) <- header
-  result <- str_align(data,maxLengths)
+  result <- str_align(data,maxLengths,.parallel=.parallel)
   result <- as.data.frame(result)
   header <- do.call(paste,as.list(c(str_align(header,maxLengths),sep=sep)))
   paste(header,
@@ -227,11 +235,8 @@ pprint_dataframe <- function(data,sep='  |  '){
         )
 }
 
-rdiscrete <- function(dist, domain=NULL, n=1){
-  dist <- cumsum(dist)
-  m <- length(dist)
-  if(is.null(domain)){domain <- 1:m}
-  sapply(runif(n), function(x) domain[(x <= dist)][1])
+rdiscrete <- function(n, prob, domain=1:length(prob)){
+  apply(rmultinom(n,1,prob/sum(prob)), 2, function(x) domain[as.logical(x)])
 }
 
 explode_dataframe <- function(all, dist, groupBy=NULL, outputPath=NULL){
@@ -259,6 +264,9 @@ explode_dataframe <- function(all, dist, groupBy=NULL, outputPath=NULL){
     shards
   }
 }
+
+
+
 
 int_to_char_map <- hash(keys=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),values=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))
 
