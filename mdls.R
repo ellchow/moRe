@@ -181,3 +181,10 @@ check_gbm_model_def <- function(modelDef, target, data){
   problems
 }
 
+make_gbm_model_def <- function(id, target_gen, features, params=list()){
+  make_model_def(id, target_gen, gbm.fit, features, gbm_predict, params=params, check=check_gbm_model_def)
+}
+
+
+## x <- get(load('data0.rda'))
+## mdls_build(x,make_model_def('foo',function(x)x$x, gbm.fit, c('a','b'), gbm_predict, check_gbm_model_def),log=log)
