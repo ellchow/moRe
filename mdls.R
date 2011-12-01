@@ -13,16 +13,15 @@ get_parallel_library()$activate()
 #### Model Building
 ##############################################
 
-preprocess_data <- function(x,log=NULL){x}
-
-make_model_def <- function(id, target_gen, fit, features, params, predict, check=function(md,d,l){list()}){
-  list(id=id,
-       target_gen=target_gen,
-       fit=fit,
-       features=features,
-       params=params,
-       predict=predict,
-       check=check)
+make_model_def <- function(id, target_gen, fit, features, predict, params=list(), check=function(md,d,l){list()}){
+  list(id=id, # name of model
+       target_gen=target_gen, # function that takes in a superset of the training data  and returns the target
+       fit=fit, # function for fitting the model of the same form as gbm.fit
+       features=features, # vector of feature names to be used by the model
+       params=params, # extra parameters for the fitting function
+       predict=predict, # function for computing a prediction of the same form as gbm.predict
+       check=check # function that takes in a model definition, target, and data and checks if there are any issues
+       )
 }
 
 model_def_properties <- function(){
@@ -53,12 +52,6 @@ mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
                      data <- as.data.frame(data)
                    }
 
-                   write_log(log,'preprocessing data')
-                   data <- preprocess_data(data,log)
-
-                   ## write_log(log,'randomize data')
-                   ## data <- data[sample(1:nrow(data)),]
-
                    t0 <- timer_start(log, 'train models on "%s"', dsId)
                    models <- flatten(llply(modelDefs,
                                            function(md){
@@ -86,7 +79,7 @@ mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
                                              }else{
                                                write_log(log, 'training "%s"', id)
                                                m <- tryCatch(do.call(md$fit,
-                                                                     c(list(data[,md$features],
+                                                                     c(list(subset(data,select=md$features),
                                                                             t),
                                                                        md$params)),
                                                              error=function(e){
@@ -142,7 +135,7 @@ mdls_predict <- function(models, datasets, log=NULL){
                                         }
 
                                         write_log(log,'predicting with "%s"', id)
-                                        pr <- predict(m, data[,features])
+                                        pr <- predict(m, subset(data,select=features))
                                         x[[2]]$predictions[[as.character(dsId)]] <- pr
                                         z <- list(x[[2]])
                                         names(z) <- id
