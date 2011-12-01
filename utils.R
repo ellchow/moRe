@@ -103,6 +103,20 @@ rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
 #### Misc
 ####################
 
+rename_cols <- function(data, old, new){
+  cbind(data,
+        do.call(c,
+                lapply(1:length(old),
+                       function(i){
+                         z <- list(data[[old[i]]])
+                         names(z) <- new[i]
+                         z
+                       }
+                       )
+                )
+        )
+}
+
 stat_sum_df <- function(fun, geom="crossbar", colour='steelblue',...) {
   stat_summary(fun.data=fun, colour=colour, geom=geom, width=0.4, ...)
 }
