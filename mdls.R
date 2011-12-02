@@ -128,6 +128,7 @@ mdls_predict <- function(models, datasets, log=NULL){
                                       function(x){
                                         id <- x[[1]]
                                         m <- x[[2]]$model
+
                                         features <- x[[2]]$features
                                         predict <- x[[2]]$predict
                                         if(is.null(x[[2]]$predictions)){
@@ -136,6 +137,7 @@ mdls_predict <- function(models, datasets, log=NULL){
 
                                         write_log(log,'predicting with "%s"', id)
                                         pr <- predict(m, subset(data,select=features))
+
                                         x[[2]]$predictions[[as.character(dsId)]] <- pr
                                         z <- list(x[[2]])
                                         names(z) <- id
@@ -175,7 +177,7 @@ check_gbm_model_def <- function(modelDef, target, data){
                     !all(modelDef$params$var.monotone %in% (-1:1))))
   if(monotonicity){problems$monotonicity <- NA}
 
-  invalid_target <- any(is.na(target)) || ((modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1))))
+  invalid_target <- any(is.na(target)) || ((!('distribution' %in% names(modelDef$params)) || modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1))))
   if(invalid_target){problems$invalid_target <- NA}
 
   problems
@@ -185,6 +187,35 @@ make_gbm_model_def <- function(id, target_gen, features, params=list()){
   make_model_def(id, target_gen, gbm.fit, features, gbm_predict, params=params, check=check_gbm_model_def)
 }
 
+#####################################
+#### glm modifications and helpers
+#####################################
 
-## x <- get(load('data0.rda'))
-## mdls_build(x,make_model_def('foo',function(x)x$x, gbm.fit, c('a','b'), gbm_predict, check_gbm_model_def),log=log)
+glm_predict <- function(object,newdata,type='response',...){
+  predict.glm(object,newdata,type=type,...)
+}
+
+check_glm_model_def <- function(modelDef, target, data){
+  problems <- list()
+
+  missing <- setdiff(modelDef$features, names(data))
+  available <- setdiff(modelDef$features, missing)
+  if(length(missing) != 0){problems$missing_factors <- missing}
+
+  has_na <- sapply(available, function(f){any(is.na(data[[f]]))})
+  if(any(has_na)){problems$has_na <- available[has_na]}
+
+  problems
+}
+
+make_glm_model_def <- function(id, target_gen, features, params=list()){
+  make_model_def(id, target_gen, glm.fit, features, glm_predict, params=params, check=check_glm_model_def)
+}
+
+log <- make_log('mylog')
+x <- get(load('data0.rda'))
+md <- list(make_glm_model_def('glm',function(x)x$x, c('b')),
+          make_gbm_model_def('gbm',function(x)x$x, c('a','b'),params=list(distribution='gaussian',train.frac=0.8))
+          )
+mdls_build(x,md,log=log) -> m
+mdls_predict(m,x,log=log) -> y
