@@ -4,6 +4,7 @@ dump <- sapply(c('gdata',
                  'plyr',
                  'doMC',
                  'gbm',
+                 'infotheo',
                  get_parallel_library()$lib
                  ), better.library)
 
@@ -212,10 +213,81 @@ make_glm_model_def <- function(id, target_gen, features, params=list()){
   make_model_def(id, target_gen, glm.fit, features, glm_predict, params=params, check=check_glm_model_def)
 }
 
-log <- make_log('mylog')
-x <- get(load('data0.rda'))
-md <- list(make_glm_model_def('glm',function(x)x$x, c('b')),
-          make_gbm_model_def('gbm',function(x)x$x, c('a','b'),params=list(distribution='gaussian',train.frac=0.8))
-          )
-mdls_build(x,md,log=log) -> m
-mdls_predict(m,x,log=log) -> y
+## log <- make_log('mylog')
+## x <- get(load('data0.rda'))
+## md <- list(make_glm_model_def('glm',function(x)x$x, c('b')),
+##           make_gbm_model_def('gbm',function(x)x$x, c('a','b'),params=list(distribution='gaussian',train.frac=0.8))
+##           )
+## mdls_build(x,md,log=log) -> m
+## mdls_predict(m,x,log=log) -> y
+
+
+##############################################
+#### Feature Selection
+##############################################
+
+pairwise_compare_vectors <- function(data, pairs, cmp=function(x,y){cor(x,y)}, .parallel=FALSE){
+  z <- adply(pairs,2,
+             function(i){
+               i <- sort(i)
+               data.frame(factor_a=i[1], factor_b=i[2], value=cmp(data[[i[1]]], data[[i[2]]]))
+             },
+             .parallel=.parallel)
+
+  z[[1]] <- NULL
+  z
+}
+
+
+interinfo_feature_selection_filter <- function(t,s,r){
+  remaining <- names(r)
+  scores <- sapply(remaining,
+                   function(f){
+                     z <- interinformation(cbind(s, t, r[[f]]))
+                     z
+                   }
+                 )
+  names(scores) <- remaining
+  scores
+}
+
+cor_feature_selection_filter <- function(t,s,r){
+  remaining <- names(r)
+  scores <- sapply(remaining,
+                   function(f){
+                     z <- abs(cor(t, r[[f]])) - (if(ncol(s)==0){0}else{max(abs(cor(s, r[[f]])))})^2
+                     z
+                   }
+                   )
+  names(scores) <- remaining
+  scores
+}
+
+forward_filter_feature_selection <- function(target, features, evaluate=interinfo_feature_selection_filter, choose_best=max, n=ncol(features)){
+  feature_selection_by_filter(target, features, NULL, evaluate,
+                              function(z, scores){
+                                bestScore <- choose_best(scores)
+                                best <- match(TRUE,scores == bestScore)
+                                z$selected <- c(z$selected, names(scores[best]))
+                                z$remaining <- z$remaining[-1 * best]
+                                z$scores <- c(z$scores, bestScore)
+                                z
+                              },
+                              n=n
+                              )
+}
+
+feature_selection_by_filter <- function(target, features, initSelected, evaluate, update, n=ncol(features)){
+  z <- list(selected = initSelected,
+            remaining = setdiff(names(features), initSelected),
+            scores = c(),
+            complete_scores = list())
+  for(i in 1:n){
+    scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining))
+    z <- update(z, scores)
+    z$complete_scores <- c(z$complete_scores, list(scores))
+  }
+  z
+}
+
+
