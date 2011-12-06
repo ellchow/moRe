@@ -272,11 +272,16 @@ cor_feature_selection_filter <- function(t,s,r){
 forward_filter_feature_selection <- function(target, features, evaluate=cor_feature_selection_filter, choose_best=max, n=ncol(features)){
   feature_selection_by_filter(target, features, NULL, evaluate,
                               function(z, scores){
-                                bestScore <- choose_best(scores)
-                                best <- match(TRUE,scores == bestScore)
-                                z$selected <- c(z$selected, names(scores[best]))
-                                z$remaining <- z$remaining[-1 * best]
-                                z$scores <- c(z$scores, bestScore)
+                                scores <- scores[!is.na(scores)]
+                                if(length(scores) == 0){
+                                  z$remaining <- NULL
+                                }else{
+                                  bestScore <- choose_best(scores)
+                                  best <- match(TRUE,scores == bestScore)
+                                  z$selected <- c(z$selected, names(scores[best]))
+                                  z$remaining <- z$remaining[-1 * best]
+                                  z$scores <- c(z$scores, bestScore)
+                                }
                                 z
                               },
                               n=n
