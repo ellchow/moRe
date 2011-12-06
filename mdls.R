@@ -242,17 +242,23 @@ pairwise_compare_vectors <- function(data, pairs, cmp=function(x,y){cor(x,y)}, .
 mrmr_feature_selection_filter <- function(t,s,r){
   ## http://penglab.janelia.org/papersall/docpdf/2005_TPAMI_FeaSel.pdf
   remaining <- names(r)
-  mi <- as.data.frame(mutinformation(r))
-  if(nrow(mi) > 1){
-    scores <- sapply(remaining,
+  scores <- sapply(remaining,
                      function(f){
-                       z <- mutinformation(t,r[[f]]) - mean(mi[[f]][names(mi) != f])
+                       ## mi <- as.data.frame(mutinformation(sx))
+                       mi <- if(length(s) > 0){
+                         sapply(c(names(s)),
+                                function(ff){
+                                  mutinformation(r[[f]], s[[ff]])
+                                })
+                       }else{
+                         0
+                       }
+                       relevance <- mutinformation(t,r[[f]])
+                       redundancy <- mean(mi)
+                       z <- relevance - redundancy
                        z
                      }
                      )
-  }else{
-    scores <- mi[1,1]
-  }
   names(scores) <- remaining
   scores
 }
