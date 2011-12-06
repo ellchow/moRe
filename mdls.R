@@ -239,14 +239,20 @@ pairwise_compare_vectors <- function(data, pairs, cmp=function(x,y){cor(x,y)}, .
 }
 
 
-interinfo_feature_selection_filter <- function(t,s,r){
+mrmr_feature_selection_filter <- function(t,s,r){
+  ## http://penglab.janelia.org/papersall/docpdf/2005_TPAMI_FeaSel.pdf
   remaining <- names(r)
-  scores <- sapply(remaining,
-                   function(f){
-                     z <- interinformation(cbind(s, t, r[[f]]))
-                     z
-                   }
-                 )
+  mi <- as.data.frame(mutinformation(r))
+  if(nrow(mi) > 1){
+    scores <- sapply(remaining,
+                     function(f){
+                       z <- mutinformation(t,r[[f]]) - mean(mi[[f]][names(mi) != f])
+                       z
+                     }
+                     )
+  }else{
+    scores <- mi[1,1]
+  }
   names(scores) <- remaining
   scores
 }
@@ -263,7 +269,7 @@ cor_feature_selection_filter <- function(t,s,r){
   scores
 }
 
-forward_filter_feature_selection <- function(target, features, evaluate=interinfo_feature_selection_filter, choose_best=max, n=ncol(features)){
+forward_filter_feature_selection <- function(target, features, evaluate=cor_feature_selection_filter, choose_best=max, n=ncol(features)){
   feature_selection_by_filter(target, features, NULL, evaluate,
                               function(z, scores){
                                 bestScore <- choose_best(scores)
