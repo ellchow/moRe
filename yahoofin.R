@@ -66,19 +66,21 @@ yfin_archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq
             x <- data.frame()
             startDate <- '1900-01-01'
           }
+
           if(startDate < today){
             y <- get_historical_data(s,
                                      startDate=startDate,
                                      endDate=today,
                                      freq=freq)
-
-            rbind(x,subset(y, as.character(date) > startDate))
+            x <- rbind(x,subset(y, as.character(date) > startDate))
           }else{
             x
           }
+          x
         },
         .parallel=.parallel)
   names(z) <- syms
   save(z, file=path)
   z
 }
+
