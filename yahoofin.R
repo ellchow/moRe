@@ -15,6 +15,8 @@ YAHOO_TAGS <- hash(keys=c('1yrtargetprice','200daymovingaverage','50daymovingave
 
 DATE_FORMAT <- '%Y-%m-%d'
 
+YFIN_COLUMNS <- c('date', 'open', 'high', 'low', 'close', 'volume', 'adj_close')
+
 yfin_make_url <- function(syms,
                           startDate=format(Sys.time(),DATE_FORMAT),
                           endDate=format(Sys.time(),DATE_FORMAT),
@@ -76,6 +78,7 @@ yfin_archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq
           }else{
             x
           }
+          names(x) <- YFIN_COLUMNS
           x
         },
         .parallel=.parallel)
@@ -83,4 +86,5 @@ yfin_archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq
   save(z, file=path)
   z
 }
+
 
