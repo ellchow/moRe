@@ -110,7 +110,7 @@ yfin_archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq
 }
 
 yfin_archive_to_single_table <- function(z){
-  Reduce(function(x,y) merge(x,y,by='date',all=TRUE) ,
+  z <- Reduce(function(x,y) merge(x,y,by='date',all=TRUE) ,
          lapply(lzip(z,names(z)),
                 function(x){
                   sym <- x[[2]]
@@ -119,4 +119,6 @@ yfin_archive_to_single_table <- function(z){
                   names(d)[-i] <- paste(sym,names(d)[-i],sep='_')
                   d
                 }))
+  z$date <- ordered(z$date, sort(as.character(z$date)))
+  z
 }
