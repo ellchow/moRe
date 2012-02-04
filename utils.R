@@ -39,10 +39,16 @@ dump <- sapply(c('gdata',
 ####################
 #### Logging
 ####################
-make_log <- function(id, level=c('info','warning','error'), availableLevels=NULL, outputs="", overwrite=TRUE){
+make_log <- function(id, level=c('info','warning','error'), availableLevels=NULL, outputs=stderr(), overwrite=TRUE){
   availableLevels <- union(level,availableLevels)
   if(overwrite){
-    sapply(outputs[outputs != ""], file.remove)
+    sapply(outputs[outputs != ""],
+           function(x){
+             if(is.character(x)){
+               file.remove(x)
+             }
+           }
+           )
   }
   hash(id=id,
        level=level,
@@ -102,6 +108,8 @@ rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
 ####################
 #### Misc
 ####################
+
+plop <- function(f,argslist,...){do.call(f,c(as.list(argslist),...))}
 
 rename_cols <- function(data, old, new){
   cbind(data,
