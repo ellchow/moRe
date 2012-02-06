@@ -178,6 +178,10 @@ flatten <- function(x){
   do.call(c,x)
 }
 
+csplat <- function(f,a,...){
+  do.call(f,c(as.list(a),...))
+}
+
 save_plots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
   llply(plots,function(x){
     tryCatch(ggsave(filename=paste(outputPath,'/',x$name,'.',ext,sep=''),plot=x$plot,...),
@@ -260,33 +264,6 @@ pprint_dataframe <- function(data,sep='  |  ',.parallel=FALSE){
 rdiscrete <- function(n, prob, domain=1:length(prob)){
   apply(rmultinom(n,1,prob/sum(prob)), 2, function(x) domain[as.logical(x)])
 }
-
-explode_dataframe <- function(all, dist, groupBy=NULL, outputPath=NULL){
-  if(is.null(groupBy)){
-    groupIds <- 1:nrow(all)
-  }else{
-    groupIds <- unique(all[[groupBy]])
-  }
-  nShards <- length(dist)
-  shardIds <- as.list(rdiscrete(dist,n=length(groupIds)))
-  names(shardIds) <- groupIds
-  shards <- lapply(1:nShards,
-                   function(s){
-                     check <- if(is.null(groupBy)){groupIds}else{all[[groupBy]]}
-                     drop.levels(all[check %in% names(shardIds)[shardIds == s],])
-                   })
-  if(!is.null(outputPath)){
-    sapply(1:nShards,
-           function(s){
-             sh<-shards[[s]];
-             save(sh,file=sprintf('%s_%d_%.2f.rda',outputPath,s,dist[s]))
-           })
-    NULL
-  }else{
-    shards
-  }
-}
-
 
 int_to_char_map <- hash(keys=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),values=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))
 

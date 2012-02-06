@@ -119,6 +119,12 @@ yfin_archive_to_single_table <- function(z){
                   names(d)[-i] <- paste(sym,names(d)[-i],sep='_')
                   d
                 }))
+  names(z) <- gsub('[^A-Za-z_]','',names(z))
   z$date <- ordered(z$date, sort(as.character(z$date)))
-  z
+  z[order(z$date),]
 }
+
+
+
+
+
