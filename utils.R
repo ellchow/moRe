@@ -109,7 +109,9 @@ rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
 #### Misc
 ####################
 
-plop <- function(f,argslist,...){do.call(f,c(as.list(argslist),...))}
+csplat <- function(f,a,...){
+  do.call(f,c(as.list(a),...))
+}
 
 rename_cols <- function(data, old, new){
   cbind(data,
@@ -176,10 +178,6 @@ keep_if <- function(x,f){
 
 flatten <- function(x){
   do.call(c,x)
-}
-
-csplat <- function(f,a,...){
-  do.call(f,c(as.list(a),...))
 }
 
 save_plots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
