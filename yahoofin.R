@@ -49,13 +49,18 @@ yfin_make_url <- function(syms,
 }
 
 get_historical_data <- function(...){
-  z <- read.table(yfin_make_url(...),sep=',',comment.char='',quote='',header=T)
+  u <- yfin_make_url(...)
+  z <- tryCatch(read.table(u,sep=',',comment.char='',quote='',header=T),
+                error=function(e){
+                  print(u)
+                })
   names(z) <- tolower(names(z))
   z$date <- factor(z$date, levels=sort(levels(z$date)), ordered=TRUE)
   z
 }
 
-## yfin_archive('~/Documents/investments/data/tsv/yd.rda',strsplit('AGG,BIV,BLV,BND,BSV,^DJI,EDV,^FTSE,GLD,^GSPC,^HSI,IAU,^MID,SLV,^SML,VAW,VB,VCR,VDC,VDE,VEU,VFH,VGK,VGT,VHT,VIS,^VIX,VNQ,VOX,VPL,VPU,VSS,VTI,VUG,VWO,VXF',',')[[1]],freq='daily',asSingleTable='~/Documents/investments/data/tsv/yd_single.rda',verbose=TRUE) -> z
+## yfin_archive('~/Documents/investments/data/yd.rda',strsplit('AGG,BIV,BLV,BND,BSV,^DJI,EDV,^FTSE,GLD,^GSPC,^HSI,IAU,^MID,SLV,^SML,VAW,VB,VCR,VDC,VDE,VEU,VFH,VGK,VGT,VHT,VIS,^VIX,VNQ,VOX,VPL,VPU,VSS,VTI,VUG,VWO,VXF',',')[[1]],freq='daily',asSingleTable='~/Documents/investments/data/yd_single.rda',verbose=TRUE) -> z
+## yfin_archive('~/Documents/investments/data/yd_monthly.rda',strsplit('AGG,BIV,BLV,BND,BSV,^DJI,EDV,^FTSE,GLD,^GSPC,^HSI,IAU,^MID,SLV,^SML,VAW,VB,VCR,VDC,VDE,VEU,VFH,VGK,VGT,VHT,VIS,^VIX,VNQ,VOX,VPL,VPU,VSS,VTI,VUG,VWO,VXF',',')[[1]],freq='monthly',asSingleTable='~/Documents/investments/data/yd_monthly_single.rda',verbose=TRUE) -> z
 yfin_archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq='weekly',update=TRUE, asSingleTable=NULL, .parallel=TRUE, verbose=FALSE){
   verbose <- if(verbose){'info'}else{NULL}
   log <- make_log('yfin_archive',level=verbose)
@@ -70,7 +75,7 @@ yfin_archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq
   today <- format(Sys.time(),DATE_FORMAT)
 
   if(update){ syms <- union(syms, names(archive))}
-  log <- write_log(log, 'getting data for %s', plop(paste,syms,sep=','))
+  log <- write_log(log, 'getting data for %s', csplat(paste,syms,sep=','))
   z <- llply(syms,
              function(s){
                if(s %in% names(archive)){
@@ -90,6 +95,7 @@ yfin_archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq
                }else{
                  x
                }
+               x$date <- as.Date(x$date)
                names(x) <- YFIN_COLUMNS
                x
              },
@@ -120,11 +126,41 @@ yfin_archive_to_single_table <- function(z){
                   d
                 }))
   names(z) <- gsub('[^A-Za-z_]','',names(z))
-  z$date <- ordered(z$date, sort(as.character(z$date)))
+  z$date <- as.Date(z$date)
   z[order(z$date),]
 }
 
+single_table_col_names <- function(syms,attrs=YFIN_COLUMNS,withDate=TRUE){
+  c(if(withDate){'date'}else{NULL},gsub('[^A-Za-z_]','',csplat(c, lapply(syms, function(s) paste(s,intersect(attrs,setdiff(YFIN_COLUMNS,'date')),sep='_')))))
+}
 
+single_table_valid_subset <- function(z, syms){
+  z[Reduce(function(x,y) x & y, lapply(single_table_col_names(syms,withDate=FALSE),function(s) !is.na(z[[s]])), init=TRUE),single_table_col_names(syms)]
+}
 
+compute_returns <- function(z){
+  zz <- cbind(tail(z$date,-1),as.data.frame(do.call(cbind,lapply(setdiff(names(z),'date'),function(i) diff(z[[i]])/head(z[[i]],1)  ))))
+  names(zz) <- names(z)
+  zz
+}
 
+compute_portfolio_returns <- function(z, allocation){
+  total <- Reduce(function(x,y) x + y, allocation, init=0)
+  Reduce(function(x,y) x + y,
+         lapply(lzip(names(allocation), allocation),
+                function(a) z[[a[[1]]]] * a[[2]] / total),
+         init=0
+         )
+}
 
+compute_values <- function(z, init=1){
+  cols <- setdiff(names(z),'date')
+  values <- list(rep(init, length(cols)))
+  for(i in 1:nrow(z)){
+    values <- c(values, list((z[,cols][i,] + 1) * tail(values,1)[[1]]))
+  }
+  zz <- do.call(rbind,values)
+  zz$date <- c(seq(z$date[1], y$date[1] - 31,by="-1 month")[2],
+               z$date)
+  zz
+}
