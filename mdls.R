@@ -307,4 +307,31 @@ feature_selection_by_filter <- function(target, features, initSelected, evaluate
   z
 }
 
+feature_selection_by_gbm <- function(target, features, data,
+                                     gbmSettings=list(n.trees=100,shrinkage=0.05,interaction.depth=8,train.fraction=0.8,distribution='gaussian', keep.data=FALSE),
+                                     keep=function(importance,iter){importance > quantile(importance,0.05)},
+                                     stop_when=function(remaining,importance){
+                                       (length(remaining) <= 10) || (min(importance) > 5)}){
+  result <- list(list(remaining=features,
+                      model=NA,
+                      importance=NA
+                      ))
+  while(is.na(tail(result,1)[[1]]$importance) ||
+        !stop_when(tail(result,1)[[1]]$remaining, tail(result,1)[[1]]$importance)){
 
+    f <- sort(tail(result,1)[[1]]$remaining)
+    model <- do.call(function(...) gbm.fit(subset(data,select=f), target,...), gbmSettings)
+    optNumTrees <- max(1, gbm.perf(model,plot.it=F,method='test'))
+
+    importance <- summary(model, n.trees=optNumTrees, plotit=F)
+    importance <- importance[order(importance[[1]]),][[2]]
+
+    toKeep <- keep(importance, length(result))
+
+    result <- c(result,list(list(remaining = f[toKeep],
+                                 model = model,
+                                 importance = importance
+                                 )))
+  }
+  result
+}

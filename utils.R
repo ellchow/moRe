@@ -259,6 +259,46 @@ pprint_dataframe <- function(data,sep='  |  ',.parallel=FALSE){
         )
 }
 
+dataframe_to_html_table <- function(x,
+                                    table_attrs='border="1"',
+                                    th_attrs='style=font-size:24px',
+                                    add_tr_attr=function(x,i){''},
+                                    add_td_attr=function(x,i,j){''}){
+  if(nrow(x) == 0){
+    rows <- ''
+  }else{
+    rows <- do.call(paste,
+            lapply(1:nrow(x),
+                   function(i){
+                     z <- sprintf('<tr %s>%s</tr>',
+                                  add_tr_attr(x,i),
+                                  do.call(paste,
+                                          lapply(1:ncol(x),
+                                                 function(j){
+                                                   sprintf('<td %s>%s</td>',
+                                                           add_td_attr(x,i,j),
+                                                           x[i,j])
+                                                 })
+                                          ))
+                     z
+                   }))
+  }
+  headers <- sprintf('<tr>%s</tr>',
+                       do.call(paste,lapply(colnames(x), function(c){sprintf('<th %s>%s</th>', th_attrs, c)})))
+  z <- sprintf('<table %s>\n%s\n%s\n</table>',
+               table_attrs,
+               headers,
+               rows
+               )
+  z
+}
+
+
+
+
+
+
+
 rdiscrete <- function(n, prob, domain=1:length(prob)){
   apply(rmultinom(n,1,prob/sum(prob)), 2, function(x) domain[as.logical(x)])
 }
