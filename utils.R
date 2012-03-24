@@ -32,6 +32,7 @@ dump <- sapply(c('gdata',
                  'stringr',
                  'plyr',
                  'hash',
+                 'R.oo',
                  get_parallel_library()$lib
                  ),
                better.library)
@@ -39,54 +40,66 @@ dump <- sapply(c('gdata',
 ####################
 #### Logging
 ####################
-make_log <- function(id, level=c('info','warning','error'), availableLevels=NULL, outputs=stderr(), overwrite=TRUE){
-  availableLevels <- union(level,availableLevels)
-  if(overwrite){
-    sapply(outputs[outputs != ""],
-           function(x){
-             if(is.character(x)){
-               file.remove(x)
-             }
-           }
-           )
-  }
-  hash(id=id,
-       level=level,
-       availableLevels=availableLevels,
-       outputs=outputs
-       )
-}
 
-write_log <- function(log,...,level='info',sep=' - '){
-  if(!is.null(log) && !suppressWarnings(is.na(log))){
-    check <- TRUE
-    if(level %in% log$level){
-      check <- all(sapply(log$outputs,
-                          function(o){
-                            sapply(intersect(level,log$level),
-                                   function(lvl){
-                                     msg <- do.call(paste,c(as.list(keep_if(c(log$id, lvl, sprintf(...)),
-                                                                            function(i){!is.null(i)})), sep=sep))
-                                     tryCatch(is.null(cat(msg,'\n', file=o, append=TRUE)), error=function(e){FALSE})
-                                   })
-                          }))
-    }
-  }
-  log
-}
+setConstructorS3('SimpleLog',
+                 function(id='log', level=c('info','warning','error'), availableLevels=NULL, outputs=stderr(), overwrite=TRUE){
+                   availableLevels <- union(level,availableLevels)
+                   if(overwrite){
+                     sapply(outputs[outputs != ""],
+                            function(x){
+                              if(is.character(x)){
+                                file.remove(x)
+                              }
+                            }
+                            )
+                   }
+                   extend(Object(), 'SimpleLog',
+                          id=id,
+                          level=level,
+                          availableLevels=availableLevels,
+                          outputs=outputs)
+                 })
 
-timer_start <- function(...,level='info'){
-  write_log(...)
-  proc.time()[3]
-}
+setMethodS3('write_msg','SimpleLog',
+            function(log,...,level='info',sep=' - '){
+              check <- TRUE
+              if(level %in% log$level){
+                check <- all(sapply(log$outputs,
+                                    function(o){
+                                      sapply(intersect(level,log$level),
+                                             function(lvl){
+                                               msg <- do.call(paste,c(as.list(keep_if(c(log$id, lvl, sprintf(...)),
+                                                                                      function(i){!is.null(i)})), sep=sep))
+                                               tryCatch(is.null(cat(msg,'\n', file=o, append=TRUE)), error=function(e){FALSE})
+                                             })
+                                    }))
+              }
+            })
 
-timer_stop <- function(t0, log, level='info'){
-  t1 <- proc.time()[3]
-  dt <- t1 - t0
-  m <- as.integer(dt / 60)
-  s <- round(dt - 60 * m,1)
-  write_log(log, "elapsed time: %s", paste(m, 'm', s, 's'), level)
-}
+setConstructorS3('Timer',
+                 function(log=NULL){
+                   if(is.null(log)){
+                     log <- SimpleLog('timerLog')
+                   }
+                   extend(Object(), 'Timer',
+                          log=log)
+                 })
+setMethodS3('start_timer', 'Timer',
+            function(self,msg=NULL){
+              if(!is.null(msg)){
+                write_msg(self$log,msg)
+              }
+              self$startTime <- proc.time()[3]
+            })
+setMethodS3('stop_timer', 'Timer',
+            function(self){
+              self$stopTime <- proc.time()[3]
+              dt <- self$stopTime - self$startTime
+              m <- as.integer(dt / 60)
+              s <- round(dt - 60 * m,1)
+              write_msg(self$log,
+                        sprintf('elapsed time: %s', paste(m, 'm', s, 's')))
+            })
 
 ####################
 #### Files
