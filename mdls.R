@@ -22,7 +22,7 @@ setConstructorS3('ModelDef',
                           features=NULL,
                           predict=gbm_predict,
                           params=list(distribution='gaussian',n.trees=100,shrinkage=0.01,train.fraction=0.8),
-                          check=function(md,d,l){list()}){
+                          check=check_gbm_model_def){
                    extend(Object(), 'ModelDef',
                           id=id, # name of model
                           target_gen=target_gen, # function that takes in a superset of the training data  and returns the target
@@ -194,10 +194,6 @@ setConstructorS3('GbmModelDef',
                  function(id, target_gen, features, params=list()){
                    extend(ModelDef(id, target_gen, gbm.fit, features, gbm_predict, params=params, check=check_gbm_model_def), 'ModelDef')
                  })
-
-## make_gbm_model_def <- function(id, target_gen, features, params=list()){
-  ## make_model_def(id, target_gen, gbm.fit, features, gbm_predict, params=params, check=check_gbm_model_def)
-## }
 
 gbm_dependency_plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = 100,
                              return.grid = FALSE, ...){
