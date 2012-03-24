@@ -21,7 +21,7 @@ setConstructorS3('ModelDef',
                           fit=gbm.fit,
                           features=NULL,
                           predict=gbm_predict,
-                          params=list(),
+                          params=list(distribution='gaussian',n.trees=100,shrinkage=0.01,train.fraction=0.8),
                           check=function(md,d,l){list()}){
                    extend(Object(), 'ModelDef',
                           id=id, # name of model
@@ -159,6 +159,9 @@ mdls_predict <- function(models, datasets, logger=NULL){
 
 gbm_predict <- function(object,newdata,n.trees=NULL,type='response',...){
   trees = if(is.null(n.trees)) gbm.perf(object,method='test',plot.it=FALSE) else n.trees
+  if(length(trees) != 1){
+    stop('could not determine optimal number of trees')
+  }
   predict.gbm(object,newdata,n.trees=trees,type=type,...)
 }
 
@@ -348,13 +351,7 @@ make_glm_model_def <- function(id, target_gen, features, params=list()){
   make_model_def(id, target_gen, glm.fit, features, glm_predict, params=params, check=check_glm_model_def)
 }
 
-## logger <- make_logger('mylogger')
-## x <- get(load('data0.rda'))
-## md <- list(make_glm_model_def('glm',function(x)x$x, c('b')),
-##           make_gbm_model_def('gbm',function(x)x$x, c('a','b'),params=list(distribution='gaussian',train.frac=0.8))
-##           )
-## mdls_build(x,md,logger=logger) -> m
-## mdls_predict(m,x,logger=logger) -> y
+## source('mdls.R'); logger <- SimpleLog('asdf'); z <- data.frame(xa=(1:1000) * runif(1000), xb=(1:1000) + rnorm(1000,0,1000), y=1:1000); m <- ModelDef(target_gen=function(data) data$y, feature=c('xa','xb'),params=list(distribution='gaussian')); mdls_build(z,m,logger) -> mm; mdls_predict(mm,z,logger)
 
 
 ##############################################
