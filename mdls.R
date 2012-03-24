@@ -37,10 +37,10 @@ is_model_def <- function(x){
   'ModelDef' %in% class(x)
 }
 
-mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
+mdls_build <- function(datasets, modelDefs, logger=NULL, .parallel=TRUE){
   datasets <- if(is.data.frame(datasets))(list(datasets))else{datasets}
   modelDefs <- if(is_model_def(modelDefs)){list(modelDefs)}else{modelDefs}
-
+  timer <- Timer(logger)
   flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{1:length(datasets)},
                       datasets),
                  function(x){
@@ -48,24 +48,24 @@ mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
                    data <- x[[2]]
 
                    if(typeof(data) == 'character'){
-                     t0 <- timer_start(log,'loading dataset "%s"', dsId)
+                     t0 <- start_timer(timer,'loading dataset "%s"', dsId)
                      data <- get(load(data))
-                     timer_stop(t0,log)
+                     timer_stop(timer)
                    }else{
                      data <- as.data.frame(data)
                    }
 
-                   t0 <- timer_start(log, 'train models on "%s"', dsId)
+                   start_timer(timer, sprintf('train models on "%s"', dsId))
                    models <- flatten(llply(modelDefs,
                                            function(md){
                                              id <- sprintf('%s%s', md$id,
                                                            if(length(datasets) > 1){
                                                              sprintf("__%s", dsId)
                                                            }else{""})
-                                             write_log(log, 'building target for "%s"', id)
+                                             write_msg(logger, sprintf('building target for "%s"', id))
                                              t <- tryCatch(md$target_gen(data),
                                                            error=function(e){
-                                                             write_log(log,str_trim(as.character(e)),
+                                                             write_msg(logger,str_trim(as.character(e)),
                                                                        level='error')
                                                              NA
                                                            })
@@ -73,20 +73,21 @@ mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
                                              if(length(problems) > 0){
                                                lapply(lzip(names(problems),problems),
                                                       function(p){
-                                                        write_log(log,'problem with "%s" (%s)',
-                                                                  id,
-                                                                  p[[1]],
-                                                                  if(is.na(p[[2]])){''}else{p[[2]]},
+                                                        write_msg(logger,
+                                                                  sprintf('problem with "%s" (%s): %s',
+                                                                          id,
+                                                                          p[[1]],
+                                                                          if(is.na(p[[2]])){''}else{p[[2]]}),
                                                                   level='warning')
                                                       })
                                              }else{
-                                               write_log(log, 'training "%s"', id)
+                                               write_msg(logger, sprintf('training "%s"', id))
                                                m <- tryCatch(do.call(md$fit,
                                                                      c(list(subset(data,select=md$features),
                                                                             t),
                                                                        md$params)),
                                                              error=function(e){
-                                                               write_log(log,str_trim(as.character(e)),
+                                                               write_msg(logger,str_trim(as.character(e)),
                                                                          level='error')
                                                                NA
                                                              })
@@ -99,34 +100,34 @@ mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
                                                  return(z)
                                                }
                                              }
-                                             write_log(log,'could not train "%s" (skipped)', id,
-                                                       level='warning')
+                                             write_msg(logger,sprintf('could not train "%s" (skipped)', id,
+                                                       level='warning'))
 
                                              list()
                                            },
                                            .parallel=.parallel))
-                   timer_stop(t0,log)
+                   stop_timer(timer)
                    models
                  }))
 }
 
-mdls_predict <- function(models, datasets, log=NULL){
+mdls_predict <- function(models, datasets, logger=NULL){
   models <- if(!is.list(models)){list(models)}else{models}
   datasets <- if(is.data.frame(datasets)){list(datasets)}else{datasets}
-
+  timer <- Timer(logger)
   flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{sapply(1:length(datasets),int_to_char_seq)},
                       datasets),
                  function(x){
                    dsId <- x[[1]]
                    data <- x[[2]]
                    if(typeof(data) == 'character'){
-                     t0 <- timer_start(log,'loading dataset "%s"', dsId)
+                     start_timer(timer,sprintf('loading dataset "%s"', dsId))
                      data <- get(load(data))
-                     timer_stop(t0,log)
+                     stop_timer(timer)
                    }else{
                      data <- as.data.frame(data)
                    }
-                   t0 <- timer_start(log,'computing predictions on "%s"', dsId)
+                   start_timer(timer,sprintf('computing predictions on "%s"', dsId))
                    z <- flatten(llply(lzip(names(models), models),
                                       function(x){
                                         id <- x[[1]]
@@ -138,7 +139,7 @@ mdls_predict <- function(models, datasets, log=NULL){
                                           x[[2]]$predictions <- list()
                                         }
 
-                                        write_log(log,'predicting with "%s"', id)
+                                        write_msg(logger,sprintf('predicting with "%s"', id))
                                         pr <- predict(m, subset(data,select=features))
 
                                         x[[2]]$predictions[[as.character(dsId)]] <- pr
@@ -146,7 +147,7 @@ mdls_predict <- function(models, datasets, log=NULL){
                                         names(z) <- id
                                         z
                                       }))
-                   timer_stop(t0, log)
+                   stop_timer(timer)
                    z
                  })
           )
@@ -347,13 +348,13 @@ make_glm_model_def <- function(id, target_gen, features, params=list()){
   make_model_def(id, target_gen, glm.fit, features, glm_predict, params=params, check=check_glm_model_def)
 }
 
-## log <- make_log('mylog')
+## logger <- make_logger('mylogger')
 ## x <- get(load('data0.rda'))
 ## md <- list(make_glm_model_def('glm',function(x)x$x, c('b')),
 ##           make_gbm_model_def('gbm',function(x)x$x, c('a','b'),params=list(distribution='gaussian',train.frac=0.8))
 ##           )
-## mdls_build(x,md,log=log) -> m
-## mdls_predict(m,x,log=log) -> y
+## mdls_build(x,md,logger=logger) -> m
+## mdls_predict(m,x,logger=logger) -> y
 
 
 ##############################################
