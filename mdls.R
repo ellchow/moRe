@@ -5,6 +5,7 @@ dump <- sapply(c('gdata',
                  'doMC',
                  'gbm',
                  'infotheo',
+                 'R.oo',
                  get_parallel_library()$lib
                  ), better.library)
 
@@ -14,25 +15,26 @@ get_parallel_library()$activate()
 #### Model Building
 ##############################################
 
-make_model_def <- function(id, target_gen, fit, features, predict, params=list(), check=function(md,d,l){list()}){
-  list(id=id, # name of model
-       target_gen=target_gen, # function that takes in a superset of the training data  and returns the target
-       fit=fit, # function for fitting the model of the same form as gbm.fit
-       features=features, # vector of feature names to be used by the model
-       params=params, # extra parameters for the fitting function
-       predict=predict, # function for computing a prediction of the same form as gbm.predict
-       check=check # function that takes in a model definition, target, and data and checks if there are any issues
-       )
-}
-
-model_def_properties <- function(){
-  names(make_model_def(NA,NA,NA,NA,NA,NA))
-}
-
-is_model_def <- function(md){
-  x <- setdiff(union(names(md),model_def_properties()),
-               intersect(names(md),model_def_properties()))
-  (length(x)==0)
+setConstructorS3('ModelDef',
+                 function(id=gsub('^..','',runif(1)),
+                          target_gen=function(data){data$target},
+                          fit=gbm.fit,
+                          features=NULL,
+                          predict=gbm_predict,
+                          params=list(),
+                          check=function(md,d,l){list()}){
+                   extend(Object(), 'ModelDef',
+                          id=id, # name of model
+                          target_gen=target_gen, # function that takes in a superset of the training data  and returns the target
+                          fit=fit, # function for fitting the model of the same form as gbm.fit
+                          features=features, # vector of feature names to be used by the model
+                          params=params, # extra parameters for the fitting function
+                          predict=predict, # function for computing a prediction of the same form as gbm.predict
+                          check=check # function that takes in a model definition, target, and data and checks if there are any issues
+                          )
+                 })
+is_model_def <- function(x){
+  'ModelDef' %in% class(x)
 }
 
 mdls_build <- function(datasets, modelDefs, log=NULL, .parallel=TRUE){
@@ -184,8 +186,140 @@ check_gbm_model_def <- function(modelDef, target, data){
   problems
 }
 
-make_gbm_model_def <- function(id, target_gen, features, params=list()){
-  make_model_def(id, target_gen, gbm.fit, features, gbm_predict, params=params, check=check_gbm_model_def)
+setConstructorS3('GbmModelDef',
+                 function(id, target_gen, features, params=list()){
+                   extend(ModelDef(id, target_gen, gbm.fit, features, gbm_predict, params=params, check=check_gbm_model_def), 'ModelDef')
+                 })
+
+## make_gbm_model_def <- function(id, target_gen, features, params=list()){
+  ## make_model_def(id, target_gen, gbm.fit, features, gbm_predict, params=params, check=check_gbm_model_def)
+## }
+
+gbm_dependency_plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = 100,
+                             return.grid = FALSE, ...){
+  if (all(is.character(i.var))) {
+    i <- match(i.var, x$var.names)
+    if (any(is.na(i))) {
+      stop("Plot variables not used in gbm model fit: ",
+           i.var[is.na(i)])
+    }
+    else {
+      i.var <- i
+    }
+  }
+  if ((min(i.var) < 1) || (max(i.var) > length(x$var.names))) {
+    warning("i.var must be between 1 and ", length(x$var.names))
+  }
+  if (n.trees > x$n.trees) {
+    warning(paste("n.trees exceeds the number of trees in the model, ",
+                  x$n.trees, ". Plotting using ", x$n.trees, " trees.",
+                  sep = ""))
+    n.trees <- x$n.trees
+  }
+  if (length(i.var) > 3) {
+    warning("plot.gbm creates up to 3-way interaction plots.\nplot.gbm will only return the plotting data structure.")
+    return.grid = TRUE
+  }
+  ## error check for invalid quantiles
+  if(length(continuous.resolution) > 1 && any(continuous.resolution < 0 | continuous.resolution > 1)){
+    stop("Invalid quantiles specified in continuous.resolution: ", continuous.resolution)
+  }
+  grid.levels <- vector("list", length(i.var))
+  for (i in 1:length(i.var)) {
+    if (is.numeric(x$var.levels[[i.var[i]]])) {
+      ## allow for quantile selection
+      if(length(continuous.resolution) > 1){
+        grid.levels[[i]] <- as.vector(quantile(x$var.levels[[i.var[i]]], probs=continuous.resolution))
+      }else{
+        grid.levels[[i]] <- seq(min(x$var.levels[[i.var[i]]]),
+                                max(x$var.levels[[i.var[i]]]), length = continuous.resolution)
+      }
+    }
+    else {
+      grid.levels[[i]] <- as.numeric(factor(x$var.levels[[i.var[i]]],
+                                            levels = x$var.levels[[i.var[i]]])) - 1
+    }
+  }
+  X <- expand.grid(grid.levels)
+  names(X) <- paste("X", 1:length(i.var), sep = "")
+  X$y <- .Call("gbm_plot", X = as.double(data.matrix(X)), cRows = as.integer(nrow(X)),
+               cCols = as.integer(ncol(X)), i.var = as.integer(i.var -
+                                              1), n.trees = as.integer(n.trees), initF = as.double(x$initF),
+               trees = x$trees, c.splits = x$c.splits, var.type = as.integer(x$var.type),
+               PACKAGE = "gbm")
+  f.factor <- rep(FALSE, length(i.var))
+  for (i in 1:length(i.var)) {
+    if (!is.numeric(x$var.levels[[i.var[i]]])) {
+      X[, i] <- factor(x$var.levels[[i.var[i]]][X[, i] +
+                                                1], levels = x$var.levels[[i.var[i]]])
+      f.factor[i] <- TRUE
+    }
+  }
+  if (return.grid) {
+    names(X)[1:length(i.var)] <- x$var.names[i.var]
+    return(X)
+  }
+  if (length(i.var) == 1) {
+    if (!f.factor) {
+      j <- order(X$X1)
+      plot(X$X1, X$y, type = "l", xlab = x$var.names[i.var],
+           ylab = paste("f(", x$var.names[i.var], ")", sep = ""),
+           ...)
+    }
+    else {
+      plot(X$X1, X$y, xlab = x$var.names[i.var], ylab = paste("f(",
+                                                   x$var.names[i.var], ")", sep = ""), ...)
+    }
+  }
+  else if (length(i.var) == 2) {
+    if (!f.factor[1] && !f.factor[2]) {
+      levelplot(y ~ X1 * X2, data = X, xlab = x$var.names[i.var[1]],
+                ylab = x$var.names[i.var[2]], ...)
+    }
+    else if (f.factor[1] && !f.factor[2]) {
+      xyplot(y ~ X2 | X1, data = X, xlab = x$var.names[i.var[2]],
+             ylab = paste("f(", x$var.names[i.var[1]], ",",
+               x$var.names[i.var[2]], ")", sep = ""), type = "l",
+             ...)
+    }
+    else if (!f.factor[1] && f.factor[2]) {
+      xyplot(y ~ X1 | X2, data = X, xlab = x$var.names[i.var[1]],
+             ylab = paste("f(", x$var.names[i.var[1]], ",",
+               x$var.names[i.var[2]], ")", sep = ""), type = "l",
+             ...)
+    }
+    else {
+      stripplot(y ~ X1 | X2, data = X, xlab = x$var.names[i.var[2]],
+                ylab = paste("f(", x$var.names[i.var[1]], ",",
+                  x$var.names[i.var[2]], ")", sep = ""), ...)
+    }
+  }
+  else if (length(i.var) == 3) {
+    i <- order(f.factor)
+    X.new <- X[, i]
+    X.new$y <- X$y
+    names(X.new) <- names(X)
+    if (sum(f.factor) == 0) {
+      X.new$X3 <- equal.count(X.new$X3)
+      levelplot(y ~ X1 * X2 | X3, data = X.new, xlab = x$var.names[i.var[i[1]]],
+                ylab = x$var.names[i.var[i[2]]], ...)
+    }
+    else if (sum(f.factor) == 1) {
+      levelplot(y ~ X1 * X2 | X3, data = X.new, xlab = x$var.names[i.var[i[1]]],
+                ylab = x$var.names[i.var[i[2]]], ...)
+    }
+    else if (sum(f.factor) == 2) {
+      xyplot(y ~ X1 | X2 * X3, data = X.new, type = "l",
+             xlab = x$var.names[i.var[i[1]]], ylab = paste("f(",
+                                                paste(x$var.names[i.var[1:3]], collapse = ","),
+                                                ")", sep = ""), ...)
+    }
+    else if (sum(f.factor) == 3) {
+      stripplot(y ~ X1 | X2 * X3, data = X.new, xlab = x$var.names[i.var[i[1]]],
+                ylab = paste("f(", paste(x$var.names[i.var[1:3]],
+                  collapse = ","), ")", sep = ""), ...)
+    }
+  }
 }
 
 #####################################
