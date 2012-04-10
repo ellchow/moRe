@@ -6,6 +6,7 @@ dump <- sapply(c('gdata',
                  'gbm',
                  'infotheo',
                  'R.oo',
+                 'rjson',
                  get.parallel.library()$lib
                  ), better.library)
 
@@ -195,8 +196,68 @@ setConstructorS3('GbmModelDef',
                    extend(ModelDef(id, target.gen, gbm.fit, features, gbm.predict, params=params, check=check.gbm.model.def), 'ModelDef')
                  })
 
-gbm.dependency.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = 100,
-                                 return.grid = FALSE, ...){
+gbm.tree.as.df <- function(object, i.tree = 1){
+  if ((i.tree < 1) || (i.tree > length(object$trees))) {
+    stop("i.tree is out of range ", length(object$trees))
+  }else{
+    tree <- data.frame(object$trees[[i.tree]])
+    names(tree) <- c("SplitVar", "SplitCodePred", "LeftNode",
+                     "RightNode", "MissingNode", "ErrorReduction", "Weight",
+                     "Prediction")
+    tree$LeftNode <- tree$LeftNode + 1
+    tree$RightNode <- tree$RightNode + 1
+    tree$MissingNode <- tree$MissingNode + 1
+    tree$SplitVarName <- ifelse(tree$SplitVar + 1 > 0, object$var.names[tree$SplitVar + 1], '')
+    tree$SplitCodePred <- ifelse(i.tree == 1 & tree$SplitVarName=='', tree$SplitCodePred + object$initF, tree$SplitCodePred)
+    tree$node <- 1:nrow(tree)
+    tree[, c("node", "SplitVarName", "SplitCodePred", "LeftNode", "RightNode", "MissingNode")]
+  }
+}
+
+gbm.tree.row.as.json <- function(tree.df, node){
+  row <- tree.df[tree.df$node == node,]
+  if (row$SplitVarName != "") {
+    list(cond=list(var=row$SplitVarName,op="<", val=row$SplitCodePred),
+         if_true = gbm.tree.row.as.json(tree.df, row$LeftNode),
+         if_false = gbm.tree.row.as.json(tree.df, row$RightNode),
+         if_missing = gbm.tree.row.as.json(tree.df, row$MissingNode))
+  } else {
+    list(prediction=row$SplitCodePred)
+  }
+}
+
+gbm.tree.as.json <- function(object, n.trees=object$n.trees, i.tree=1){
+  gbm.tree.row.as.json(gbm.tree.as.df(object, i.tree), 1)
+}
+
+gbm.model.json <- function(object, trees=object$n.trees, name=""){
+  usedVariables <- gbm.model.used.variables(object)
+  jsonTree <- lapply(1:trees, function(tree) gbm.tree.as.json(object, i.tree=tree, n.trees=trees))
+
+  toJSON(list(name=name,
+              bag.fraction=object$bag.fraction,
+              distribution= object$distribution$name,
+              interaction.depth=object$interaction.depth,
+              n.minobsinnode=object$n.minobsinnode,
+              n.trees=trees,
+              shrinkage=object$shrinkage,
+              factors = usedVariables,
+              trees=jsonTree))
+}
+
+gbm.model.used.variables <- function(object, trees=object$n.trees){
+  as.character(subset(summary.gbm(object,plotit=F), rel.inf > 0,)$var)
+}
+
+gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
+  if(is.integer(var.name)){
+    var.name <- object$var.names[var.name]
+  }
+  subset(do.call(rbind, lapply(1:trees, function(tree) gbm.tree.as.df(object, i.tree=tree))), SplitVarName == var.name)$SplitCodePred
+}
+
+gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',2),
+                             return.grid = FALSE, ...){
   if (all(is.character(i.var))) {
     i <- match(i.var, x$var.names)
     if (any(is.na(i))) {
@@ -220,19 +281,23 @@ gbm.dependency.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.r
     warning("plot.gbm creates up to 3-way interaction plots.\nplot.gbm will only return the plotting data structure.")
     return.grid = TRUE
   }
-  ## error check for invalid quantiles
-  if(length(continuous.resolution) > 1 && any(continuous.resolution < 0 | continuous.resolution > 1)){
-    stop("Invalid quantiles specified in continuous.resolution: ", continuous.resolution)
-  }
   grid.levels <- vector("list", length(i.var))
   for (i in 1:length(i.var)) {
     if (is.numeric(x$var.levels[[i.var[i]]])) {
-      ## allow for quantile selection
-      if(length(continuous.resolution) > 1){
-        grid.levels[[i]] <- as.vector(quantile(x$var.levels[[i.var[i]]], probs=continuous.resolution))
-      }else{
+      if(continuous.resolution[[1]] == 'quantile'){
+        grid.levels[[i]] <- as.vector(quantile(x$var.levels[[i.var[i]]], probs=continuous.resolution[[2]]))
+      }else if (continuous.resolution[[1]] == 'uniform'){
         grid.levels[[i]] <- seq(min(x$var.levels[[i.var[i]]]),
-                                max(x$var.levels[[i.var[i]]]), length = continuous.resolution)
+                                max(x$var.levels[[i.var[i]]]), length = continuous.resolution[[2]])
+      }else if(continuous.resolution[[1]] == "splits"){
+        var.name <- x$var.names[i.var[i]]
+        splitPoints <- sort(gbm.split.points(x, var.name))
+        splitPoints <- c(0.99*splitPoints[1], splitPoints)
+        nextPoints <- c(splitPoints, tail(splitPoints,1)*1.01)
+        grid.levels[[i]] <- do.call(c,lapply(lzip(splitPoints, nextPoints),
+                                             function(x) seq(x[[1]], x[[2]], length=continuous.resolution[[2]]+2)))
+      }else{
+        stop("unknown range sampling method: ", continuous.resolution[[1]])
       }
     }
     else {
@@ -322,6 +387,9 @@ gbm.dependency.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.r
   }
 }
 
+
+
+
 #####################################
 #### glm modifications and helpers
 #####################################
@@ -347,7 +415,7 @@ make.glm.model.def <- function(id, target.gen, features, params=list()){
   make.model.def(id, target.gen, glm.fit, features, glm.predict, params=params, check=check.glm.model.def)
 }
 
-## source('mdls.R'); logger <- SimpleLog('asdf'); z <- data.frame(xa=(1:1000) * runif(1000), xb=(1:1000) + rnorm(1000,0,1000), y=1:1000); m <- ModelDef(target.gen=function(data) data$y, feature=c('xa','xb'),params=list(distribution='gaussian')); mdls.build(z,m,logger) -> mm; mdls.predict(mm,z,logger)
+## source('mdls.R'); logger <- SimpleLog('asdf'); z <- data.frame(xa=(1:1000) * runif(1000), xb=(1:1000) + rnorm(1000,0,1000), y=1:1000); m <- ModelDef(target.gen=function(data) data$y, feature=c('xa','xb'),params=list(distribution='gaussian',train.frac=0.8)); mdls.build(z,m,logger) -> mm; mdls.predict(mm,z,logger)
 
 
 ##############################################
