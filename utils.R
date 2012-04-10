@@ -1,7 +1,7 @@
-system_os <- function(){.Platform$OS.type}
+system.os <- function(){.Platform$OS.type}
 
-get_parallel_library <- function(){
-  if(system_os() == 'windows'){
+get.parallel.library <- function(){
+  if(system.os() == 'windows'){
     list(lib='doSMP',activate=function(cores){eval(parse(text=sprintf('registerDoSMP(%d)',cores)))})
   }else{
     list(lib='doMC',activate=function(cores="NULL"){eval(parse(text=sprintf('registerDoMC(%s)',cores)))})
@@ -33,7 +33,7 @@ dump <- sapply(c('gdata',
                  'plyr',
                  'hash',
                  'R.oo',
-                 get_parallel_library()$lib
+                 get.parallel.library()$lib
                  ),
                better.library)
 
@@ -60,7 +60,7 @@ setConstructorS3('SimpleLog',
                           outputs=outputs)
                  })
 
-setMethodS3('write_msg','SimpleLog',
+setMethodS3('write.msg','SimpleLog',
             function(log,...,level='info',sep=' - '){
               check <- TRUE
               if(level %in% log$level){
@@ -68,7 +68,7 @@ setMethodS3('write_msg','SimpleLog',
                                     function(o){
                                       sapply(intersect(level,log$level),
                                              function(lvl){
-                                               msg <- do.call(paste,c(as.list(keep_if(c(log$id, lvl, sprintf(...)),
+                                               msg <- do.call(paste,c(as.list(keep.if(c(log$id, lvl, sprintf(...)),
                                                                                       function(i){!is.null(i)})), sep=sep))
                                                tryCatch(is.null(cat(msg,'\n', file=o, append=TRUE)), error=function(e){FALSE})
                                              })
@@ -84,20 +84,20 @@ setConstructorS3('Timer',
                    extend(Object(), 'Timer',
                           log=log)
                  })
-setMethodS3('start_timer', 'Timer',
+setMethodS3('start.timer', 'Timer',
             function(self,msg=NULL){
               if(!is.null(msg)){
-                write_msg(self$log,msg)
+                write.msg(self$log,msg)
               }
               self$startTime <- proc.time()[3]
             })
-setMethodS3('stop_timer', 'Timer',
+setMethodS3('stop.timer', 'Timer',
             function(self){
               self$stopTime <- proc.time()[3]
               dt <- self$stopTime - self$startTime
               m <- as.integer(dt / 60)
               s <- round(dt - 60 * m,1)
-              write_msg(self$log,
+              write.msg(self$log,
                         sprintf('elapsed time: %s', paste(m, 'm', s, 's')))
             })
 
@@ -126,7 +126,7 @@ csplat <- function(f,a,...){
   do.call(f,c(as.list(a),...))
 }
 
-rename_cols <- function(data, old, new){
+rename.cols <- function(data, old, new){
   cbind(data,
         do.call(c,
                 lapply(1:length(old),
@@ -140,11 +140,11 @@ rename_cols <- function(data, old, new){
         )
 }
 
-stat_sum_df <- function(fun, geom="crossbar", colour='steelblue',...) {
+stat.sum.df <- function(fun, geom="crossbar", colour='steelblue',...) {
   stat_summary(fun.data=fun, colour=colour, geom=geom, width=0.4, ...)
 }
 
-linear_norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, rm_na=TRUE, displayLevel=0){
+linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, rm.na=TRUE, displayLevel=0){
   if(clipMin){
     x <- max(x,lb)
   }
@@ -175,7 +175,7 @@ lzip <- function(...){
          })
 }
 
-zip_to_named <- function(x,nameCol=1,valCol=2){
+zip.to.named <- function(x,nameCol=1,valCol=2){
   do.call(c,lapply(x,
                    function(y){
                      z <- list(y[[valCol]])
@@ -184,7 +184,7 @@ zip_to_named <- function(x,nameCol=1,valCol=2){
                    }))
 }
 
-keep_if <- function(x,f){
+keep.if <- function(x,f){
   mask <- sapply(x,f)
   x[mask]
 }
@@ -193,7 +193,7 @@ flatten <- function(x){
   do.call(c,x)
 }
 
-save_plots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
+save.plots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
   llply(plots,function(x){
     tryCatch(ggsave(filename=paste(outputPath,'/',x$name,'.',ext,sep=''),plot=x$plot,...),
              error=function(e){
@@ -202,7 +202,7 @@ save_plots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
   }, .parallel=.parallel)
 }
 
-merge_lists <- function(all,FUN=function(n,x){x}){
+merge.lists <- function(all,FUN=function(n,x){x}){
   allNames <- unique(do.call(c,lapply(all,names)))
   z <- lapply(allNames,
               function(n){
@@ -217,7 +217,7 @@ merge_lists <- function(all,FUN=function(n,x){x}){
   z
 }
 
-max_element_str_length <- function(data,.parallel=FALSE){
+max.element.str.length <- function(data,.parallel=FALSE){
   maxLengths <- llply(names(data),
                        function(i){
                          max(str_length(i),
@@ -229,7 +229,7 @@ max_element_str_length <- function(data,.parallel=FALSE){
   maxLengths
 }
 
-str_align <- function(data, maxLengths, .parallel=FALSE){
+str.align <- function(data, maxLengths, .parallel=FALSE){
   result <- llply(names(maxLengths),
                   function(i){
                     sapply(data[[i]],
@@ -253,13 +253,13 @@ str_align <- function(data, maxLengths, .parallel=FALSE){
 }
 
 
-pprint_dataframe <- function(data,sep='  |  ',.parallel=FALSE){
-  maxLengths <- max_element_str_length(data,.parallel=.parallel)
+pprint.dataframe <- function(data,sep='  |  ',.parallel=FALSE){
+  maxLengths <- max.element.str.length(data,.parallel=.parallel)
   header <- as.list(names(maxLengths))
   names(header) <- header
-  result <- str_align(data,maxLengths,.parallel=.parallel)
+  result <- str.align(data,maxLengths,.parallel=.parallel)
   result <- as.data.frame(result)
-  header <- do.call(paste,as.list(c(str_align(header,maxLengths),sep=sep)))
+  header <- do.call(paste,as.list(c(str.align(header,maxLengths),sep=sep)))
   paste(header,
         do.call(paste,as.list(c(rep('-',str_length(header)),sep=''))),
         do.call(paste, as.list(c(apply(result,1,
@@ -272,11 +272,11 @@ pprint_dataframe <- function(data,sep='  |  ',.parallel=FALSE){
         )
 }
 
-dataframe_to_html_table <- function(x,
-                                    table_attrs='border="1"',
-                                    th_attrs='style=font-size:24px',
-                                    add_tr_attr=function(x,i){''},
-                                    add_td_attr=function(x,i,j){''}){
+dataframe.to.html.table <- function(x,
+                                    table.attrs='border="1"',
+                                    th.attrs='style=font-size:24px',
+                                    add.tr.attr=function(x,i){''},
+                                    add.td.attr=function(x,i,j){''}){
   if(nrow(x) == 0){
     rows <- ''
   }else{
@@ -284,12 +284,12 @@ dataframe_to_html_table <- function(x,
             lapply(1:nrow(x),
                    function(i){
                      z <- sprintf('<tr %s>%s</tr>',
-                                  add_tr_attr(x,i),
+                                  add.tr.attr(x,i),
                                   do.call(paste,
                                           lapply(1:ncol(x),
                                                  function(j){
                                                    sprintf('<td %s>%s</td>',
-                                                           add_td_attr(x,i,j),
+                                                           add.td.attr(x,i,j),
                                                            x[i,j])
                                                  })
                                           ))
@@ -297,9 +297,9 @@ dataframe_to_html_table <- function(x,
                    }))
   }
   headers <- sprintf('<tr>%s</tr>',
-                       do.call(paste,lapply(colnames(x), function(c){sprintf('<th %s>%s</th>', th_attrs, c)})))
+                       do.call(paste,lapply(colnames(x), function(c){sprintf('<th %s>%s</th>', th.attrs, c)})))
   z <- sprintf('<table %s>\n%s\n%s\n</table>',
-               table_attrs,
+               table.attrs,
                headers,
                rows
                )
@@ -316,20 +316,20 @@ rdiscrete <- function(n, prob, domain=1:length(prob)){
   apply(rmultinom(n,1,prob/sum(prob)), 2, function(x) domain[as.logical(x)])
 }
 
-int_to_char_map <- hash(keys=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),values=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))
+int.to.char.map <- hash(keys=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),values=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))
 
-int_to_char <- function(i){
-  int_to_char_map[[as.character(i)]]
+int.to.char <- function(i){
+  int.to.char.map[[as.character(i)]]
 }
 
-char_to_int_map <- hash(values=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),keys=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))
+char.to.int.map <- hash(values=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),keys=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))
 
-char_to_int <- function(c){
-  as.integer(char_to_int_map[[as.character(c)]])
+char.to.int <- function(c){
+  as.integer(char.to.int.map[[as.character(c)]])
 }
 
-int_to_char_seq <- function(x, offset=0){
+int.to.char.seq <- function(x, offset=0){
   n <- as.integer((x-1) / 26) + 1
   m <- as.integer((x-1) %% 26)
-  do.call(paste,c(as.list(rep(int_to_char(m + 97),n)),sep=''))
+  do.call(paste,c(as.list(rep(int.to.char(m + 97),n)),sep=''))
 }
