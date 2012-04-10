@@ -7,6 +7,7 @@ dump <- sapply(c('gdata',
                  'infotheo',
                  'R.oo',
                  'rjson',
+                 'ggplot2',
                  get.parallel.library()$lib
                  ), better.library)
 
@@ -196,6 +197,10 @@ setConstructorS3('GbmModelDef',
                    extend(ModelDef(id, target.gen, gbm.fit, features, gbm.predict, params=params, check=check.gbm.model.def), 'ModelDef')
                  })
 
+gbm.opt.n.trees <- function(object, method='test'){
+  gbm.perf(object,method='test',plot.it=F)
+}
+
 gbm.tree.as.df <- function(object, i.tree = 1){
   if ((i.tree < 1) || (i.tree > length(object$trees))) {
     stop("i.tree is out of range ", length(object$trees))
@@ -254,6 +259,18 @@ gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
     var.name <- object$var.names[var.name]
   }
   subset(do.call(rbind, lapply(1:trees, function(tree) gbm.tree.as.df(object, i.tree=tree))), SplitVarName == var.name)$SplitCodePred
+}
+
+gbm.factor.importance <- function(object, k=min(10,length(object$n.trees)),
+                                  n.trees=gbm.opt.n.trees(object), ...){
+  x <- as.data.frame(as.list(summary(object, n.trees=n.trees, plotit=FALSE)[k:1,]))
+  names(x) <- c('factor', 'importance')
+  x$factor <- ordered(x$factor, x$factor)
+  print(x)
+  ggplot(x, aes(factor,importance)) +
+    geom_bar() +
+      coord_flip() +
+        opts(title=paste('Top',k,'Factors'))
 }
 
 gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',2),
