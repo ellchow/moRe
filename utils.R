@@ -174,6 +174,16 @@ mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
   as.data.frame(as.list(z))
 }
 
+val.to.quantile <- function(x,q=0.1){
+  qtls <- seq(0,1,q)
+  vals <- quantile(x, qtls)
+  sapply(x,
+         function(y) {
+           z <- y <= vals
+           qtls[z][1]
+         })
+}
+
 lzip <- function(...){
   args <- list(...)
   n <- min(sapply(args,length))
