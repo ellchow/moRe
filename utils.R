@@ -119,69 +119,15 @@ rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
 }
 
 ####################
-#### Misc
+#### Lists/Vectors
 ####################
 
 csplat <- function(f,a,...){
   do.call(f,c(as.list(a),...))
 }
 
-rename.cols <- function(data, old, new){
-  cbind(data,
-        do.call(c,
-                lapply(1:length(old),
-                       function(i){
-                         z <- list(data[[old[i]]])
-                         names(z) <- new[i]
-                         z
-                       }
-                       )
-                )
-        )
-}
-
-stat.sum.df <- function(fun, geom="crossbar", colour='steelblue',...) {
-  stat_summary(fun.data=fun, colour=colour, geom=geom, width=0.4, ...)
-}
-
-linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, rm.na=TRUE, displayLevel=0){
-  if(clipMin){
-    x <- max(x,lb)
-  }
-  if(clipMax){
-    x <- min(x,ub)
-  }
-  y <- (x - lb) / (ub - lb)
-
-  y
-}
-
-mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
-  if(na.rm){
-    ok <- !is.na(x) & !is.nan(x) & !is.infinite(x)
-    w <- w[ok]
-    x <- x[ok]
-  }
-  w <- w / sum(w)
-  z <- c(x %*% w,
-         quantile(sapply(1:rounds,
-                         function(i,x,m){
-                           sum(sample(x,m,replace=T,prob=w))/m
-                         },
-                           x=x,m=length(x)),
-                         c(1-ci,1+ci)/2))
-  names(z) <- c('y','ymin','ymax')
-  as.data.frame(as.list(z))
-}
-
-val.to.quantile <- function(x,q=0.1){
-  qtls <- seq(0,1,q)
-  vals <- quantile(x, qtls)
-  sapply(x,
-         function(y) {
-           z <- y <= vals
-           qtls[z][1]
-         })
+tmapply <- function(f,g,...){
+  do.call(mapply,c(f,lapply(list(...),function(x) split(x,g))))
 }
 
 lzip <- function(...){
@@ -245,6 +191,12 @@ merge.lists <- function(all,FUN=function(n,x){x}){
   z
 }
 
+
+
+####################
+#### Dataframe
+####################
+
 max.element.str.length <- function(data,.parallel=FALSE){
   maxLengths <- llply(names(data),
                        function(i){
@@ -255,6 +207,20 @@ max.element.str.length <- function(data,.parallel=FALSE){
                       .parallel=.parallel)
   names(maxLengths) <- names(data)
   maxLengths
+}
+
+rename.cols <- function(data, old, new){
+  cbind(data,
+        do.call(c,
+                lapply(1:length(old),
+                       function(i){
+                         z <- list(data[[old[i]]])
+                         names(z) <- new[i]
+                         z
+                       }
+                       )
+                )
+        )
 }
 
 str.align <- function(data, maxLengths, .parallel=FALSE){
@@ -334,14 +300,61 @@ dataframe.to.html.table <- function(x,
   z
 }
 
+####################
+#### Math/Stats
+####################
+
+stat.sum.df <- function(fun, geom="crossbar", colour='steelblue',...) {
+  stat_summary(fun.data=fun, colour=colour, geom=geom, width=0.4, ...)
+}
+
+linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, rm.na=TRUE, displayLevel=0){
+  if(clipMin){
+    x <- max(x,lb)
+  }
+  if(clipMax){
+    x <- min(x,ub)
+  }
+  y <- (x - lb) / (ub - lb)
+
+  y
+}
+
+mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
+  if(na.rm){
+    ok <- !is.na(x) & !is.nan(x) & !is.infinite(x)
+    w <- w[ok]
+    x <- x[ok]
+  }
+  w <- w / sum(w)
+  z <- c(x %*% w,
+         quantile(sapply(1:rounds,
+                         function(i,x,m){
+                           sum(sample(x,m,replace=T,prob=w))/m
+                         },
+                           x=x,m=length(x)),
+                         c(1-ci,1+ci)/2))
+  names(z) <- c('y','ymin','ymax')
+  as.data.frame(as.list(z))
+}
+
+val.to.quantile <- function(x,q=0.1){
+  qtls <- seq(0,1,q)
+  vals <- quantile(x, qtls)
+  sapply(x,
+         function(y) {
+           z <- y <= vals
+           qtls[z][1]
+         })
+}
+
 rdiscrete <- function(n, prob, domain=1:length(prob)){
   apply(rmultinom(n,1,prob/sum(prob)), 2, function(x) domain[as.logical(x)])
 }
 
-
-
-
-
+####################
+#### Misc
+####################
 
 
 int.to.char.map <- hash(keys=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),values=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))
