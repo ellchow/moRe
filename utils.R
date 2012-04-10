@@ -156,6 +156,24 @@ linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, rm.na=TRUE, dis
   y
 }
 
+mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
+  if(na.rm){
+    ok <- !is.na(x) & !is.nan(x) & !is.infinite(x)
+    w <- w[ok]
+    x <- x[ok]
+  }
+  w <- w / sum(w)
+  z <- c(x %*% w,
+         quantile(sapply(1:rounds,
+                         function(i,x,m){
+                           sum(sample(x,m,replace=T,prob=w))/m
+                         },
+                           x=x,m=length(x)),
+                         c(1-ci,1+ci)/2))
+  names(z) <- c('y','ymin','ymax')
+  as.data.frame(as.list(z))
+}
+
 lzip <- function(...){
   args <- list(...)
   n <- min(sapply(args,length))
