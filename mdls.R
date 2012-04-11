@@ -273,7 +273,7 @@ gbm.factor.importance <- function(object, k=min(10,length(object$n.trees)),
         opts(title=paste('Top',k,'Factors'))
 }
 
-gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',2),
+gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',NA),
                              return.grid = FALSE, ...){
   if (all(is.character(i.var))) {
     i <- match(i.var, x$var.names)
@@ -308,11 +308,13 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                                 max(x$var.levels[[i.var[i]]]), length = continuous.resolution[[2]])
       }else if(continuous.resolution[[1]] == "splits"){
         var.name <- x$var.names[i.var[i]]
-        splitPoints <- sort(gbm.split.points(x, var.name))
-        splitPoints <- c(0.99*splitPoints[1], splitPoints)
-        nextPoints <- c(splitPoints, tail(splitPoints,1)*1.01)
-        grid.levels[[i]] <- do.call(c,lapply(lzip(splitPoints, nextPoints),
-                                             function(x) seq(x[[1]], x[[2]], length=continuous.resolution[[2]]+2)))
+        splitPoints <- sort(unique(gbm.split.points(x, var.name)))
+        if(length(splitPoints) == 1){
+          d <- 1
+        }else{
+          d <- min(diff(splitPoints))
+        }
+        grid.levels[[i]] <- c(splitPoints[1] - d, splitPoints)
       }else{
         stop("unknown range sampling method: ", continuous.resolution[[1]])
       }
@@ -402,149 +404,4 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   collapse = ","), ")", sep = ""), ...)
     }
   }
-}
-
-
-
-
-#####################################
-#### glm modifications and helpers
-#####################################
-
-glm.predict <- function(object,newdata,type='response',...){
-  predict.glm(object,newdata,type=type,...)
-}
-
-check.glm.model.def <- function(modelDef, target, data){
-  problems <- list()
-
-  missing <- setdiff(modelDef$features, names(data))
-  available <- setdiff(modelDef$features, missing)
-  if(length(missing) != 0){problems$missing.factors <- missing}
-
-  has.na <- sapply(available, function(f){any(is.na(data[[f]]))})
-  if(any(has.na)){problems$has.na <- available[has.na]}
-
-  problems
-}
-
-make.glm.model.def <- function(id, target.gen, features, params=list()){
-  make.model.def(id, target.gen, glm.fit, features, glm.predict, params=params, check=check.glm.model.def)
-}
-
-## source('mdls.R'); logger <- SimpleLog('asdf'); z <- data.frame(xa=(1:1000) * runif(1000), xb=(1:1000) + rnorm(1000,0,1000), y=1:1000); m <- ModelDef(target.gen=function(data) data$y, feature=c('xa','xb'),params=list(distribution='gaussian',train.frac=0.8)); mdls.build(z,m,logger) -> mm; mdls.predict(mm,z,logger)
-
-
-##############################################
-#### Feature Selection
-##############################################
-
-pairwise.compare.vectors <- function(data, pairs, cmp=function(x,y){cor(x,y)}, .parallel=FALSE){
-  z <- adply(pairs,2,
-             function(i){
-               i <- sort(i)
-               data.frame(factor.a=i[1], factor.b=i[2], value=cmp(data[[i[1]]], data[[i[2]]]))
-             },
-             .parallel=.parallel)
-
-  z[[1]] <- NULL
-  z
-}
-
-
-mrmr.feature.selection.filter <- function(t,s,r){
-  ## http://penglab.janelia.org/papersall/docpdf/2005_TPAMI_FeaSel.pdf
-  remaining <- names(r)
-  scores <- sapply(remaining,
-                   function(f){
-                     ## mi <- as.data.frame(mutinformation(sx))
-                     mi <- if(length(s) > 0){
-                       sapply(c(names(s)),
-                              function(ff){
-                                mutinformation(r[[f]], s[[ff]])
-                              })
-                     }else{
-                       0
-                     }
-                     relevance <- mutinformation(t,r[[f]])
-                     redundancy <- mean(mi)
-                     z <- relevance - redundancy
-                     z
-                   }
-                   )
-  names(scores) <- remaining
-  scores
-}
-
-cor.feature.selection.filter <- function(t,s,r){
-  remaining <- names(r)
-  scores <- sapply(remaining,
-                   function(f){
-                     z <- abs(cor(t, r[[f]])) - (if(ncol(s)==0){0}else{max(abs(cor(s, r[[f]])))})^2
-                     z
-                   }
-                   )
-  names(scores) <- remaining
-  scores
-}
-
-forward.filter.feature.selection <- function(target, features, evaluate=cor.feature.selection.filter, choose.best=max, n=ncol(features)){
-  feature.selection.by.filter(target, features, NULL, evaluate,
-                              function(z, scores){
-                                scores <- scores[!is.na(scores)]
-                                if(length(scores) == 0){
-                                  z$remaining <- NULL
-                                }else{
-                                  bestScore <- choose.best(scores)
-                                  best <- match(TRUE,scores == bestScore)
-                                  z$selected <- c(z$selected, names(scores[best]))
-                                  z$remaining <- z$remaining[-1 * best]
-                                  z$scores <- c(z$scores, bestScore)
-                                }
-                                z
-                              },
-                              n=n
-                              )
-}
-
-feature.selection.by.filter <- function(target, features, initSelected, evaluate, update, n=ncol(features)){
-  z <- list(selected = initSelected,
-            remaining = setdiff(names(features), initSelected),
-            scores = c(),
-            complete.scores = list())
-  for(i in 1:n){
-    scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining))
-    z <- update(z, scores)
-    z$complete.scores <- c(z$complete.scores, list(scores))
-  }
-  z
-}
-
-feature.selection.by.gbm <- function(target, features, data,
-                                     gbmSettings=list(n.trees=100,shrinkage=0.05,interaction.depth=8,train.fraction=0.8,distribution='gaussian', keep.data=FALSE),
-                                     keep=function(importance,iter){importance > quantile(importance,0.05)},
-                                     stop.when=function(remaining,importance){
-                                       (length(remaining) <= 10) || (min(importance) > 5)}){
-  result <- list(list(remaining=features,
-                      model=NA,
-                      importance=NA
-                      ))
-  while(is.na(tail(result,1)[[1]]$importance) ||
-        !stop.when(tail(result,1)[[1]]$remaining, tail(result,1)[[1]]$importance)){
-
-    f <- sort(tail(result,1)[[1]]$remaining)
-    model <- do.call(function(...) gbm.fit(subset(data,select=f), target,...), gbmSettings)
-    optNumTrees <- max(1, gbm.perf(model,plot.it=F,method='test'))
-
-    importance <- summary(model, n.trees=optNumTrees, plotit=F)
-    importance <- importance[order(importance[[1]]),][[2]]
-
-    toKeep <- keep(importance, length(result))
-
-    result <- c(result,list(list(remaining = f[toKeep],
-                                 model = model,
-                                 importance = importance
-                                 )))
-  }
-  result
 }
