@@ -62,7 +62,6 @@ parse_args <- function(filename, arglist, args){
 
                                  z <- list(str_trim(do.call(paste,as.list(y[2:length(y)]))))
                                  if(!(y[1] %in% argnames)){
-                                   ## cat(sprintf('ERROR: unknown argument "%s"\n', y[1]))
                                    return(NA)
                                  }
                                  if(y[1] %in% names(flag)){

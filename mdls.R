@@ -1,4 +1,5 @@
 source('utils.R', chdir=TRUE)
+source('math.R', chdir=TRUE)
 dump <- sapply(c('gdata',
                  'stringr',
                  'plyr',

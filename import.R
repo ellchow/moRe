@@ -1,5 +1,9 @@
 #!/usr/bin/env Rscript
 
-do.call(function(x) source(x,chdir=TRUE),
-        list('utils.R','cmdargs.R', 'mdls.R', 'yahoofin.R')
-        )
+lapply(list('utils.R',
+            'cmdargs.R',
+            'mdls.R',
+            'math.R',
+            'yahoofin.R'),
+       function(x) source(x,chdir=TRUE))
+
