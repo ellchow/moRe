@@ -52,7 +52,7 @@ beta.params <- function(a,b){
   list(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
 }
 
-beta.param.est <- function(x,m=mean,v=var){
+beta.est <- function(x,m=mean,v=var){
   sampleMean <- m(x)
   sampleVar <- v(x)
   a <- sampleMean * ((sampleMean * (1 - sampleMean)) / sampleVar - 1)
