@@ -47,3 +47,19 @@ val.to.quantile <- function(x,q=0.1){
 rdiscrete <- function(n, prob, domain=1:length(prob)){
   apply(rmultinom(n,1,prob/sum(prob)), 2, function(x) domain[as.logical(x)])
 }
+
+beta.params <- function(a,b){
+  list(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
+}
+
+beta.param.est <- function(x,m=mean,v=var){
+  sampleMean <- m(x)
+  sampleVar <- v(x)
+  a <- sampleMean * ((sampleMean * (1 - sampleMean)) / sampleVar - 1)
+  b <- (1 - sampleMean) * ((sampleMean * (1 - sampleMean)) / sampleVar - 1)
+  beta.params(a,b)
+}
+
+beta.update <- function(params,s,n){
+  beta.params(s+params$a, n-s+params$b)
+}
