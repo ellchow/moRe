@@ -53,8 +53,13 @@ beta.params <- function(a,b){
 }
 
 beta.est <- function(x,m=mean,v=var){
-  sampleMean <- m(x)
-  sampleVar <- v(x)
+  if(is.null(dim(x)) || ncol(x) != 2){
+    sampleMean <- m(x)
+    sampleVar <- v(x)
+  }else{
+    sampleMean <- m(x[,1] / x[,2])
+    sampleVar <- v(x[,1] / x[,2])
+  }
   a <- sampleMean * ((sampleMean * (1 - sampleMean)) / sampleVar - 1)
   b <- (1 - sampleMean) * ((sampleMean * (1 - sampleMean)) / sampleVar - 1)
   beta.params(a,b)
