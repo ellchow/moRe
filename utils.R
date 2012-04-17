@@ -130,7 +130,7 @@ tmapply <- function(f,g,...){
   do.call(mapply,c(f,lapply(list(...),function(x) split(x,g))))
 }
 
-lzip <- function(...){
+lzip <- function(...,simplify=TRUE){
   args <- list(...)
   n <- min(sapply(args,length))
   if(n == 0){
@@ -138,14 +138,14 @@ lzip <- function(...){
   }
   lapply(1:n,
          function(i){
-           lapply(1:length(args),
+           sapply(1:length(args),
                   function(j){
                     y <- args[[j]]
                     if(typeof(y) == 'list')
                       y[[i]]
                     else
                       y[i]
-                  })
+                  },simplify=simplify)
          })
 }
 
