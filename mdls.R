@@ -43,6 +43,7 @@ is.model.def <- function(x){
 mdls.build <- function(datasets, modelDefs, logger=NULL, .parallel=TRUE){
   datasets <- if(is.data.frame(datasets))(list(datasets))else{datasets}
   modelDefs <- if(is.model.def(modelDefs)){list(modelDefs)}else{modelDefs}
+  if(is.null(logger)){ logger <- SimpleLog()}
   timer <- Timer(logger)
   flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{1:length(datasets)},
                       datasets),
@@ -262,7 +263,7 @@ gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
   subset(do.call(rbind, lapply(1:trees, function(tree) gbm.tree.as.df(object, i.tree=tree))), SplitVarName == var.name)$SplitCodePred
 }
 
-gbm.factor.importance <- function(object, k=min(10,length(object$n.trees)),
+gbm.factor.importance <- function(object, k=min(10,length(object$var.names)),
                                   n.trees=gbm.opt.n.trees(object), ...){
   x <- as.data.frame(as.list(summary(object, n.trees=n.trees, plotit=FALSE)[k:1,]))
   names(x) <- c('factor', 'importance')
@@ -271,7 +272,7 @@ gbm.factor.importance <- function(object, k=min(10,length(object$n.trees)),
   ggplot(x, aes(factor,importance)) +
     geom_bar() +
       coord_flip() +
-        opts(title=paste('Top',k,'Factors'))
+        opts(title=paste('Top',k,'of',length(object$var.names),'Factors'))
 }
 
 gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',NA),
@@ -406,3 +407,6 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
     }
   }
 }
+
+
+
