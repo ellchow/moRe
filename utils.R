@@ -126,8 +126,47 @@ csplat <- function(f,a,...){
   do.call(f,c(as.list(a),...))
 }
 
-tmapply <- function(f,g,...){
-  do.call(mapply,c(f,lapply(list(...),function(x) split(x,g))))
+tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE) {
+    FUN <- if (!is.null(FUN)) 
+        match.fun(FUN)
+    if (!is.list(INDEX)) 
+        INDEX <- list(INDEX)
+    if (!is.list(X))
+        X <- list(X)
+    nI <- length(INDEX)
+    namelist <- vector("list", nI)
+    names(namelist) <- names(INDEX)
+    extent <- integer(nI)
+    nx <- length(X[[1]])
+    one <- 1L
+    group <- rep.int(one, nx)
+    ngroup <- one
+    for (i in seq_along(INDEX)) {
+        index <- as.factor(INDEX[[i]])
+        if (length(index) != nx) 
+            stop("arguments must have same length")
+        namelist[[i]] <- levels(index)
+        extent[i] <- nlevels(index)
+        group <- group + ngroup * (as.integer(index) - one)
+        ngroup <- ngroup * nlevels(index)
+    }
+    if (is.null(FUN)) 
+        return(group)
+    ans <- do.call(mapply, c(FUN, lapply(X, function(x) split(x, group)), SIMPLIFY=FALSE))
+    index <- as.integer(names(ans))
+    if (simplify && all(unlist(lapply(ans, length)) == 1L)) {
+        ansmat <- array(dim = extent, dimnames = namelist)
+        ans <- unlist(ans, recursive = FALSE)
+    }
+    else {
+        ansmat <- array(vector("list", prod(extent)), dim = extent, 
+            dimnames = namelist)
+    }
+    if (length(index)) {
+        names(ans) <- NULL
+        ansmat[index] <- ans
+    }
+    ansmat
 }
 
 lzip <- function(...,simplify=TRUE){
