@@ -34,14 +34,11 @@ mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
   as.data.frame(as.list(z))
 }
 
-val.to.quantile <- function(x,q=0.1){
-  qtls <- seq(0,1,q)
+val.to.quantile <- function(x,...){
+  qtls <- seq(0,1,...)
   vals <- quantile(x, qtls)
-  sapply(x,
-         function(y) {
-           z <- y <= vals
-           qtls[z][1]
-         })
+  f <- approxfun(vals, qtls)
+  f(x)
 }
 
 rdiscrete <- function(n, prob, domain=1:length(prob)){
@@ -52,7 +49,7 @@ beta.params <- function(a,b){
   list(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
 }
 
-beta.est <- function(x,m=mean,v=var){
+beta.estimate <- function(x,m=mean,v=var){
   if(is.null(dim(x)) || ncol(x) != 2){
     sampleMean <- m(x)
     sampleVar <- v(x)
