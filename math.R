@@ -36,11 +36,19 @@ mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
   as.data.frame(as.list(z))
 }
 
-val.to.quantile <- function(x,...){
+val.to.quantile <- function(x,...,method='b'){
   qtls <- seq(0,1,...)
   vals <- quantile(x, qtls)
-  f <- approxfun(vals, qtls)
-  f(x)
+  if(method=='b'){
+    sapply(x,
+           function(y) {
+             z <- y <= vals
+             qtls[z][1]
+           })
+  }else if(method=='l'){
+    f <- approxfun(vals, qtls)
+    f(x)
+  }
 }
 
 rdiscrete <- function(n, prob, domain=1:length(prob)){
