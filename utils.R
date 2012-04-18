@@ -1,3 +1,5 @@
+#### Elliot Chow
+
 system.os <- function(){.Platform$OS.type}
 
 get.parallel.library <- function(){

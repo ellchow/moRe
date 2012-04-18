@@ -1,3 +1,5 @@
+#### Elliot Chow
+
 source('utils.R', chdir=TRUE)
 dump <- sapply(c('stringr'),better.library)
 
