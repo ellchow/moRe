@@ -35,6 +35,7 @@ dump <- sapply(c('gdata',
                  'plyr',
                  'hash',
                  'R.oo',
+                 'digest',
                  get.parallel.library()$lib
                  ),
                better.library)
@@ -118,6 +119,28 @@ rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
   if(!rmContentsOnly){
     file.remove(path)
   }
+}
+
+load.data <- function(path, cachePath='.cache', forceDownload=FALSE){
+  if(str_detect(path,'http://')){
+    pathHash <- digest(path, 'md5')
+    cachedFile <- file.path(cachePath, pathHash)
+    if(!file.exists(cachedFile) || forceDownload){
+      system(sprintf('mkdir -p %s && curl -o %s %s', cachePath, cachedFile, path))
+    }
+    conn <- cachedFile
+  }else{
+    conn <- path
+  }
+
+  options(warn=-1)
+  x <- tryCatch(get(load(conn)),
+                error=function(e){
+                  options(warn=0)
+                  read.table(conn,sep='\t',header=T,comment.char='',quote='')
+                })
+  options(warn=0)                                                                                                                                        
+  x
 }
 
 ####################
