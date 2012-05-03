@@ -121,7 +121,7 @@ rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
   }
 }
 
-cache.data <- function(path, cachePath='.cache', forceDownload=FALSE, displayLevel=0){
+cache_data <- function(path, cachePath='.cache', forceDownload=FALSE){
   if(str_detect(path,'http://')){
     pathHash <- digest(path, 'md5')
     cachedFile <- file.path(cachePath, pathHash)
@@ -133,13 +133,13 @@ cache.data <- function(path, cachePath='.cache', forceDownload=FALSE, displayLev
     conn <- path
   }
   conn
-}                                                                                                                                                        
+}
 
-load.data <- function(path, cachePath='.cache', forceDownload=FALSE, displayLevel=0){
-  conn <- cache.data(path, cachePath, forceDownload, displayLevel)
+load.data <- function(path, cachePath='.cache', forceDownload=FALSE){
+  conn <- cache_data(path, cachePath, forceDownload)
   options(warn=-1)
   x <- tryCatch(get(load(conn)),
-  	error=function(e){
+                error=function(e){
                   options(warn=0)
                   read.table(conn,sep='\t',header=T,comment.char='',quote='')
                 })
