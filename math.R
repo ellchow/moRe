@@ -51,6 +51,12 @@ val.to.quantile <- function(x,...,method='b'){
   }
 }
 
+bucketize <- function(x,buckets){
+  f <- approxfun(cbind(sort(buckets),1:length(buckets)))
+  x <- pmin(max(buckets),pmax(min(buckets),x))
+  as.integer(f(x))
+}
+
 rdiscrete <- function(n, prob, domain=1:length(prob)){
   apply(rmultinom(n,1,prob/sum(prob)), 2, function(x) domain[as.logical(x)])
 }
