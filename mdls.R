@@ -216,7 +216,7 @@ gbm.tree.as.df <- function(object, i.tree = 1){
     tree$LeftNode <- tree$LeftNode + 1
     tree$RightNode <- tree$RightNode + 1
     tree$MissingNode <- tree$MissingNode + 1
-    tree$SplitVarName <- ifelse(tree$SplitVar + 1 > 0, object$var.names[tree$SplitVar + 1], '')
+    tree$SplitVarName <- c("",object$var.names)[tree$SplitVar + 2]
     tree$SplitCodePred <- ifelse(i.tree == 1 & tree$SplitVarName=='', tree$SplitCodePred + object$initF, tree$SplitCodePred)
     tree$node <- 1:nrow(tree)
     tree[, c("node", "SplitVarName", "SplitCodePred", "LeftNode", "RightNode", "MissingNode")]
@@ -259,7 +259,7 @@ gbm.model.used.variables <- function(object, trees=object$n.trees){
 }
 
 gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
-  if(is.integer(var.name)){
+  if(is.numeric(var.name)){
     var.name <- object$var.names[var.name]
   }
   subset(do.call(rbind, lapply(1:trees, function(tree) gbm.tree.as.df(object, i.tree=tree))), SplitVarName == var.name)$SplitCodePred
@@ -350,13 +350,10 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   if (length(i.var) == 1) {
     if (!f.factor) {
       j <- order(X$X1)
-      plot(X$X1, X$y, type = "l", xlab = x$var.names[i.var],
-           ylab = paste("f(", x$var.names[i.var], ")", sep = ""),
-           ...)
+      ggplot(X, aes(x=X1,y=y)) + geom_step(color='steelblue',direction='hv') + geom_point(color='red',alpha=0.65) + scale_x_continuous(x$var.names[i.var]) + scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))
     }
     else {
-      plot(X$X1, X$y, xlab = x$var.names[i.var], ylab = paste("f(",
-                                                   x$var.names[i.var], ")", sep = ""), ...)
+      ggplot(X, aes(x=X1,y=y)) + geom_boxplot(color='steelblue') + scale_x_discrete(x$var.names[i.var]) + scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))
     }
   }
   else if (length(i.var) == 2) {
