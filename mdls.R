@@ -350,7 +350,14 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   if (length(i.var) == 1) {
     if (!f.factor) {
       j <- order(X$X1)
-      ggplot(X, aes(x=X1,y=y)) + geom_step(color='steelblue',direction='hv') + geom_point(color='red',alpha=0.65) + scale_x_continuous(x$var.names[i.var]) + scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))
+      qtls <- quantile(x$var.levels[[i.var[i]]], probs=seq(0,1,0.1))
+      qtls <- qtls[qtls <= max(X$X1) & qtls >= min(X$X1)]
+      n <- nrow(X)
+      ggplot(cbind(rbind(cbind(X,lbl=NA), data.frame(X1=qtls,y=max(X$y),lbl=names(qtls))),n=n), aes(x=X1[1:n[1]],y=y[1:n[1]])) + geom_step(color='steelblue',direction='hv') + geom_point(color='red',alpha=0.65) +
+        geom_vline(aes(xintercept=X1[-(1:n[1])]),alpha=0.3) +
+          geom_text(aes(x=X1[-(1:n[1])],y=max(y[-(1:n[1])]),label=lbl[-(1:n[1])]),angle=90,size=3,vjust=-1,alpha=0.5) +                                                                                                                                                                                               
+            scale_x_continuous(x$var.names[i.var]) +
+              scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))      
     }
     else {
       ggplot(X, aes(x=X1,y=y)) + geom_boxplot(color='steelblue') + scale_x_discrete(x$var.names[i.var]) + scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))
