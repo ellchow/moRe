@@ -339,12 +339,13 @@ dataframe.to.html.table <- function(x,
                                     table.attrs='border="1"',
                                     th.attrs='style=font-size:24px',
                                     add.tr.attr=function(x,i){''},
-                                    add.td.attr=function(x,i,j){''}){
+                                    add.td.attr=function(x,i,j){''},
+                                    .parallel=FALSE){
   if(nrow(x) == 0){
     rows <- ''
   }else{
     rows <- do.call(paste,
-                    lapply(1:nrow(x),
+                    llply(1:nrow(x),
                            function(i){
                              z <- sprintf('<tr %s>%s</tr>',
                                           add.tr.attr(x,i),
@@ -357,7 +358,7 @@ dataframe.to.html.table <- function(x,
                                                          })
                                                   ))
                              z
-                           }))
+                           },.parallel=.parallel))
   }
   headers <- sprintf('<tr>%s</tr>',
                      do.call(paste,lapply(colnames(x), function(c){sprintf('<th %s>%s</th>', th.attrs, c)})))
