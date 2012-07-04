@@ -216,7 +216,7 @@ gbm.tree.as.df <- function(object, i.tree = 1){
     tree$LeftNode <- tree$LeftNode + 1
     tree$RightNode <- tree$RightNode + 1
     tree$MissingNode <- tree$MissingNode + 1
-    tree$SplitVarName <- ifelse(tree$SplitVar + 1 > 0, object$var.names[tree$SplitVar + 1], '')
+    tree$SplitVarName <- c("",object$var.names)[tree$SplitVar + 2]
     tree$SplitCodePred <- ifelse(i.tree == 1 & tree$SplitVarName=='', tree$SplitCodePred + object$initF, tree$SplitCodePred)
     tree$node <- 1:nrow(tree)
     tree[, c("node", "SplitVarName", "SplitCodePred", "LeftNode", "RightNode", "MissingNode")]
@@ -259,7 +259,7 @@ gbm.model.used.variables <- function(object, trees=object$n.trees){
 }
 
 gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
-  if(is.integer(var.name)){
+  if(is.numeric(var.name)){
     var.name <- object$var.names[var.name]
   }
   subset(do.call(rbind, lapply(1:trees, function(tree) gbm.tree.as.df(object, i.tree=tree))), SplitVarName == var.name)$SplitCodePred
@@ -350,7 +350,14 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   if (length(i.var) == 1) {
     if (!f.factor) {
       j <- order(X$X1)
-      ggplot(X, aes(x=X1,y=y)) + geom_step(color='steelblue',direction='hv') + geom_point(color='red',alpha=0.65) + scale_x_continuous(x$var.names[i.var]) + scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))
+      qtls <- quantile(x$var.levels[[i.var[i]]], probs=seq(0,1,0.1))
+      qtls <- qtls[qtls <= max(X$X1) & qtls >= min(X$X1)]
+      n <- nrow(X)
+      ggplot(cbind(rbind(cbind(X,lbl=NA), data.frame(X1=qtls,y=max(X$y),lbl=names(qtls))),n=n), aes(x=X1[1:n[1]],y=y[1:n[1]])) + geom_step(color='steelblue',direction='hv') + geom_point(color='red',alpha=0.65) +
+        geom_vline(aes(xintercept=X1[-(1:n[1])]),alpha=0.3) +
+          geom_text(aes(x=X1[-(1:n[1])],y=max(y[-(1:n[1])]),label=lbl[-(1:n[1])]),angle=90,size=3,vjust=-1,alpha=0.5) +                                                                                                                                                                                               
+            scale_x_continuous(x$var.names[i.var]) +
+              scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))      
     }
     else {
       ggplot(X, aes(x=X1,y=y)) + geom_boxplot(color='steelblue') + scale_x_discrete(x$var.names[i.var]) + scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))
@@ -406,6 +413,4 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
     }
   }
 }
-
-
 

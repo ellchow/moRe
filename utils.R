@@ -35,6 +35,7 @@ dump <- sapply(c('gdata',
                  'plyr',
                  'hash',
                  'R.oo',
+                 'digest',
                  get.parallel.library()$lib
                  ),
                better.library)
@@ -118,6 +119,32 @@ rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
   if(!rmContentsOnly){
     file.remove(path)
   }
+}
+
+cache_data <- function(path, cachePath='.cache', forceDownload=FALSE){
+  if(str_detect(path,'http://')){
+    pathHash <- digest(path, 'md5')
+    cachedFile <- file.path(cachePath, pathHash)
+    if(!file.exists(cachedFile) || forceDownload){
+      system(sprintf('mkdir -p %s && curl -o %s %s', cachePath, cachedFile, path))
+    }
+    conn <- cachedFile
+  }else{
+    conn <- path
+  }
+  conn
+}
+
+load.data <- function(path, cachePath='.cache', forceDownload=FALSE){
+  conn <- cache_data(path, cachePath, forceDownload)
+  options(warn=-1)
+  x <- tryCatch(get(load(conn)),
+                error=function(e){
+                  options(warn=0)
+                  read.table(conn,sep='\t',header=T,comment.char='',quote='')
+                })
+  options(warn=0)
+  x
 }
 
 ####################
@@ -322,12 +349,13 @@ dataframe.to.html.table <- function(x,
                                     table.attrs='border="1"',
                                     th.attrs='style=font-size:24px',
                                     add.tr.attr=function(x,i){''},
-                                    add.td.attr=function(x,i,j){''}){
+                                    add.td.attr=function(x,i,j){''},
+                                    .parallel=FALSE){
   if(nrow(x) == 0){
     rows <- ''
   }else{
     rows <- do.call(paste,
-                    lapply(1:nrow(x),
+                    llply(1:nrow(x),
                            function(i){
                              z <- sprintf('<tr %s>%s</tr>',
                                           add.tr.attr(x,i),
@@ -340,7 +368,7 @@ dataframe.to.html.table <- function(x,
                                                          })
                                                   ))
                              z
-                           }))
+                           },.parallel=.parallel))
   }
   headers <- sprintf('<tr>%s</tr>',
                      do.call(paste,lapply(colnames(x), function(c){sprintf('<th %s>%s</th>', th.attrs, c)})))
