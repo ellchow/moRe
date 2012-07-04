@@ -185,27 +185,21 @@ tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, as.df=FALSE) {
   ans <- do.call(mapply, c(FUN, lapply(X, function(x) split(x, group)), SIMPLIFY=FALSE))
   index <- as.integer(names(ans))
 
-  if(as.df){
-    groupLabelRow <- approxfun(group,1:length(group))
-    groupLabels <- as.data.frame(INDEX)
-    names(groupLabels) <- names(INDEX)
-    ansmat <- cbind(groupLabels[groupLabelRow(names(ans)),], value = unlist(ans))
-    row.names(ansmat) <- NULL
-  }else{
-    if(simplify && all(unlist(lapply(ans, length)) == 1L)){
-      ansmat <- array(dim = extent, dimnames = namelist)
-      ans <- unlist(ans, recursive = FALSE)
-    }
-    else{
-      ansmat <- array(vector("list", prod(extent)), dim = extent,
-                      dimnames = namelist)
-    }
-    if(length(index)){
-      names(ans) <- NULL
-      ansmat[index] <- ans
-    }
+  if(simplify && all(unlist(lapply(ans, length)) == 1L)){
+    ansmat <- array(dim = extent, dimnames = namelist)
+    ans <- unlist(ans, recursive = FALSE)
   }
-
+  else{
+    ansmat <- array(vector("list", prod(extent)), dim = extent,
+                    dimnames = namelist)
+  }
+  if(length(index)){
+    names(ans) <- NULL
+    ansmat[index] <- ans
+  }
+  if(as.df){
+    ansmat <- data.frame(expand.grid(dimnames(ansmat)),y=do.call(rbind,as.list(ansmat)))
+  }
   ansmat
 }
 
@@ -356,19 +350,19 @@ dataframe.to.html.table <- function(x,
   }else{
     rows <- do.call(paste,
                     llply(1:nrow(x),
-                           function(i){
-                             z <- sprintf('<tr %s>%s</tr>',
-                                          add.tr.attr(x,i),
-                                          do.call(paste,
-                                                  lapply(1:ncol(x),
-                                                         function(j){
-                                                           sprintf('<td %s>%s</td>',
-                                                                   add.td.attr(x,i,j),
-                                                                   x[i,j])
-                                                         })
-                                                  ))
-                             z
-                           },.parallel=.parallel))
+                          function(i){
+                            z <- sprintf('<tr %s>%s</tr>',
+                                         add.tr.attr(x,i),
+                                         do.call(paste,
+                                                 lapply(1:ncol(x),
+                                                        function(j){
+                                                          sprintf('<td %s>%s</td>',
+                                                                  add.td.attr(x,i,j),
+                                                                  x[i,j])
+                                                        })
+                                                 ))
+                            z
+                          },.parallel=.parallel))
   }
   headers <- sprintf('<tr>%s</tr>',
                      do.call(paste,lapply(colnames(x), function(c){sprintf('<th %s>%s</th>', th.attrs, c)})))
