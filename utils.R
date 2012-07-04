@@ -128,7 +128,7 @@ csplat <- function(f,a,...){
   do.call(f,c(as.list(a),...))
 }
 
-tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE) {
+tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, as.df=FALSE) {
   FUN <- if(!is.null(FUN))
     match.fun(FUN)
   if(!is.list(INDEX))
@@ -157,18 +157,28 @@ tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE) {
     return(group)
   ans <- do.call(mapply, c(FUN, lapply(X, function(x) split(x, group)), SIMPLIFY=FALSE))
   index <- as.integer(names(ans))
-  if(simplify && all(unlist(lapply(ans, length)) == 1L)){
-    ansmat <- array(dim = extent, dimnames = namelist)
-    ans <- unlist(ans, recursive = FALSE)
+
+  if(as.df){
+    groupLabelRow <- approxfun(group,1:length(group))
+    groupLabels <- as.data.frame(INDEX)
+    names(groupLabels) <- names(INDEX)
+    ansmat <- cbind(groupLabels[groupLabelRow(names(ans)),], value = unlist(ans))
+    row.names(ansmat) <- NULL
+  }else{
+    if(simplify && all(unlist(lapply(ans, length)) == 1L)){
+      ansmat <- array(dim = extent, dimnames = namelist)
+      ans <- unlist(ans, recursive = FALSE)
+    }
+    else{
+      ansmat <- array(vector("list", prod(extent)), dim = extent,
+                      dimnames = namelist)
+    }
+    if(length(index)){
+      names(ans) <- NULL
+      ansmat[index] <- ans
+    }
   }
-  else{
-    ansmat <- array(vector("list", prod(extent)), dim = extent,
-                    dimnames = namelist)
-  }
-  if(length(index)){
-    names(ans) <- NULL
-    ansmat[index] <- ans
-  }
+
   ansmat
 }
 
