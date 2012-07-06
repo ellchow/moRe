@@ -414,3 +414,18 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   }
 }
 
+#######
+
+
+better.lm <- function(data,target,...){
+  factors <- setdiff(names(data),target)
+  fs <- sprintf('%s ~ %s',target,do.call(paste,c(as.list(factors),sep=' + ')))
+  lm(formula(fs), data, ...)
+}
+
+better.glm <- function(data,target,...){
+  factors <- setdiff(names(data),target)
+  fs <- sprintf('%s ~ %s',target,do.call(paste,c(as.list(factors),sep=' + ')))
+  glm(formula(fs), data=data, ...)                                                                                                                                                                                                                                                                                    
+}
+
