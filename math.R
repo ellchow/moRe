@@ -81,3 +81,18 @@ beta.estimate <- function(x,m=mean,v=var){
 beta.update <- function(params,s,n){
   beta.params(s+params$a, n-s+params$b)
 }
+
+ffilter <- function(x,w,indexes=1:length(x),sides=2){
+  stop_if(length(w) %% 2 == 0 && sides == 2,'filter must have odd length if two-sided')
+  offset <-  if(sides == 2){-as.integer(length(w)/2)}else{0}
+  bw <- length(w)
+  n <- length(x)
+  sapply(indexes,
+         function(i){
+           is <- (offset + i):(offset + i + bw - 1)
+           keep <- is > 0 & is <= n
+           is <- is[keep]
+           w <-  w[keep]
+           w %*% x[is]
+         })
+}
