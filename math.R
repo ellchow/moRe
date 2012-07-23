@@ -83,7 +83,7 @@ beta.update <- function(params,s,n){
 }
 
 ffilter <- function(x,w,indexes=1:length(x),sides=2){
-  stop_if(length(w) %% 2 == 0 && sides == 2,'filter must have odd length if two-sided')
+  stop.if(length(w) %% 2 == 0 && sides == 2,'filter must have odd length if two-sided')
   offset <-  if(sides == 2){-as.integer(length(w)/2)}else{0}
   bw <- length(w)
   n <- length(x)
