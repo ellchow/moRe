@@ -50,11 +50,15 @@ yfin.make.url <- function(syms,
   url
 }
 
-get.historical.data <- function(...){
+get.historical.data <- function(...,verbose=FALSE){
   u <- yfin.make.url(...)
+  log <- SimpleLog('get.historical.data',level=verbose)
   z <- tryCatch(read.table(u,sep=',',comment.char='',quote='',header=T),
                 error=function(e){
-                  print(u)
+                  write.msg(log,'could not fetch data for %s',u,level='error')
+                  res <- lapply(1:length(YFIN_COLUMNS),function(x) 0)
+                  names(res) <- YFIN_COLUMNS
+                  head(do.call(data.frame,res),0)
                 })
   names(z) <- tolower(names(z))
   z$date <- factor(z$date, levels=sort(levels(z$date)), ordered=TRUE)
@@ -91,7 +95,8 @@ yfin.archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq
                  y <- get.historical.data(s,
                                           startDate=startDate,
                                           endDate=today,
-                                          freq=freq)
+                                          freq=freq,
+                                          verbose=verbose)
                  x <- rbind(x,subset(y, as.character(date) > startDate))
                }else{
                  x
