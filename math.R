@@ -96,3 +96,6 @@ ffilter <- function(x,w,indexes=1:length(x),sides=2){
            w %*% x[is]
          })
 }
+
+
+
