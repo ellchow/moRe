@@ -20,31 +20,22 @@ get.parallel.library()$activate()
 #### Model Building
 ##############################################
 
-setConstructorS3('ModelDef',
-                 function(id=gsub('^..','',runif(1)),
-                          target.gen=function(data){data$target},
-                          fit=gbm.fit,
-                          features=NULL,
-                          predict=gbm.predict,
-                          params=list(distribution='gaussian',n.trees=100,shrinkage=0.01,train.fraction=0.8),
-                          check=check.gbm.model.def){
-                   extend(Object(), 'ModelDef',
-                          id=id, # name of model
-                          target.gen=target.gen, # function that takes in a superset of the training data  and returns the target
-                          fit=fit, # function for fitting the model of the same form as gbm.fit
-                          features=features, # vector of feature names to be used by the model
-                          params=params, # extra parameters for the fitting function
-                          predict=predict, # function for computing a prediction of the same form as gbm.predict
-                          check=check # function that takes in a model definition, target, and data and checks if there are any issues
-                          )
-                 })
 is.model.def <- function(x){
-  all(names(x) == c("id", "target.gen", "fit", "features", "predict", "params", "check"))
+  all(names(x) == c(
+             "id", # name of model
+             "target.gen", # function that takes in a superset of the training data  and returns the target
+             "fit", # function for fitting the model of the same form as gbm.fit
+             "features", # vector of feature names to be used by the model
+             "predict", # function for computing a prediction of the same form as gbm.predict
+             "params", # extra parameters for the fitting function
+             "check" # function that takes in a model definition, target, and data and checks if there are any issues
+             ))
 }
 
-mdls.build <- function(datasets, modelDefs, logger=NULL, .parallel=TRUE){
+mdls.fit <- function(datasets, ..., logger=NULL, .parallel=TRUE){
   datasets <- if(is.data.frame(datasets))(list(datasets))else{datasets}
-  modelDefs <- if(is.model.def(modelDefs)){list(modelDefs)}else{modelDefs}
+  modelDefs <- list(...) ##if(is.model.def(modelDefs)){list(modelDefs)}else{modelDefs}
+
   if(is.null(logger)){ logger <- SimpleLog()}
   timer <- Timer(logger)
   flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{1:length(datasets)},
@@ -76,6 +67,7 @@ mdls.build <- function(datasets, modelDefs, logger=NULL, .parallel=TRUE){
                                                              NA
                                                            })
                                              problems <- md$check(md,t,data)
+
                                              if(length(problems) > 0){
                                                lapply(lzip(names(problems),problems),
                                                       function(p){
@@ -196,8 +188,15 @@ check.gbm.model.def <- function(modelDef, target, data){
                     !all(modelDef$params$var.monotone %in% (-1:1))))
   if(monotonicity){problems$monotonicity <- NA}
 
-  invalid.target <- any(is.na(target)) || ((!('distribution' %in% names(modelDef$params)) || modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1))))
-  if(invalid.target){problems$invalid.target <- NA}
+  na.target <- any(is.na(target))
+  if(na.target){problems$invalid.target <- NA}
+
+  no.distribution <- !('distribution' %in% names(modelDef$params))
+  if(no.distribution){problems$no.distribution <- NA}
+  else{
+    invalid.bernoulli.target <- (modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1)))
+    if(invalid.bernoulli.target){problems$invalid.bernoulli.target <- NA}
+  }
 
   problems
 }
@@ -456,3 +455,4 @@ check.glm.model.def <- function(modelDef, target, data){list()}
 glm.predict <- function(object,newdata,type='response',...){
   predict.glm(object,newdata,type=type,...)
 }
+
