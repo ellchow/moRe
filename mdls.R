@@ -33,6 +33,14 @@ is.model.def <- function(x){
 }
 
 mdls.fit <- function(datasets, ..., logger=NULL, .parallel=TRUE){
+## mdls.fit(iris[,1:4],
+##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
+##                        c('Sepal.Width','Petal.Length','Petal.Width'),
+##                        params=list(distribution='gaussian',train.fraction=0.8)),
+##          lm.model.def('lmmodel', function(x) x$Sepal.Length,
+##                       c('Sepal.Width','Petal.Length','Petal.Width')) ) -> ms
+## mdls.predict(ms,iris[,1:4]) -> s
+
   datasets <- if(is.data.frame(datasets))(list(datasets))else{datasets}
   modelDefs <- list(...) ##if(is.model.def(modelDefs)){list(modelDefs)}else{modelDefs}
 
@@ -110,8 +118,8 @@ mdls.fit <- function(datasets, ..., logger=NULL, .parallel=TRUE){
 }
 
 mdls.predict <- function(models, datasets, logger=NULL){
-  models <- if(!is.list(models)){list(models)}else{models}
   datasets <- if(is.data.frame(datasets)){list(datasets)}else{datasets}
+  if(is.null(logger)){ logger <- SimpleLog()}
   timer <- Timer(logger)
   flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{sapply(1:length(datasets),int.to.char.seq)},
                       datasets),
