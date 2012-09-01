@@ -81,7 +81,7 @@ yfin.archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq
              function(s){
                if(s %in% names(archive)){
                  x <- archive[[s]]
-                 startDate <- max(levels(x$date))
+                 startDate <- as.character(max(x$date))
                }else{
                  x <- data.frame()
                  startDate <- '1900-01-01'

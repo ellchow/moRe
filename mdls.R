@@ -355,9 +355,9 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
       n <- nrow(X)
       ggplot(cbind(rbind(cbind(X,lbl=NA), data.frame(X1=qtls,y=max(X$y),lbl=names(qtls))),n=n), aes(x=X1[1:n[1]],y=y[1:n[1]])) + geom_step(color='steelblue',direction='hv') + geom_point(color='red',alpha=0.65) +
         geom_vline(aes(xintercept=X1[-(1:n[1])]),alpha=0.3) +
-          geom_text(aes(x=X1[-(1:n[1])],y=max(y[-(1:n[1])]),label=lbl[-(1:n[1])]),angle=90,size=3,vjust=-1,alpha=0.5) +                                                                                                                                                                                               
+          geom_text(aes(x=X1[-(1:n[1])],y=max(y[-(1:n[1])]),label=lbl[-(1:n[1])]),angle=90,size=3,vjust=-1,alpha=0.5) +
             scale_x_continuous(x$var.names[i.var]) +
-              scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))      
+              scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))
     }
     else {
       ggplot(X, aes(x=X1,y=y)) + geom_boxplot(color='steelblue') + scale_x_discrete(x$var.names[i.var]) + scale_y_continuous(paste("f(", x$var.names[i.var], ")", sep = ""))
@@ -414,3 +414,46 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   }
 }
 
+
+
+
+
+
+
+
+#####################################
+#### (g)lm modifications and helpers
+#####################################
+
+setConstructorS3('LmModelDef',
+                 function(id, target.gen, features, params=list()){
+                   extend(ModelDef(id, target.gen, lm.fit.plus, features, predict.lm, params=params, check=check.lm.model.def), 'ModelDef')
+                 })
+
+lm.fit.plus <- function(x, y, ..., y.label="y"){
+  features <- names(x)
+  x[[y.label]] <- y
+  f <- sprintf("%s ~ %s", y.label, do.call(paste,c(as.list(features),sep=" + ")))
+  lm(formula(f), x, ...)
+}
+
+check.lm.model.def <- function(modelDef, target, data){list()}
+
+setConstructorS3('GlmModelDef',
+                 function(id, target.gen, features, params=list()){
+                   extend(ModelDef(id, target.gen, glm.fit.plus, features, glm.predict, params=params, check=check.glm.model.def), 'ModelDef')
+                 })
+
+
+glm.fit.plus <- function(x, y, family=gaussian,..., y.label="y"){
+  features <- names(x)
+  x[[y.label]] <- y
+  f <- sprintf("%s ~ %s", y.label, do.call(paste,c(as.list(features),sep=" + ")))
+  glm(formula(f), family=family, x, ...)
+}
+
+check.glm.model.def <- function(modelDef, target, data){list()}
+
+glm.predict <- function(object,newdata,type='response',...){
+  predict.glm(object,newdata,type=type,...)
+}
