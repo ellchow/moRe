@@ -39,7 +39,7 @@ setConstructorS3('ModelDef',
                           )
                  })
 is.model.def <- function(x){
-  'ModelDef' %in% class(x)
+  all(names(x) == c("id", "target.gen", "fit", "features", "predict", "params", "check"))
 }
 
 mdls.build <- function(datasets, modelDefs, logger=NULL, .parallel=TRUE){
@@ -163,6 +163,12 @@ mdls.predict <- function(models, datasets, logger=NULL){
 #### gbm modifications and helpers
 #####################################
 
+
+gbm.model.def <- function(id, target.gen, features, params=list()){
+  list(id=id, target.gen=target.gen, fit=gbm.fit, features=features, predict=gbm.predict, params=params, check=check.gbm.model.def)
+}
+
+
 gbm.predict <- function(object,newdata,n.trees=NULL,type='response',...){
   trees = if(is.null(n.trees)) gbm.perf(object,method='test',plot.it=FALSE) else n.trees
   if(length(trees) != 1){
@@ -195,11 +201,6 @@ check.gbm.model.def <- function(modelDef, target, data){
 
   problems
 }
-
-setConstructorS3('GbmModelDef',
-                 function(id, target.gen, features, params=list()){
-                   extend(ModelDef(id, target.gen, gbm.fit, features, gbm.predict, params=params, check=check.gbm.model.def), 'ModelDef')
-                 })
 
 gbm.opt.n.trees <- function(object, method='test'){
   gbm.perf(object,method='test',plot.it=F)
@@ -421,10 +422,11 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
 #### (g)lm modifications and helpers
 #####################################
 
-setConstructorS3('LmModelDef',
-                 function(id, target.gen, features, params=list()){
-                   extend(ModelDef(id, target.gen, lm.fit.plus, features, predict.lm, params=params, check=check.lm.model.def), 'ModelDef')
-                 })
+lm.model.def <- function(id, target.gen, features, params=list()){
+  list(id=id, target.gen=target.gen, fit=lm.fit.plus, features=features, predict=predict.lm, params=params, check=check.lm.model.def)
+}
+
+
 
 lm.fit.plus <- function(x, y, ..., y.label="y"){
   features <- names(x)
@@ -435,10 +437,11 @@ lm.fit.plus <- function(x, y, ..., y.label="y"){
 
 check.lm.model.def <- function(modelDef, target, data){list()}
 
-setConstructorS3('GlmModelDef',
-                 function(id, target.gen, features, params=list()){
-                   extend(ModelDef(id, target.gen, glm.fit.plus, features, glm.predict, params=params, check=check.glm.model.def), 'ModelDef')
-                 })
+
+
+glm.model.def <- function(id, target.gen, features, params=list()){
+  list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=params, check=check.glm.model.def)
+}
 
 
 glm.fit.plus <- function(x, y, family=gaussian,..., y.label="y"){
