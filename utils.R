@@ -104,6 +104,12 @@ setMethodS3('stop.timer', 'Timer',
                         sprintf('elapsed time: %s', paste(m, 'm', s, 's')))
             })
 options(warn=0)
+
+stop.if <- function(x,msg){
+  if(x){
+    stop(msg)
+  }
+}
 ####################
 #### Files
 ####################

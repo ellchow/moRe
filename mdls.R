@@ -417,10 +417,6 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
 
 
 
-
-
-
-
 #####################################
 #### (g)lm modifications and helpers
 #####################################
