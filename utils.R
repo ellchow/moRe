@@ -161,6 +161,8 @@ csplat <- function(f,a,...){
   do.call(f,c(as.list(a),...))
 }
 
+na.rm <- function(x) x[!is.na(x)]
+
 tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, as.df=FALSE) {
   FUN <- if(!is.null(FUN))
     match.fun(FUN)
