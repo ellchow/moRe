@@ -248,7 +248,13 @@ flatten <- function(x){
   do.call(c,x)
 }
 
-save.plots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
+save.plot <- function(...,file,plot.type=png){
+  plot.type(file)
+  plot(...)
+  dev.off()
+}
+
+save.ggplots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
   llply(plots,function(x){
     tryCatch(ggsave(filename=paste(outputPath,'/',x$name,'.',ext,sep=''),plot=x$plot,...),
              error=function(e){
