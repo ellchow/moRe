@@ -248,8 +248,8 @@ flatten <- function(x){
   do.call(c,x)
 }
 
-save.plot <- function(...,file,plot.type=png){
-  plot.type(file)
+save.plot <- function(...,file,size=c(1024,1024),plot.type=png){
+  plot.type(file,width=size[1],height=size[2])
   plot(...)
   dev.off()
 }
