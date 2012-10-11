@@ -198,7 +198,7 @@ check.gbm.model.def <- function(modelDef, target, data){
   if(monotonicity){problems$monotonicity <- NA}
 
   na.target <- any(is.na(target))
-  if(na.target){problems$invalid.target <- NA}
+  if(na.target){problems$na.target <- NA}
 
   no.distribution <- !('distribution' %in% names(modelDef$params))
   if(no.distribution){problems$no.distribution <- NA}
