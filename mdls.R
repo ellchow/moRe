@@ -165,8 +165,8 @@ mdls.predict <- function(models, datasets, logger=NULL){
 #####################################
 
 
-gbm.model.def <- function(id, target.gen, features, params=list()){
-  list(id=id, target.gen=target.gen, fit=gbm.fit, features=features, predict=gbm.predict, params=params, check=check.gbm.model.def)
+gbm.model.def <- function(id, target.gen, features, ...){
+  list(id=id, target.gen=target.gen, fit=gbm.fit, features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def)
 }
 
 
@@ -492,8 +492,8 @@ check.lm.model.def <- function(modelDef, target, data){list()}
 
 
 
-glm.model.def <- function(id, target.gen, features, params=list()){
-  list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=params, check=check.glm.model.def)
+glm.model.def <- function(id, target.gen, features, ...){
+  list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def)
 }
 
 
