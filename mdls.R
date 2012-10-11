@@ -8,7 +8,6 @@ dump <- sapply(c('gdata',
                  'doMC',
                  'gbm',
                  'infotheo',
-                 'R.oo',
                  'rjson',
                  'ggplot2',
                  get.parallel.library()$lib
@@ -358,14 +357,14 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   if (length(i.var) == 1) {
     if (!f.factor) {
       j <- order(X$X1)
-      plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],                                                                                                                                            
+      plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
            ylab = paste("f(", x$var.names[i.var], ")", sep = ""),
            ...)
     }
     else {
       plot(X$X1, X$y, xlab = x$var.names[i.var], ylab = paste("f(",
                                                    x$var.names[i.var], ")", sep = ""), ...)
-    }                  
+    }
   }
   else if (length(i.var) == 2) {
     if (!f.factor[1] && !f.factor[2]) {
