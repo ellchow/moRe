@@ -147,9 +147,11 @@ mdls.predict <- function(models, datasets, logger=NULL){
                                         write.msg(logger,sprintf('predicting with "%s"', id))
                                         pr <- predict(m, subset(data,select=features))
 
-                                        x[[2]]$predictions[[as.character(dsId)]] <- pr
-                                        z <- list(x[[2]])
+                                        ## x[[2]]$predictions[[as.character(dsId)]] <- pr
+                                        z <- list(pr)
                                         names(z) <- id
+                                        z <- list(z)
+                                        names(z) <- dsId
                                         z
                                       }))
                    stop.timer(timer)
@@ -277,7 +279,6 @@ gbm.factor.importance <- function(object, k=min(10,length(object$var.names)),
   x <- as.data.frame(as.list(summary(object, n.trees=n.trees, plotit=FALSE)[k:1,]))
   names(x) <- c('factor', 'importance')
   x$factor <- ordered(x$factor, x$factor)
-  print(x)
   ggplot(x, aes(factor,importance)) +
     geom_bar() +
       coord_flip() +
@@ -416,6 +417,56 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
     }
   }
 }
+
+
+
+
+compute.factor.contributions <- function(modelDef, src, snk, select=which.min, logger=SimpleLog(level=NULL)){
+  ## compute.factor.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
+  features <- modelDef$model$var.names
+  src <- subset(src,select=features) -> osrc
+  snk <- subset(snk,select=features) -> osnk
+
+  srcScore <- mdls.predict(list(model=modelDef),src,logger=logger)[[1]][[1]]
+  snkScore <- mdls.predict(list(model=modelDef),snk,logger=logger)[[1]][[1]]
+  selected.features <- NA
+  scores <- srcScore
+
+  while(length(features) > 0){
+    s <- sapply(features,
+                function(ft){
+                  src[[ft]] <- snk[[ft]]
+                  mdls.predict(list(model=modelDef),src,logger=logger)[[1]][[1]]
+                })
+    selected <- select(snkScore - s)
+    ft <- features[selected]
+
+    selected.features <- c(selected.features,ft)
+    features <- setdiff(features,ft)
+    scores <- c(scores,s[selected])
+
+    src[[ft]] <- snk[[ft]]
+  }
+
+  z <- data.frame(tail(selected.features,-1),
+                  diff(scores),
+                  t(osrc[,tail(selected.features,-1)]),
+                  t(osnk[,tail(selected.features,-1)]),
+                  head(scores,-1),
+                  tail(scores,-1)
+             )
+  names(z) <- c('var','delta','src.feature','snk.feature','score.before','score.after')
+  z
+}
+
+
+
+
+
+
+
+
+
 
 
 
