@@ -58,7 +58,7 @@ bucketize <- function(x,buckets){
 }
 
 rdiscrete <- function(n, prob, domain=1:length(prob)){
-  apply(rmultinom(n,1,prob/sum(prob)), 2, function(x) domain[as.logical(x)])
+  bucketize(runif(n), c(0,cumsum(prob / sum(prob))))
 }
 
 beta.params <- function(a,b){
