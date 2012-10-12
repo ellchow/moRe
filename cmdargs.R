@@ -3,7 +3,7 @@
 source('utils.R', chdir=TRUE)
 dump <- sapply(c('stringr'),better.library)
 
-parse_args <- function(filename, arglist, args){
+parse.args <- function(filename, arglist, args){
   ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
 
   args <- do.call(paste,as.list(c(args,'')))
@@ -111,7 +111,7 @@ parse_args <- function(filename, arglist, args){
   list(args=parsed,usage=make_usage_string(filename, arglist))
 }
 
-make_usage_string <- function(filename, arglist){
+make.usage.string <- function(filename, arglist){
   sprintf('USAGE: %s %s\n  ARGS  %s\n', filename,
           do.call(paste, c(lapply(arglist,
                                   function(x){
@@ -130,7 +130,7 @@ make_usage_string <- function(filename, arglist){
 
 
 
-parse_list <- function(v,sep=',',def='=', useDefaultNames=TRUE){
+parse.list <- function(v,sep=',',def='=', useDefaultNames=TRUE){
   if(!is.null(v)){
     vv <- str_split(v,sep)[[1]]
 
