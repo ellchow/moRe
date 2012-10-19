@@ -358,9 +358,7 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   if (length(i.var) == 1) {
     if (!f.factor) {
       j <- order(X$X1)
-      plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
-           ylab = paste("f(", x$var.names[i.var], ")", sep = ""),
-           ...)
+      ggplot(X,aes(x=X1,y=y)) + geom_step(direction="h") + scale_x_continuous(name=x$var.names[i.var]) + scale_y_continuous(name=sprintf('f(%s)',(x$var.names[i.var])))
     }
     else {
       plot(X$X1, X$y, xlab = x$var.names[i.var], ylab = paste("f(",
