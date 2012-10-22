@@ -1,7 +1,7 @@
 #### Elliot Chow
 
 source('utils.R', chdir=TRUE)
-dump <- sapply(c('stringr'),better.library)
+better.library('stringr')
 
 parse.args <- function(filename, arglist, args){
   ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
@@ -105,10 +105,10 @@ parse.args <- function(filename, arglist, args){
     }
   }
   if(parsed$help || (!success)){
-    cat(make_usage_string(filename, arglist))
+    cat(make.usage.string(filename, arglist))
     return(NULL)
   }
-  list(args=parsed,usage=make_usage_string(filename, arglist))
+  list(args=parsed,usage=make.usage.string(filename, arglist))
 }
 
 make.usage.string <- function(filename, arglist){

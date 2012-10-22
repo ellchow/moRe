@@ -10,35 +10,40 @@ get.parallel.library <- function(){
   }
 }
 
-better.library <- function(pkg,repos='http://cran.cnr.Berkeley.edu/',lib=.Library,attempt=1){
-  ## set number of attempts for installation
-  attempt <- max(0,attempt)
-  ## try to load package, return false if failed or error
-  check <- tryCatch(suppressMessages(suppressWarnings(do.call(library,list(pkg,logical.return=T,quietly=T,verbose=F)))),
-                    error=function(e){FALSE})
-  if(!check){
-    if(attempt > 0){
-      ## try to install and then import again
-      cat(sprintf('Trying to install "%s"\n', pkg))
-      check <- tryCatch(is.null(suppressWarnings(install.packages(pkg,repos=repos,dependencies=T))),
-                        error=function(e){FALSE}) && better.library(pkg,repos=repos,lib=lib,attempt=attempt-1)
-    }else{
-      ## stop if failed to install properly
-      stop(sprintf('Could not load or install package "%s"', pkg))
+better.library <- function(...,repos='http://cran.cnr.Berkeley.edu/',lib=.Library,attempt=1){
+  dots <- list(...)
+  loaded <- vector('logical',length(dots))
+  for(i in 1:length(dots)){
+    pkg <- dots[[i]]
+    ## set number of attempts for installation
+    attempt <- max(0,attempt)
+    ## try to load package, return false if failed or error
+    check <- tryCatch(suppressMessages(suppressWarnings(do.call(library,list(pkg,logical.return=T,quietly=T,verbose=F)))),
+                      error=function(e){FALSE})
+    if(!check){
+      if(attempt > 0){
+        ## try to install and then import again
+        cat(sprintf('Trying to install "%s"\n', pkg))
+        check <- tryCatch(is.null(suppressWarnings(install.packages(pkg,repos=repos,dependencies=T))),
+                          error=function(e){FALSE}) && better.library(pkg,repos=repos,lib=lib,attempt=attempt-1)
+      }else{
+        ## stop if failed to install properly
+        stop(sprintf('Could not load or install package "%s"', pkg))
+      }
     }
+    loaded[i] <- check
   }
-  check
+  invisible(loaded)
 }
 
-dump <- sapply(c('gdata',
-                 'stringr',
-                 'plyr',
-                 'hash',
-                 'R.oo',
-                 'digest',
-                 get.parallel.library()$lib
-                 ),
-               better.library)
+better.library('gdata',
+               'stringr',
+               'plyr',
+               'hash',
+               'R.oo',
+               'digest',
+               get.parallel.library()$lib
+               )
 
 ####################
 #### Logging
@@ -71,7 +76,7 @@ setMethodS3('write.msg','SimpleLog',
                                     function(o){
                                       sapply(intersect(level,log$level),
                                              function(lvl){
-                                               msg <- do.call(paste,c(as.list(keep.if(c(log$id, lvl, sprintf(...)),
+                                               msg <- do.call(paste,c(as.list(keep.if(c(log$id, lvl, format(Sys.time(), "%Y/%m/%d %H:%M:%S") ,sprintf(...)),
                                                                                       function(i){!is.null(i)})), sep=sep))
                                                tryCatch(is.null(cat(msg,'\n', file=o, append=TRUE)), error=function(e){FALSE})
                                              })
@@ -110,6 +115,7 @@ stop.if <- function(x,msg){
     stop(msg)
   }
 }
+
 ####################
 #### Files
 ####################
@@ -155,6 +161,13 @@ load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cacheP
 ####################
 #### Lists/Vectors
 ####################
+
+get.or.else <- function(x, field, default){
+  z <- x[[field]]
+  if(is.null(z))
+    z <- default
+  z
+}
 
 csplat <- function(f,a,...){
   do.call(f,c(as.list(a),...))

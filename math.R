@@ -1,6 +1,7 @@
 #### Elliot Chow
 
 source('utils.R', chdir=T)
+better.library('ggplot2')
 
 stat.sum.df <- function(fun, geom="crossbar", colour='steelblue',...) {
   stat_summary(fun.data=fun, colour=colour, geom=geom, width=0.4, ...)

@@ -1,9 +1,9 @@
 source('utils.R', chdir=TRUE)
 source('yahoofin.R', chdir=TRUE)
 
-dump <- sapply(c('ggplot2',
-                 'reshape2'
-                 ), better.library)
+better.library('ggplot2',
+               'reshape2'
+               )
 
 allSyms <- strsplit('AGG,BIV,BLV,BND,BSV,^DJI,EDV,^FTSE,GLD,^GSPC,^HSI,IAU,^MID,SLV,^SML,VAW,VB,VCR,VDC,VDE,VEU,VFH,VGK,VGT,VHT,VIS,^VIX,VNQ,VOX,VPL,VPU,VSS,VTI,VUG,VWO,VXF',',')[[1]]
 

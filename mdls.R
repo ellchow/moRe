@@ -2,16 +2,16 @@
 
 source('utils.R', chdir=TRUE)
 source('math.R', chdir=TRUE)
-dump <- sapply(c('gdata',
-                 'stringr',
-                 'plyr',
-                 'doMC',
-                 'gbm',
-                 'infotheo',
-                 'rjson',
-                 'ggplot2',
-                 get.parallel.library()$lib
-                 ), better.library)
+better.library('gdata',
+               'stringr',
+               'plyr',
+               'doMC',
+               'gbm',
+               'infotheo',
+               'rjson',
+               'ggplot2',
+               get.parallel.library()$lib
+               )
 
 get.parallel.library()$activate()
 

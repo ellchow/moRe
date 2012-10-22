@@ -1,13 +1,13 @@
 #### Elliot Chow
 
 source('utils.R', chdir=TRUE)
-dump <- sapply(c('gdata',
-                 'stringr',
-                 'plyr',
-                 'doMC',
-                 'hash',
-                 get.parallel.library()$lib
-                 ), better.library)
+better.library('gdata',
+               'stringr',
+               'plyr',
+               'doMC',
+               'hash',
+               get.parallel.library()$lib
+               )
 
 get.parallel.library()$activate()
 
