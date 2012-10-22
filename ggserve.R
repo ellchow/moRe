@@ -74,7 +74,7 @@ app <- URLMap$new(
                                file=output,
                                height=as.integer(get.or.else(query,'height','6')),
                                width=as.integer(get.or.else(query,'width','6')),
-                               dpi=as.integer(get.or.else(query,'dpi','200')),
+                               dpi=as.integer(get.or.else(query,'dpi','150')),
                                )
                         res$body <- readBin(output,'raw',n=file.info(output)$size)
                         unlink(output)
@@ -119,3 +119,4 @@ get.dataset <- function(path,type='data.frame',...,max.n.datasets=2){
 
 
 # http://localhost:9080/custom/ggserve.R/plot?path=/home/elliot/tmp/iris.rda&gg=ggplot%28data,aes%28x=Petal.Length,y=Sepal.Width%29%29%252Bgeom_point%28%29
+## http://localhost:9080/custom/ggserve.R/plot?path=/home/elliot/tmp/iris.rda&gg=ggplot%28data.frame%28x=runif%28100%29,y=runif%28100%29,g=%28runif%28100%29%20%3C%200.7%29%29,aes%28x,y,group=g,color=g%29%29%252B+geom_point%28%29
