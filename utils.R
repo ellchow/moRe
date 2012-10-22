@@ -158,6 +158,14 @@ load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cacheP
   x
 }
 
+load.data.many <- function(paths,...,.parallel=FALSE){
+  as.data.frame(llply(csplat(rbind,
+                             llply(system(sprintf('ls %s', csplat(paste,paths)),intern=T),
+                                   function(z) load.data(z,stringsAsFactors=F,...),.parallel=.parallel)),
+                      function(col){if(is.character(col)) factor(col) else col},
+                      .parallel=.parallel))                                                                                                                                                                                                                                                                           
+}
+
 ####################
 #### Lists/Vectors
 ####################
