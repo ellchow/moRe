@@ -183,6 +183,8 @@ csplat <- function(f,a,...){
 
 na.rm <- function(x) x[!is.na(x)]
 
+inf.rm <- function(x) x[!is.infinite(x)]
+
 tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, as.df=FALSE) {
   FUN <- if(!is.null(FUN))
     match.fun(FUN)
