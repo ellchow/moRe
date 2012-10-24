@@ -98,4 +98,11 @@ ffilter <- function(x,w,indexes=1:length(x),sides=2){
          })
 }
 
+cumdist.df <- function(x,buckets=seq(min(x),max(x),length=1000),values=rep(1,length(x))){
+  lookup<-approxfun(1:length(buckets),sort(buckets))
+  bucketize(x,buckets) -> b
+  dist <- tapply(values,b,sum)/sum(values)
+  data.frame(x=sort(lookup(as.integer(names(dist)))),'F(x)'=cumsum(dist[order(lookup(as.integer(names(dist))))]))
+}
+
 
