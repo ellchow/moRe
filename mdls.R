@@ -578,10 +578,12 @@ feature.selection.by.filter <- function(target, features, initSelected, evaluate
             scores = c(),
             complete_scores = list())
   for(i in 1:n){
-    scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining),log.level=log.level)
-    z <- update(z, scores)
-    write.msg(logger,'feature %d: %s',i, tail(z$selected,1))
-    z$complete_scores <- c(z$complete_scores, list(scores))
+    if(length(z$remaining) > 0){
+      scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining),log.level=log.level)
+      z <- update(z, scores)
+      write.msg(logger,'feature %d: %s',i, tail(z$selected,1))
+      z$complete_scores <- c(z$complete_scores, list(scores))
+    }
   }
   z
 }
