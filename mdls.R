@@ -31,16 +31,16 @@ is.model.def <- function(x){
              ))
 }
 
-mdls.fit <- function(datasets, ..., logger=SimpleLog(), .parallel=TRUE){
-## mdls.fit(iris[,1:4],
-##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
-##                        c('Sepal.Width','Petal.Length','Petal.Width'),
-##                        params=list(distribution='gaussian',train.fraction=0.8)),
-##          lm.model.def('lmmodel', function(x) x$Sepal.Length,
-##                       c('Sepal.Width','Petal.Length','Petal.Width')) ) -> ms
-## mdls.predict(ms,iris[,1:4]) -> s
+mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .parallel=TRUE){
+  ## mdls.fit(iris[,1:4],
+  ##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
+  ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
+  ##                        distribution='gaussian',train.fraction=0.8),
+  ##          lm.model.def('lmmodel', function(x) x$Sepal.Length,
+  ##                       c('Sepal.Width','Petal.Length','Petal.Width')) ) -> ms
+  ## mdls.predict(ms,iris[,1:4]) -> s
 
-  logger$id <- 'mdls.fit'
+  logger <- SimpleLog('mdls.fit',log.level)
 
   datasets <- if(is.data.frame(datasets))(list(datasets))else{datasets}
   modelDefs <- list(...) ##if(is.model.def(modelDefs)){list(modelDefs)}else{modelDefs}
@@ -100,6 +100,7 @@ mdls.fit <- function(datasets, ..., logger=SimpleLog(), .parallel=TRUE){
                                                if(!any(is.na(m))){
                                                  z <- list(list(target=t,
                                                                 model=m,
+                                                                id=id,
                                                                 predict=md$predict,
                                                                 features=md$features))
                                                  names(z) <- id
@@ -117,8 +118,8 @@ mdls.fit <- function(datasets, ..., logger=SimpleLog(), .parallel=TRUE){
                  }))
 }
 
-mdls.predict <- function(models, datasets, logger=SimpleLog()){
-  logger$id <- 'mdls.predict'
+mdls.predict <- function(models, datasets, log.level=c('info','warning','error')){
+  logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets)){list(datasets)}else{datasets}
 
   timer <- Timer(logger)
@@ -203,6 +204,9 @@ check.gbm.model.def <- function(modelDef, target, data){
   if(na.target){problems$na.target <- NA}
 
   no.distribution <- !('distribution' %in% names(modelDef$params))
+  print(no.distribution)
+  print(names(modelDef$params))
+
   if(no.distribution){problems$no.distribution <- NA}
   else{
     invalid.bernoulli.target <- (modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1)))
@@ -288,7 +292,7 @@ gbm.factor.importance <- function(object, k=min(10,length(object$var.names)),
 }
 
 gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',NA),
-                             return.grid = FALSE, ...){
+                      return.grid = FALSE, ...){
   if (all(is.character(i.var))) {
     i <- match(i.var, x$var.names)
     if (any(is.na(i))) {
@@ -421,15 +425,17 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
 
 
 
-compute.factor.contributions <- function(modelDef, src, snk, select=which.min, logger=SimpleLog()){
-  logger$id <- 'compute.factor.contributions'
-  ## compute.factor.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
-  features <- modelDef$model$var.names
+feature.contributions <- function(mdl, src, snk, select=which.max, log.level=c('info','warning','error')){
+  logger <- SimpleLog('factor.contributions',log.level)
+  ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
+  features <- mdl$model$var.names
   src <- subset(src,select=features) -> osrc
   snk <- subset(snk,select=features) -> osnk
 
-  srcScore <- mdls.predict(list(model=modelDef),src,logger=logger)[[1]][[1]]
-  snkScore <- mdls.predict(list(model=modelDef),snk,logger=logger)[[1]][[1]]
+  md <- list(model=mdl)
+  names(md) <- mdl$id
+  srcScore <- mdls.predict(md,src,log.level=log.level)[[1]][[1]]
+  snkScore <- mdls.predict(md,snk,log.level=log.level)[[1]][[1]]
   selected.features <- NA
   scores <- srcScore
 
@@ -437,10 +443,11 @@ compute.factor.contributions <- function(modelDef, src, snk, select=which.min, l
     s <- sapply(features,
                 function(ft){
                   src[[ft]] <- snk[[ft]]
-                  mdls.predict(list(model=modelDef),src,logger=logger)[[1]][[1]]
+                  mdls.predict(md,src,log.level=log.level)[[1]][[1]]
                 })
     selected <- select(snkScore - s)
     ft <- features[selected]
+    write.msg(logger,'feature %d selected: %s',length(selected.features)-1,ft)
 
     selected.features <- c(selected.features,ft)
     features <- setdiff(features,ft)
@@ -455,8 +462,9 @@ compute.factor.contributions <- function(modelDef, src, snk, select=which.min, l
                   t(osnk[,tail(selected.features,-1)]),
                   head(scores,-1),
                   tail(scores,-1)
-             )
+                  )
   names(z) <- c('var','delta','src.feature','snk.feature','score.before','score.after')
+  row.names(z) <- NULL
   z
 }
 
@@ -486,7 +494,9 @@ lm.fit.plus <- function(x, y, ..., y.label="y"){
   features <- names(x)
   x[[y.label]] <- y
   f <- sprintf("%s ~ %s", y.label, do.call(paste,c(as.list(features),sep=" + ")))
-  lm(formula(f), x, ...)
+  m <- lm(formula(f), x, ...)
+  m$var.names <- features
+  m
 }
 
 check.lm.model.def <- function(modelDef, target, data){list()}
@@ -516,34 +526,35 @@ glm.predict <- function(object,newdata,type='response',...){
 #### Feature Helpers ##################
 #######################################
 
-interinfo.feature.selection.filter <- function(t,s,r,.parallel=FALSE,logger=SimpleLog()){
-  logger$id <- 'interinfo.feature.selection.filter'
+interinfo.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=c('info','warning','error')){
+  logger <- SimpleLog('interinfo.feature.selection.filter',log.level)
+  logger$level <- log.level
   remaining <- names(r)
   scores <- laply(remaining,
-                   function(f){
-                     z <- interinformation(cbind(s, t, r[[f]]))
-                     z
-                   },
-                 .parallel=.parallel)
-  names(scores) <- remaining
-  scores
-}
-
-cor.feature.selection.filter <- function(t,s,r,.parallel=FALSE,logger=SimpleLog()){
-  logger$id <- 'cor.feature.selection.filter'
-  remaining <- names(r)
-  scores <- laply(remaining,
-                   function(f){
-                     z <- abs(cor(t, r[[f]])) - (if(ncol(s)==0){0}else{max(abs(cor(s, r[[f]])))})^2
-                     z
-                   },
+                  function(f){
+                    z <- interinformation(cbind(s, t, r[[f]]))
+                    z
+                  },
                   .parallel=.parallel)
   names(scores) <- remaining
   scores
 }
 
-forward.filter.feature.selection <- function(target, features, evaluate=interinfo.feature.selection.filter, choose.best=max, n=ncol(features), .parallel=FALSE, logger=SimpleLog()){
-  logger$id <- "forward.filter.feature.selection"
+cor.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=c('info','warning','error')){
+  logger <- SimpleLog('cor.feature.selection.filter',log.level)
+  remaining <- names(r)
+  scores <- laply(remaining,
+                  function(f){
+                    z <- abs(cor(t, r[[f]])) - (if(ncol(s)==0){0}else{max(abs(cor(s, r[[f]])))})^2
+                    z
+                  },
+                  .parallel=.parallel)
+  names(scores) <- remaining
+  scores
+}
+
+forward.filter.feature.selection <- function(target, features, evaluate=interinfo.feature.selection.filter, choose.best=max, n=ncol(features), .parallel=FALSE, log.level=c('info','warning','error')){
+  logger <- SimpleLog('forward.filter.feature.selection',log.level)
   feature.selection.by.filter(target, features, NULL, function(...) evaluate(...,.parallel=.parallel),
                               function(z, scores){
                                 are.na <- names(scores)[is.na(scores)]
@@ -560,14 +571,14 @@ forward.filter.feature.selection <- function(target, features, evaluate=interinf
                               )
 }
 
-feature.selection.by.filter <- function(target, features, initSelected, evaluate, update, n=ncol(features),logger=SimpleLog()){
-  logger$id <- "feature.selection.by.filter"
+feature.selection.by.filter <- function(target, features, initSelected, evaluate, update, n=ncol(features),log.level=c('info','warning','error')){
+  logger <- SimpleLog('feature.selection.by.filter',log.level)
   z <- list(selected = initSelected,
             remaining = setdiff(names(features), initSelected),
             scores = c(),
             complete_scores = list())
   for(i in 1:n){
-    scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining),logger=logger)
+    scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining),log.level=log.level)
     z <- update(z, scores)
     write.msg(logger,'feature %d: %s',i, tail(z$selected,1))
     z$complete_scores <- c(z$complete_scores, list(scores))
