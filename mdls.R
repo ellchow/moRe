@@ -508,3 +508,58 @@ glm.predict <- function(object,newdata,type='response',...){
   predict.glm(object,newdata,type=type,...)
 }
 
+
+#######################################
+#### Feature Helpers ##################
+#######################################
+
+interinfo.feature.selection.filter <- function(t,s,r){
+  remaining <- names(r)
+  scores <- sapply(remaining,
+                   function(f){
+                     z <- interinformation(cbind(s, t, r[[f]]))
+                     z
+                   }
+                 )
+  names(scores) <- remaining
+  scores
+}
+
+cor.feature.selection.filter <- function(t,s,r){
+  remaining <- names(r)
+  scores <- sapply(remaining,
+                   function(f){
+                     z <- abs(cor(t, r[[f]])) - (if(ncol(s)==0){0}else{max(abs(cor(s, r[[f]])))})^2
+                     z
+                   }
+                   )
+  names(scores) <- remaining
+  scores
+}
+
+forward.filter.feature.selection <- function(target, features, evaluate=interinfo.feature.selection.filter, choose.best=max, n=ncol(features)){
+  feature_selection_by_filter(target, features, NULL, evaluate,
+                              function(z, scores){
+                                bestScore <- choose.best(scores)
+                                best <- match(TRUE,scores == bestScore)
+                                z$selected <- c(z$selected, names(scores[best]))
+                                z$remaining <- z$remaining[-1 * best]
+                                z$scores <- c(z$scores, bestScore)
+                                z
+                              },
+                              n=n
+                              )
+}
+
+feature.selection.by.filter <- function(target, features, initSelected, evaluate, update, n=ncol(features)){
+  z <- list(selected = initSelected,
+            remaining = setdiff(names(features), initSelected),
+            scores = c(),
+            complete_scores = list())
+  for(i in 1:n){
+    scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining))
+    z <- update(z, scores)
+    z$complete_scores <- c(z$complete_scores, list(scores))
+  }
+  z
+}
