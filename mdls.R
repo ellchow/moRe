@@ -97,7 +97,7 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
                                                write.msg(logger, sprintf('training "%s"', id))
                                                m <- tryCatch(do.call(md$fit,
                                                                      c(list(subset(data,select=md$features),
-                                                                            t),
+                                                                            t,weights=w),
                                                                        md$params)),
                                                              error=function(e){
                                                                write.msg(logger,str_trim(as.character(e)),
@@ -176,7 +176,7 @@ mdls.predict <- function(models, datasets, log.level=c('info','warning','error')
 
 
 gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
-  list(id=id, target.gen=target.gen, fit=gbm.fit, features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def, weights=weights)
+  list(id=id, target.gen=target.gen, fit=function(...,weights=NULL)gbm.fit(...,w=weights), features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def, weights=weights)
 }
 
 
