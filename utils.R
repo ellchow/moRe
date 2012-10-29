@@ -76,7 +76,7 @@ setMethodS3('write.msg','SimpleLog',
                                     function(o){
                                       sapply(intersect(level,log$level),
                                              function(lvl){
-                                               msg <- do.call(paste,c(as.list(keep.if(c(log$id, lvl, format(Sys.time(), "%Y/%m/%d %H:%M:%S") ,sprintf(...)),
+                                               msg <- do.call(paste,c(as.list(keep.if(c(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)),
                                                                                       function(i){!is.null(i)})), sep=sep))
                                                tryCatch(is.null(cat(msg,'\n', file=o, append=TRUE)), error=function(e){FALSE})
                                              })
@@ -182,6 +182,8 @@ csplat <- function(f,a,...){
 }
 
 na.rm <- function(x) x[!is.na(x)]
+
+inf.rm <- function(x) x[!is.infinite(x)]
 
 tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, as.df=FALSE) {
   FUN <- if(!is.null(FUN))

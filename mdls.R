@@ -27,23 +27,25 @@ is.model.def <- function(x){
              "features", # vector of feature names to be used by the model
              "predict", # function for computing a prediction of the same form as gbm.predict
              "params", # extra parameters for the fitting function
-             "check" # function that takes in a model definition, target, and data and checks if there are any issues
+             "check", # function that takes in a model definition, target, and data and checks if there are any issues
+             "weights" # weights on training examples
              ))
 }
 
-mdls.fit <- function(datasets, ..., logger=NULL, .parallel=TRUE){
-## mdls.fit(iris[,1:4],
-##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
-##                        c('Sepal.Width','Petal.Length','Petal.Width'),
-##                        params=list(distribution='gaussian',train.fraction=0.8)),
-##          lm.model.def('lmmodel', function(x) x$Sepal.Length,
-##                       c('Sepal.Width','Petal.Length','Petal.Width')) ) -> ms
-## mdls.predict(ms,iris[,1:4]) -> s
+mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .parallel=TRUE){
+  ## mdls.fit(iris[,1:4],
+  ##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
+  ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
+  ##                        distribution='gaussian',train.fraction=0.8,weights=function(data) runif(nrow(data))),
+  ##          lm.model.def('lmmodel', function(x) x$Sepal.Length,
+  ##                       c('Sepal.Width','Petal.Length','Petal.Width')) ) -> ms
+  ## mdls.predict(ms,iris[,1:4]) -> s
+
+  logger <- SimpleLog('mdls.fit',log.level)
 
   datasets <- if(is.data.frame(datasets))(list(datasets))else{datasets}
   modelDefs <- list(...) ##if(is.model.def(modelDefs)){list(modelDefs)}else{modelDefs}
 
-  if(is.null(logger)){ logger <- SimpleLog()}
   timer <- Timer(logger)
   flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{1:length(datasets)},
                       datasets),
@@ -73,7 +75,13 @@ mdls.fit <- function(datasets, ..., logger=NULL, .parallel=TRUE){
                                                                        level='error')
                                                              NA
                                                            })
-                                             problems <- md$check(md,t,data)
+                                             w <- tryCatch(md$weights(data),
+                                                           error=function(e){
+                                                             write.msg(logger,str_trim(as.character(e)),
+                                                                       level='error')
+                                                             NA
+                                                           })
+                                             problems <- md$check(md,t,data,w)
 
                                              if(length(problems) > 0){
                                                lapply(lzip(names(problems),problems),
@@ -89,7 +97,7 @@ mdls.fit <- function(datasets, ..., logger=NULL, .parallel=TRUE){
                                                write.msg(logger, sprintf('training "%s"', id))
                                                m <- tryCatch(do.call(md$fit,
                                                                      c(list(subset(data,select=md$features),
-                                                                            t),
+                                                                            t,weights=w),
                                                                        md$params)),
                                                              error=function(e){
                                                                write.msg(logger,str_trim(as.character(e)),
@@ -99,6 +107,7 @@ mdls.fit <- function(datasets, ..., logger=NULL, .parallel=TRUE){
                                                if(!any(is.na(m))){
                                                  z <- list(list(target=t,
                                                                 model=m,
+                                                                id=id,
                                                                 predict=md$predict,
                                                                 features=md$features))
                                                  names(z) <- id
@@ -116,9 +125,10 @@ mdls.fit <- function(datasets, ..., logger=NULL, .parallel=TRUE){
                  }))
 }
 
-mdls.predict <- function(models, datasets, logger=NULL){
+mdls.predict <- function(models, datasets, log.level=c('info','warning','error')){
+  logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets)){list(datasets)}else{datasets}
-  if(is.null(logger)){ logger <- SimpleLog()}
+
   timer <- Timer(logger)
   flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{sapply(1:length(datasets),int.to.char.seq)},
                       datasets),
@@ -165,8 +175,8 @@ mdls.predict <- function(models, datasets, logger=NULL){
 #####################################
 
 
-gbm.model.def <- function(id, target.gen, features, ...){
-  list(id=id, target.gen=target.gen, fit=gbm.fit, features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def)
+gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+  list(id=id, target.gen=target.gen, fit=function(...,weights=NULL)gbm.fit(...,w=weights), features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def, weights=weights)
 }
 
 
@@ -178,7 +188,7 @@ gbm.predict <- function(object,newdata,n.trees=NULL,type='response',...){
   predict.gbm(object,newdata,n.trees=trees,type=type,...)
 }
 
-check.gbm.model.def <- function(modelDef, target, data){
+check.gbm.model.def <- function(modelDef, target, data, weights){
   problems <- list()
 
   missing <- setdiff(modelDef$features, names(data))
@@ -201,12 +211,19 @@ check.gbm.model.def <- function(modelDef, target, data){
   if(na.target){problems$na.target <- NA}
 
   no.distribution <- !('distribution' %in% names(modelDef$params))
+
   if(no.distribution){problems$no.distribution <- NA}
   else{
     invalid.bernoulli.target <- (modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1)))
     if(invalid.bernoulli.target){problems$invalid.bernoulli.target <- NA}
   }
 
+  invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
+  if(invalid.weights){problems$invalid.weights <- NA}
+  else{
+    negative.weights <- any(weights < 0)
+    if(negative.weights){problems$negative.weights <- NA}
+  }
   problems
 }
 
@@ -286,7 +303,7 @@ gbm.factor.importance <- function(object, k=min(10,length(object$var.names)),
 }
 
 gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',NA),
-                             return.grid = FALSE, ...){
+                      return.grid = FALSE, ...){
   if (all(is.character(i.var))) {
     i <- match(i.var, x$var.names)
     if (any(is.na(i))) {
@@ -419,14 +436,17 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
 
 
 
-compute.factor.contributions <- function(modelDef, src, snk, select=which.min, logger=SimpleLog(level=NULL)){
-  ## compute.factor.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
-  features <- modelDef$model$var.names
+feature.contributions <- function(mdl, src, snk, select=which.max, log.level=c('info','warning','error')){
+  logger <- SimpleLog('factor.contributions',log.level)
+  ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
+  features <- mdl$model$var.names
   src <- subset(src,select=features) -> osrc
   snk <- subset(snk,select=features) -> osnk
 
-  srcScore <- mdls.predict(list(model=modelDef),src,logger=logger)[[1]][[1]]
-  snkScore <- mdls.predict(list(model=modelDef),snk,logger=logger)[[1]][[1]]
+  md <- list(model=mdl)
+  names(md) <- mdl$id
+  srcScore <- mdls.predict(md,src,log.level=log.level)[[1]][[1]]
+  snkScore <- mdls.predict(md,snk,log.level=log.level)[[1]][[1]]
   selected.features <- NA
   scores <- srcScore
 
@@ -434,10 +454,11 @@ compute.factor.contributions <- function(modelDef, src, snk, select=which.min, l
     s <- sapply(features,
                 function(ft){
                   src[[ft]] <- snk[[ft]]
-                  mdls.predict(list(model=modelDef),src,logger=logger)[[1]][[1]]
+                  mdls.predict(md,src,log.level=log.level)[[1]][[1]]
                 })
     selected <- select(snkScore - s)
     ft <- features[selected]
+    write.msg(logger,'feature %d selected: %s',length(selected.features)-1,ft)
 
     selected.features <- c(selected.features,ft)
     features <- setdiff(features,ft)
@@ -452,8 +473,9 @@ compute.factor.contributions <- function(modelDef, src, snk, select=which.min, l
                   t(osnk[,tail(selected.features,-1)]),
                   head(scores,-1),
                   tail(scores,-1)
-             )
+                  )
   names(z) <- c('var','delta','src.feature','snk.feature','score.before','score.after')
+  row.names(z) <- NULL
   z
 }
 
@@ -473,8 +495,8 @@ compute.factor.contributions <- function(modelDef, src, snk, select=which.min, l
 #### (g)lm modifications and helpers
 #####################################
 
-lm.model.def <- function(id, target.gen, features, params=list()){
-  list(id=id, target.gen=target.gen, fit=lm.fit.plus, features=features, predict=predict.lm, params=params, check=check.lm.model.def)
+lm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+  list(id=id, target.gen=target.gen, fit=lm.fit.plus, features=features, predict=predict.lm, params=list(...), check=check.lm.model.def, weights=weights)
 }
 
 
@@ -483,10 +505,23 @@ lm.fit.plus <- function(x, y, ..., y.label="y"){
   features <- names(x)
   x[[y.label]] <- y
   f <- sprintf("%s ~ %s", y.label, do.call(paste,c(as.list(features),sep=" + ")))
-  lm(formula(f), x, ...)
+  m <- lm(formula(f), x, ...)
+  m$var.names <- features
+  m
 }
 
-check.lm.model.def <- function(modelDef, target, data){list()}
+check.lm.model.def <- function(modelDef, target, data, weights){
+  problems <- list()
+
+  invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
+  if(invalid.weights){problems$invalid.weights <- NA}
+  else{
+    negative.weights <- any(weights < 0)
+    if(negative.weights){problems$negative.weights <- NA}
+  }
+
+  problems
+}
 
 
 
@@ -508,3 +543,69 @@ glm.predict <- function(object,newdata,type='response',...){
   predict.glm(object,newdata,type=type,...)
 }
 
+
+#######################################
+#### Feature Helpers ##################
+#######################################
+
+interinfo.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=c('info','warning','error')){
+  logger <- SimpleLog('interinfo.feature.selection.filter',log.level)
+  logger$level <- log.level
+  remaining <- names(r)
+  scores <- laply(remaining,
+                  function(f){
+                    z <- interinformation(cbind(s, t, r[[f]]))
+                    z
+                  },
+                  .parallel=.parallel)
+  names(scores) <- remaining
+  scores
+}
+
+cor.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=c('info','warning','error')){
+  logger <- SimpleLog('cor.feature.selection.filter',log.level)
+  remaining <- names(r)
+  scores <- laply(remaining,
+                  function(f){
+                    z <- abs(cor(t, r[[f]])) - (if(ncol(s)==0){0}else{max(abs(cor(s, r[[f]])))})^2
+                    z
+                  },
+                  .parallel=.parallel)
+  names(scores) <- remaining
+  scores
+}
+
+forward.filter.feature.selection <- function(target, features, evaluate=interinfo.feature.selection.filter, choose.best=max, n=ncol(features), .parallel=FALSE, log.level=c('info','warning','error')){
+  logger <- SimpleLog('forward.filter.feature.selection',log.level)
+  feature.selection.by.filter(target, features, NULL, function(...) evaluate(...,.parallel=.parallel),
+                              function(z, scores){
+                                are.na <- names(scores)[is.na(scores)]
+                                write.msg(logger,'score for factors "%s" is na - dropping',csplat(paste,are.na,sep=','),level='warn')
+                                bestScore <- choose.best(na.rm(scores))
+                                best <- match(TRUE,scores == bestScore)
+                                z$selected <- c(z$selected, names(scores[best]))
+                                z$remaining <- z$remaining[-1 * best]
+                                z$remaining <- z$remaining[!(z$remaining %in% are.na)]
+                                z$scores <- c(z$scores, bestScore)
+                                z
+                              },
+                              n=n
+                              )
+}
+
+feature.selection.by.filter <- function(target, features, initSelected, evaluate, update, n=ncol(features),log.level=c('info','warning','error')){
+  logger <- SimpleLog('feature.selection.by.filter',log.level)
+  z <- list(selected = initSelected,
+            remaining = setdiff(names(features), initSelected),
+            scores = c(),
+            complete_scores = list())
+  for(i in 1:n){
+    if(length(z$remaining) > 0){
+      scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining),log.level=log.level)
+      z <- update(z, scores)
+      write.msg(logger,'feature %d: %s',i, tail(z$selected,1))
+      z$complete_scores <- c(z$complete_scores, list(scores))
+    }
+  }
+  z
+}
