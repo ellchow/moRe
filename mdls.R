@@ -27,7 +27,8 @@ is.model.def <- function(x){
              "features", # vector of feature names to be used by the model
              "predict", # function for computing a prediction of the same form as gbm.predict
              "params", # extra parameters for the fitting function
-             "check" # function that takes in a model definition, target, and data and checks if there are any issues
+             "check", # function that takes in a model definition, target, and data and checks if there are any issues
+             "weights" # weights on training examples
              ))
 }
 
@@ -35,7 +36,7 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
   ## mdls.fit(iris[,1:4],
   ##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
   ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
-  ##                        distribution='gaussian',train.fraction=0.8),
+  ##                        distribution='gaussian',train.fraction=0.8,weights=function(data) runif(nrow(data))),
   ##          lm.model.def('lmmodel', function(x) x$Sepal.Length,
   ##                       c('Sepal.Width','Petal.Length','Petal.Width')) ) -> ms
   ## mdls.predict(ms,iris[,1:4]) -> s
@@ -74,7 +75,13 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
                                                                        level='error')
                                                              NA
                                                            })
-                                             problems <- md$check(md,t,data)
+                                             w <- tryCatch(md$weights(data),
+                                                           error=function(e){
+                                                             write.msg(logger,str_trim(as.character(e)),
+                                                                       level='error')
+                                                             NA
+                                                           })
+                                             problems <- md$check(md,t,data,w)
 
                                              if(length(problems) > 0){
                                                lapply(lzip(names(problems),problems),
@@ -168,8 +175,8 @@ mdls.predict <- function(models, datasets, log.level=c('info','warning','error')
 #####################################
 
 
-gbm.model.def <- function(id, target.gen, features, ...){
-  list(id=id, target.gen=target.gen, fit=gbm.fit, features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def)
+gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+  list(id=id, target.gen=target.gen, fit=gbm.fit, features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def, weights=weights)
 }
 
 
@@ -181,7 +188,7 @@ gbm.predict <- function(object,newdata,n.trees=NULL,type='response',...){
   predict.gbm(object,newdata,n.trees=trees,type=type,...)
 }
 
-check.gbm.model.def <- function(modelDef, target, data){
+check.gbm.model.def <- function(modelDef, target, data, weights){
   problems <- list()
 
   missing <- setdiff(modelDef$features, names(data))
@@ -204,8 +211,6 @@ check.gbm.model.def <- function(modelDef, target, data){
   if(na.target){problems$na.target <- NA}
 
   no.distribution <- !('distribution' %in% names(modelDef$params))
-  print(no.distribution)
-  print(names(modelDef$params))
 
   if(no.distribution){problems$no.distribution <- NA}
   else{
@@ -213,6 +218,12 @@ check.gbm.model.def <- function(modelDef, target, data){
     if(invalid.bernoulli.target){problems$invalid.bernoulli.target <- NA}
   }
 
+  invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
+  if(invalid.weights){problems$invalid.weights <- NA}
+  else{
+    negative.weights <- any(weights < 0)
+    if(negative.weights){problems$negative.weights <- NA}
+  }
   problems
 }
 
@@ -484,8 +495,8 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=c('
 #### (g)lm modifications and helpers
 #####################################
 
-lm.model.def <- function(id, target.gen, features, params=list()){
-  list(id=id, target.gen=target.gen, fit=lm.fit.plus, features=features, predict=predict.lm, params=params, check=check.lm.model.def)
+lm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+  list(id=id, target.gen=target.gen, fit=lm.fit.plus, features=features, predict=predict.lm, params=list(...), check=check.lm.model.def, weights=weights)
 }
 
 
@@ -499,7 +510,18 @@ lm.fit.plus <- function(x, y, ..., y.label="y"){
   m
 }
 
-check.lm.model.def <- function(modelDef, target, data){list()}
+check.lm.model.def <- function(modelDef, target, data, weights){
+  problems <- list()
+
+  invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
+  if(invalid.weights){problems$invalid.weights <- NA}
+  else{
+    negative.weights <- any(weights < 0)
+    if(negative.weights){problems$negative.weights <- NA}
+  }
+
+  problems
+}
 
 
 
