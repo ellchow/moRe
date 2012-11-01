@@ -64,16 +64,18 @@ connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','err
        )
 }
 
-load.sql.fragments <- function(file,split.by='--\\*'){
-  s <- file.to.string(file)
-  as.list(csplat(c,lapply(str_split(s,split.by)[[1]],
-                          function(x){
-                            if(str_length(x) == 0) NULL
-                            else{
-                              i <- str_locate(x,'\n')[1]
-                              z <- str_sub(x,i+1)
-                              names(z) <- str_trim(str_sub(x,1,i-1)[[1]])
-                              z
-                            }
-                          })))
+load.sql.fragments <- function(...,split.by='--\\*'){
+  csplat(c,lapply(list(...),function(file){
+    s <- file.to.string(file)
+    as.list(csplat(c,lapply(str_split(s,split.by)[[1]],
+                            function(x){
+                              if(str_length(x) == 0) NULL
+                              else{
+                                i <- str_locate(x,'\n')[1]
+                                z <- list(function(...) brew.string(str_sub(x,i+1)[[1]],...))
+                                names(z) <- str_trim(str_sub(x,1,i-1)[[1]])
+                                z
+                              }
+                            })))
+  }))
 }
