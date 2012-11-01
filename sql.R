@@ -60,9 +60,9 @@ connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','err
          dbRemoveTable(conn,s,...)
        },
 
-       explain=function(s){
-         write.msg(logger,'on %s, explain SQL:\n EXPLAIN %s',uri,s)
-         dbGetQuery(conn,s,...)
+       explain=function(s,...){
+         write.msg(logger,'on %s, explain SQL:\n %s',uri,s)
+         dbGetQuery(conn,paste('explain ',s),...)
        },
 
        tmp.table=function(name,s,indexattr) brew.string(SQL_SYNTAX[[type]]$tmp.table,name=name,body=s,indexattr=indexattr)
