@@ -42,6 +42,7 @@ better.library('gdata',
                'hash',
                'R.oo',
                'digest',
+               'gsubfn',
                get.parallel.library()$lib
                )
 
@@ -164,6 +165,19 @@ load.data.many <- function(paths,...,.parallel=FALSE){
                                    function(z) load.data(z,stringsAsFactors=F,...),.parallel=.parallel)),
                       function(col){if(is.character(col)) factor(col) else col},
                       .parallel=.parallel))
+}
+
+file.to.string <- function(file){
+  readChar(file, file.info(file)$size)
+}
+
+brew.string <- function(s,...){
+  dots <- list(...)
+  e <- if(length(dots) == 0) new.env() else list2env(dots)
+  brewedSql <- tempfile()
+  brew(text=s,output=brewedSql,envir=e)
+  sql <- file.to.string(brewedSql)
+  sql
 }
 
 ####################
