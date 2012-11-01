@@ -62,7 +62,7 @@ connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','err
 
        explain=function(s,...){
          write.msg(logger,'on %s, explain SQL:\n %s',uri,s)
-         dbGetQuery(conn,paste('explain ',s),...)
+         cat(pprint.dataframe(dbGetQuery(conn,paste('explain ',s),...)))
        },
 
        tmp.table=function(name,s,indexattr) brew.string(SQL_SYNTAX[[type]]$tmp.table,name=name,body=s,indexattr=indexattr)
@@ -77,7 +77,7 @@ load.sql.fragments <- function(...,split.by='--\\*'){
                               if(str_length(x) == 0) NULL
                               else{
                                 i <- str_locate(x,'\n')[1]
-                                z <- list(function(...) brew.string(str_trim(str_sub(x,i+1)[[1]]),...))
+                                z <- list(function(...) brew.string(gsub('--.*?\n','',str_trim(str_sub(x,i+1)[[1]])),...))
                                 names(z) <- str_trim(str_sub(x,1,i-1)[[1]])
                                 z
                               }
