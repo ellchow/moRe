@@ -1,6 +1,8 @@
 source('utils.R')
 better.library('RJDBC','brew','stringr')
 
+#options(java.parameters = "-Xmx4g")
+
 SAMPLE_DB_CONFIG <- list(class='com.teradata.jdbc.TeraDriver',
                          protocol='jdbc:teradata',
                          jar='/usr/lib/java/terajdbc4.jar',
