@@ -79,10 +79,21 @@ load.sql.fragments <- function(...,split.by='--\\*'){
                               if(str_length(x) == 0) NULL
                               else{
                                 i <- str_locate(x,'\n')[1]
-                                z <- list(function(...) brew.string(gsub('--.*?\n','',str_trim(str_sub(x,i+1)[[1]])),...))
+                                z <- list(function(...) brew.sql(gsub('--.*?\n','\n',str_trim(str_sub(x,i+1)[[1]])),...))
                                 names(z) <- str_trim(str_sub(x,1,i-1)[[1]])
                                 z
                               }
                             })))
   }))
+}
+
+
+brew.sql <- function(s,...){
+  dots <- list(...)
+  e <- if(length(dots) == 0) new.env() else list2env(dots)
+  brewedSql <- tempfile()
+  brewedSqlFmt <- sprintf('%s.fmt',brewedSql)
+  brew(text=s,output=brewedSql,envir=e)
+  system(sprintf("python -c \"import sqlparse;  s = open('%s').read(); print sqlparse.format(s,reindent=True,keyword_case='upper')\" > %s",brewedSql,brewedSqlFmt))
+  file.to.string(brewedSqlFmt)
 }
