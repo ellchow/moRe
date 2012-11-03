@@ -19,81 +19,75 @@ connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','err
   conn <- dbConnect(driver, uri, ...)
   type <- jdbc.config$type
   logger <- SimpleLog('jdbc.connect',log.level)
+  timer <- Timer(logger)
   list(driver=driver,
        connection=conn,
        type=jdbc.config$type,
 
        get.query=function(s,...){
          write.msg(logger,'on %s, execute query and get:\n%s',uri,s)
+         start.timer(timer)
          dbGetQuery(conn, s, ...)
+         stop.timer(timer)
        },
        exec.query=function(s,...){
          write.msg(logger,'on %s, execute query:\n%s',uri,s)
+         start.timer(timer)
          dbSendQuery(conn, s, ...)
+         stop.timer(timer)
        },
        exec.update=function(s,...){
          write.msg(logger,'on %s, execute update:\n%s',uri,s)
+         start.timer(timer)
          dbSendUpdate(conn,s,...)
+         stop.timer(timer)
        },
 
        list.tables=function(...){
          write.msg(logger,'on %s, list tables',uri)
+         start.timer(timer)
          dbListTables(conn,...)
+         stop.timer(timer)
        },
        list.fields=function(s,...){
          write.msg(logger,'on %s, list fields on %s',uri,s)
+         start.timer(timer)
          dbListFields(conn,s,...)
+         stop.timer(timer)
        },
 
        exists.table=function(s,...){
          write.msg(logger,'on %s, check if table %s exists',uri,s)
+         start.timer(timer)
          dbExistsTable(conn,s,...)
+         stop.timer(timer)
        },
        read.table=function(s,...){
          write.msg(logger,'on %s, read table %s',uri,s)
+         start.timer(timer)
          dbReadTable(conn,s,...)
        },
        write.table=function(s,...){
          write.msg(logger,'on %s, write table %s',uri,s)
+         start.timer(timer)
          dbWriteTable(conn,s,...)
+         stop.timer(timer)
        },
        remove.table=function(s,...){
          write.msg(logger,'on %s, remove table %s',uri,s)
+         start.timer(timer)
          dbRemoveTable(conn,s,...)
+         stop.timer(timer)
        },
 
        explain=function(s,...){
          write.msg(logger,'on %s, explain SQL:\n %s',uri,s)
+         start.timer(timer)
          cat(pprint.dataframe(dbGetQuery(conn,paste('explain ',s),...)))
+         stop.timer(timer)
        },
 
        tmp.table=function(name,s,indexattr) brew.string(SQL_SYNTAX[[type]]$tmp.table,name=name,body=s,indexattr=indexattr)
        )
 }
 
-load.sql.fragments <- function(...,split.by='--\\*'){
-  csplat(c,lapply(list(...),function(file){
-    s <- file.to.string(file)
-    as.list(csplat(c,lapply(str_split(s,split.by)[[1]],
-                            function(x){
-                              if(str_length(x) == 0) NULL
-                              else{
-                                i <- str_locate(x,'\n')[1]
-                                z <- list(function(...) brew.sql(gsub('--.*?\n','\n',str_trim(str_sub(x,i+1)[[1]])),...))
-                                names(z) <- str_trim(str_sub(x,1,i-1)[[1]])
-                                z
-                              }
-                            })))
-  }))
-}
-
-
-brew.sql <- function(s,...){
-  dots <- list(...)
-  e <- if(length(dots) == 0) new.env() else list2env(dots)
-  brewedSql <- tempfile()
-  brewedSqlFmt <- sprintf('%s.fmt',brewedSql)
-  brew(text=s,output=brewedSql,envir=e)
-  system(sprintf("python -c \"import sqlparse;  s = open('%s').read(); print sqlparse.format(s,reindent=True,keyword_case='upper')\" > %s",brewedSql,brewedSqlFmt))
-  file.to.string(brewedSqlFmt)
-}
