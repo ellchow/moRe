@@ -425,7 +425,7 @@ dataframe.to.html.table <- function(x,
 
 str.fmt <- function(s,...){
   dots <- list(...)
-  named.pat <- '(^|[^%])(%)\\(([A-Za-z0-9_]+?)\\)(([0-9.]+)?[sdf])'
+  named.pat <- '(^|[^%])(%)\\(([A-Za-z0-9_.]+?)\\)(([0-9.]+)?[sdf])'
   unnamed.pat <- '(^|[^%])(%[sdf])'
   named <- str_detect(s,named.pat)
   ss <- s
