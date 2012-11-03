@@ -91,6 +91,14 @@ connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','err
          start.timer(timer)
          cat(pprint.dataframe(dbGetQuery(conn,paste('explain ',if(pretty) pprint.sql(s) else s),...)))
          stop.timer(timer)
+       },
+
+       nrows=function(t,...){
+         write.msg(logger,'on %s, number of rows in %s',uri,t)
+         start.timer(timer)
+         z <- dbGetQuery(conn, sprintf('select count(*) from %s',t), ...)
+         stop.timer(timer)
+         z
        }
        )
 }
@@ -109,7 +117,7 @@ pprint.sql <- function(s){
 
 sql.mk.tmp.table <- function(...,db.type='teradata'){
   if(db.type == 'teradata'){
-    str.fmt('create volatile table %(name)s as (%(body)s) with data primary index (%(indexAttr)s) on commit preserve rows',...)
+    str.fmt('create volatile table %(name)s as (%(body)s) with data primary index (%(index.attr)s) on commit preserve rows',...)
   }else{
     stop(str.fmt("unknown database '%s'",db.type))
   }
@@ -117,4 +125,12 @@ sql.mk.tmp.table <- function(...,db.type='teradata'){
 
 sql.contains <- function(e,set){
   sprintf('%s in (%s)',e,csplat(paste,set,sep=','))
+}
+
+sql.sample <- function(s,n,db.type='teradata'){
+  if(db.type == 'teradata'){
+    sprintf('%s\n sample %s', s, as.character(n))
+  }else{
+    stop(str.fmt("unknown database '%s'",db.type))
+  }
 }
