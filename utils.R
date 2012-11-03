@@ -417,7 +417,18 @@ dataframe.to.html.table <- function(x,
                )
   z
 }
+###################
+#### Date
+###################
 
+STANDARD.TIMESTAMP.FORMAT <- "%Y-%m-%d %H:%M:%S"
+EPOCH <- strptime("1970-01-01 00:00:00", STANDARD.TIMESTAMP.FORMAT, tz="UTC")
+MIN.SEC <- 60
+HOUR.SEC <- 60 * MIN.SEC
+DAY.SEC <-  24 * HOUR.SEC
+unix.timestamp.to.fmt <- function(ts,fmt=STANDARD.TIMESTAMP.FORMAT){
+  as.POSIXct(ts,fmt,origin=EPOCH)
+}
 
 ####################
 #### Misc
@@ -431,14 +442,16 @@ str.fmt <- function(s,...){
   ss <- s
   params <- dots
   if(named){
+    n <- as.vector(sapply(str_extract_all(s,named.pat),
+                          function(x) gsub(named.pat,'\\3', x)))
     stop.if(is.null(names(dots)) || any(str_length(names(dots))==0),
             'requires named parameters')
+    stop.if(any(!n %in% names(dots)), sprintf('missing params %s', csplat(paste,setdiff(n,names(dots)),sep=',')))
     # first escape things that percent symbols; then replace named params with unnamed params
     ss <- gsub(named.pat,'\\1\\2\\4',
                gsub(unnamed.pat,'\\1%\\2',s))
     # get params in order of appearance
-    params <- dots[as.vector(sapply(str_extract_all(s,named.pat),
-                                    function(x) gsub(named.pat,'\\3', x)))]
+    params <- dots[n]
   }
   csplat(sprintf,ss,params)
 }

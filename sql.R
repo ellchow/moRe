@@ -107,10 +107,14 @@ pprint.sql <- function(s){
   z
 }
 
-mk.tmp.table <- function(...,db.type='teradata'){
+sql.mk.tmp.table <- function(...,db.type='teradata'){
   if(db.type == 'teradata'){
     str.fmt('create volatile table %(name)s as (%(body)s) with data primary index (%(indexAttr)s) on commit preserve rows',...)
   }else{
     stop(str.fmt("unknown database '%s'",db.type))
   }
+}
+
+sql.contains <- function(e,set){
+  sprintf('%s in (%s)',e,csplat(paste,set,sep=','))
 }
