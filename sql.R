@@ -9,10 +9,6 @@ SAMPLE_DB_CONFIG <- list(class='com.teradata.jdbc.TeraDriver',
                          type='teradata'
                          )
 
-SQL_SYNTAX <- list(teradata=
-                   list('tmp.table'='create volatile table <% cat(name) %> as (<% cat(body) %>) with data primary index (<% cat(indexattr) %>) on commit preserve rows'
-                        )
-                   )
 connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','error')){
   driver <- JDBC(jdbc.config$class,jdbc.config$jar)
   uri <- paste(jdbc.config$protocol,host,sep="://")
@@ -24,70 +20,68 @@ connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','err
        connection=conn,
        type=jdbc.config$type,
 
-       get.query=function(s,...){
-         write.msg(logger,'on %s, execute query and get:\n%s',uri,s)
+       get.query=function(s,...,pretty=TRUE){
+         write.msg(logger,'on %s, execute query and get:\n%s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          dbGetQuery(conn, s, ...)
          stop.timer(timer)
        },
        exec.query=function(s,...){
-         write.msg(logger,'on %s, execute query:\n%s',uri,s)
+         write.msg(logger,'on %s, execute query:\n%s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          dbSendQuery(conn, s, ...)
          stop.timer(timer)
        },
-       exec.update=function(s,...){
-         write.msg(logger,'on %s, execute update:\n%s',uri,s)
+       exec.update=function(s,...,pretty=TRUE){
+         write.msg(logger,'on %s, execute update:\n%s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          dbSendUpdate(conn,s,...)
          stop.timer(timer)
        },
 
-       list.tables=function(...){
+       list.tables=function(...,pretty=TRUE){
          write.msg(logger,'on %s, list tables',uri)
          start.timer(timer)
          dbListTables(conn,...)
          stop.timer(timer)
        },
-       list.fields=function(s,...){
-         write.msg(logger,'on %s, list fields on %s',uri,s)
+       list.fields=function(s,...,pretty=TRUE){
+         write.msg(logger,'on %s, list fields on %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          dbListFields(conn,s,...)
          stop.timer(timer)
        },
 
-       exists.table=function(s,...){
-         write.msg(logger,'on %s, check if table %s exists',uri,s)
+       exists.table=function(s,...,pretty=TRUE){
+         write.msg(logger,'on %s, check if table %s exists',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          dbExistsTable(conn,s,...)
          stop.timer(timer)
        },
-       read.table=function(s,...){
-         write.msg(logger,'on %s, read table %s',uri,s)
+       read.table=function(s,...,pretty=TRUE){
+         write.msg(logger,'on %s, read table %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          dbReadTable(conn,s,...)
        },
-       write.table=function(s,...){
-         write.msg(logger,'on %s, write table %s',uri,s)
+       write.table=function(s,...,pretty=TRUE){
+         write.msg(logger,'on %s, write table %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          dbWriteTable(conn,s,...)
          stop.timer(timer)
        },
-       remove.table=function(s,...){
-         write.msg(logger,'on %s, remove table %s',uri,s)
+       remove.table=function(s,...,pretty=TRUE){
+         write.msg(logger,'on %s, remove table %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          dbRemoveTable(conn,s,...)
          stop.timer(timer)
        },
 
-       explain=function(s,...){
-         write.msg(logger,'on %s, explain SQL:\n %s',uri,s)
+       explain=function(s,...,pretty=TRUE){
+         write.msg(logger,'on %s, explain SQL:\n %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
-         cat(pprint.dataframe(dbGetQuery(conn,paste('explain ',s),...)))
+         cat(pprint.dataframe(dbGetQuery(conn,paste('explain ',if(pretty) pprint.sql(s) else s),...)))
          stop.timer(timer)
-       },
-
-       tmp.table=function(name,s,indexattr) brew.string(SQL_SYNTAX[[type]]$tmp.table,name=name,body=s,indexattr=indexattr)
+       }
        )
 }
 
@@ -101,4 +95,11 @@ pprint.sql <- function(s){
   file.remove(tmp)
   file.remove(fmt)
   z
+}
+
+mk.tmp.table <- function(...,db.type='teradata'){
+  if(db.type == 'teradata'){
+    str.fmt('create volatile table %(name)s as (%(body)s) with data primary index (%(indexAttr)s) on commit preserve rows',...)
+  }
+
 }
