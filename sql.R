@@ -91,3 +91,14 @@ connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','err
        )
 }
 
+
+pprint.sql <- function(s){
+  tmp <- tempfile()
+  fmt <- sprintf('%s.fmt',tmp)
+  cat(s,file=tmp)
+  system(sprintf("python -c \"import sqlparse; s = open('%s').read(); print sqlparse.format(s,reindent=True,keyword_case='upper')\" > %s",tmp,fmt))
+  z <- file.to.string(fmt)
+  file.remove(tmp)
+  file.remove(fmt)
+  z
+}
