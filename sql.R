@@ -109,7 +109,7 @@ pprint.sql <- function(s){
 
 sql.mk.tmp.table <- function(...,db.type='teradata'){
   if(db.type == 'teradata'){
-    str.fmt('create volatile table %(name)s as (%(body)s) with data primary index (%(indexAttr)s) on commit preserve rows',...)
+    str.fmt('create volatile table %(name)s as (%(body)s) with data primary index (%(index.attr)s) on commit preserve rows',...)
   }else{
     stop(str.fmt("unknown database '%s'",db.type))
   }
