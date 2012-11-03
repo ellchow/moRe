@@ -54,7 +54,7 @@ setConstructorS3('SimpleLog',
                  function(id='log', level=c('info','warning','error'), availableLevels=NULL, outputs=stderr(), overwrite=TRUE){
                    availableLevels <- union(level,availableLevels)
                    if(overwrite){
-                     sapply(outputs[outputs != ""],
+                     sapply(outputs[is.character(outputs) & outputs != ""],
                             function(x){
                               if(is.character(x)){
                                 file.remove(x)
