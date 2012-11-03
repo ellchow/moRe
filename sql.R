@@ -23,57 +23,67 @@ connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','err
        get.query=function(s,...,pretty=TRUE){
          write.msg(logger,'on %s, execute query and get:\n%s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
-         dbGetQuery(conn, s, ...)
+         z <- dbGetQuery(conn, s, ...)
          stop.timer(timer)
+         z
        },
        exec.query=function(s,...){
          write.msg(logger,'on %s, execute query:\n%s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
-         dbSendQuery(conn, s, ...)
+         z <- dbSendQuery(conn, s, ...)
          stop.timer(timer)
+         z
        },
        exec.update=function(s,...,pretty=TRUE){
          write.msg(logger,'on %s, execute update:\n%s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
-         dbSendUpdate(conn,s,...)
+         z <- dbSendUpdate(conn,s,...)
          stop.timer(timer)
+         z
        },
 
        list.tables=function(...,pretty=TRUE){
          write.msg(logger,'on %s, list tables',uri)
          start.timer(timer)
-         dbListTables(conn,...)
+         z <- dbListTables(conn,...)
          stop.timer(timer)
+         z
        },
        list.fields=function(s,...,pretty=TRUE){
          write.msg(logger,'on %s, list fields on %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
-         dbListFields(conn,s,...)
+         z <- dbListFields(conn,s,...)
          stop.timer(timer)
+         z
        },
 
        exists.table=function(s,...,pretty=TRUE){
          write.msg(logger,'on %s, check if table %s exists',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
-         dbExistsTable(conn,s,...)
+         z <- dbExistsTable(conn,s,...)
          stop.timer(timer)
+         z
        },
        read.table=function(s,...,pretty=TRUE){
          write.msg(logger,'on %s, read table %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
-         dbReadTable(conn,s,...)
+         z <- dbReadTable(conn,s,...)
+         stop.timer(timer)
+         z
        },
        write.table=function(s,...,pretty=TRUE){
          write.msg(logger,'on %s, write table %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
-         dbWriteTable(conn,s,...)
+         z <- dbWriteTable(conn,s,...)
          stop.timer(timer)
+         z
        },
        remove.table=function(s,...,pretty=TRUE){
          write.msg(logger,'on %s, remove table %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
-         dbRemoveTable(conn,s,...)
+         z <- dbRemoveTable(conn,s,...)
          stop.timer(timer)
+         z
        },
 
        explain=function(s,...,pretty=TRUE){
