@@ -9,12 +9,12 @@ SAMPLE_DB_CONFIG <- list(class='com.teradata.jdbc.TeraDriver',
                          type='teradata'
                          )
 
-connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','error')){
+connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','error'),log.output=stderr()){
   driver <- JDBC(jdbc.config$class,jdbc.config$jar)
   uri <- paste(jdbc.config$protocol,host,sep="://")
   conn <- dbConnect(driver, uri, ...)
   type <- jdbc.config$type
-  logger <- SimpleLog('jdbc.connect',log.level)
+  logger <- SimpleLog('jdbc.connect',level=log.level,outputs=log.output)
   timer <- Timer(logger)
   list(driver=driver,
        connection=conn,
