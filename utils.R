@@ -434,7 +434,7 @@ str.fmt <- function(s,...){
     stop.if(is.null(names(dots)) || any(str_length(names(dots))==0),
             'requires named parameters')
     # first escape things that percent symbols; then replace named params with unnamed params
-    ss <- gsub(named.pat,'\\2\\4',
+    ss <- gsub(named.pat,'\\1\\2\\4',
                gsub(unnamed.pat,'\\1%\\2',s))
     # get params in order of appearance
     params <- dots[as.vector(sapply(str_extract_all(s,named.pat),
