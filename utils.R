@@ -318,9 +318,8 @@ max.element.str.length <- function(data,.parallel=FALSE){
   maxLengths <- llply(names(data),
                       function(i){
                         max(str_length(i),
-                            max(sapply(data[[i]],
-                                       function(j) str_length(j)
-                                       )))},
+                            max(str_length(data[[i]])))
+                      },
                       .parallel=.parallel)
   names(maxLengths) <- names(data)
   maxLengths
