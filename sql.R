@@ -134,3 +134,7 @@ sql.sample <- function(s,n,db.type='teradata'){
     stop(str.fmt("unknown database '%s'",db.type))
   }
 }
+
+sql.quote <- function(s,char='\''){
+  sprintf('%s%s%s',char,s,char)
+}
