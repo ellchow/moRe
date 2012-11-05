@@ -146,10 +146,15 @@ sql.seq.stmts <- function(stmts,table.gen=function(...) sql.mk.tmp.table(...), a
          function(x){
            csplat(table.gen, x)
          })
-  function(db,delay=5){
+  function(db=NULL,...,delay=5,pretty=TRUE){
+    no.action <- is.null(db)
     for(i in 1:length(tmp.tables)){
-      if(i > 1) system(sprintf('sleep %ds',delay))
-      db[[actions[i]]](tmp.tables[[i]])
+      if(i > 1 && !no.action) system(sprintf('sleep %ds',delay))
+      if(!no.action){
+        db[[actions[i]]](tmp.tables[[i]],pretty=pretty)
+      }else{
+        cat(if(pretty) pprint.sql(tmp.tables[[i]]) else tmp.tables[[i]])
+      }
     }
   }
 }
