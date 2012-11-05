@@ -138,3 +138,21 @@ sql.sample <- function(s,n,db.type='teradata'){
 sql.quote <- function(s,char='\''){
   sprintf('%s%s%s',char,s,char)
 }
+
+
+sql.seq.stmts <- function(stmts,db.type='teradata'){
+  tmp.tables <- lapply(lzip(names(stmts),stmts),
+         function(x){
+           name <- x[[1]]
+           index.attr <- x[[2]]$index.attr
+           stmt <- x[[2]]$stmt
+           sql.mk.tmp.table(name=name,index.attr=index.attr,body=stmt,db.type=db.type)
+         })
+  function(db,delay=5){
+    for(i in 1:length(tmp.tables)){
+      if(i > 1) system(sprintf('sleep %ds',delay))
+      db$exec.update(tmp.tables[[i]])
+    }
+  }
+}
+
