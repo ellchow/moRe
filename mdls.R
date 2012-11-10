@@ -433,9 +433,6 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   }
 }
 
-
-
-
 feature.contributions <- function(mdl, src, snk, select=which.max, log.level=c('info','warning','error')){
   logger <- SimpleLog('factor.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
@@ -479,16 +476,53 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=c('
   z
 }
 
+gbm.model.r <- function(object,trees=object$n.trees){
+  dataset <- 'data'
+  s <- sprintf('function(%s){%s}',
+          dataset,
+          do.call(paste,
+                  c(lapply(1:trees,
+                           function(i.tree){
+                             gbm.tree.r(object,i.tree,dataset)
+                           }),
+                    sep='+')
+                  )
+          )
+  eval(parse(text=s))
+}
 
+gbm.tree.r <- function(object, i.tree=1, dataset='data'){
+  gbm.tree.r.node(gbm.tree.as.df(object,i.tree),1,dataset)
+}
 
+gbm.tree.r.node <- function(tree,node=1,dataset='data'){
+  row <- tree[tree$node == node,]
+  if (row$SplitVarName != "") {
+    sprintf('ifelse(is.na(%s[["%s"]]),%s,ifelse(%s[["%s"]]<%f,%s,%s))',
+            dataset,
+            row$SplitVarName,
+            gbm.tree.r.node(tree,row$MissingNode),
+            dataset,
+            row$SplitVarName,
+            row$SplitCodePred,
+            gbm.tree.r.node(tree,row$LeftNode),
+            gbm.tree.r.node(tree,row$RightNode))
+  }else {
+    as.character(row$SplitCodePred)
+  }
+}
 
-
-
-
-
-
-
-
+compare.gbm.predict <- function(m,data){
+  t <- Timer()
+  start.timer(t,"built-in prediction")
+  sa <- predict.gbm(m,data[,m$var.names],n.trees=m$n.trees)
+  stop.timer(t,)
+  f <- gbm.model.r(m)
+  start.timer(t,"generated r code prediction")
+  sb <- f(data)
+  stop.timer(t)
+  cbind(sa,sb)
+}
 
 
 #####################################
