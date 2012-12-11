@@ -3,15 +3,26 @@ better.library('RJDBC','brew','stringr')
 
 #options(java.parameters = "-Xmx4g")
 
-SAMPLE_DB_CONFIG <- list(class='com.teradata.jdbc.TeraDriver',
-                         protocol='jdbc:teradata',
+TERADATA_JDBC_CONFIG <- list(class='com.teradata.jdbc.TeraDriver',
+                         protocol='jdbc:teradata:',
                          jar='/usr/lib/java/terajdbc4.jar',
                          type='teradata'
                          )
 
+MYSQL_JDBC_CONFIG <- list(class='com.mysql.jdbc.Driver',
+                          protocol='jdbc:mysql',
+                          jar='/usr/lib/java/mysql-connector-java-3.1.14-bin.jar',
+                          type='mysql'
+                          )
+
+ORACLE_JDBC_CONFIG <- list(class='oracle.jdbc.OracleDriver',
+                           protocol='jdbc:oracle:thin:@',
+                           jar='/usr/lib/java/ojdbc6.jar',
+                           type='mysql')
+
 connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','error'),log.output=stderr()){
   driver <- JDBC(jdbc.config$class,jdbc.config$jar)
-  uri <- paste(jdbc.config$protocol,host,sep="://")
+  uri <- paste(jdbc.config$protocol,host,sep="//")
   conn <- dbConnect(driver, uri, ...)
   type <- jdbc.config$type
   logger <- SimpleLog('jdbc.connect',level=log.level,outputs=log.output)
