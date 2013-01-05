@@ -52,6 +52,7 @@ val.to.quantile <- function(x,...,method='b'){
     f(x)
   }
 }
+  
 
 bucketize <- function(x,buckets){
   f <- approxfun(cbind(sort(buckets),1:length(buckets)))

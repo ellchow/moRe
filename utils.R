@@ -42,6 +42,7 @@ better.library('gdata',
                'hash',
                'R.oo',
                'digest',
+               'gsubfn',
                get.parallel.library()$lib
                )
 
@@ -53,7 +54,7 @@ setConstructorS3('SimpleLog',
                  function(id='log', level=c('info','warning','error'), availableLevels=NULL, outputs=stderr(), overwrite=TRUE){
                    availableLevels <- union(level,availableLevels)
                    if(overwrite){
-                     sapply(outputs[outputs != ""],
+                     sapply(outputs[is.character(outputs) & outputs != ""],
                             function(x){
                               if(is.character(x)){
                                 file.remove(x)
@@ -163,7 +164,20 @@ load.data.many <- function(paths,...,.parallel=FALSE){
                              llply(system(sprintf('ls %s', csplat(paste,paths)),intern=T),
                                    function(z) load.data(z,stringsAsFactors=F,...),.parallel=.parallel)),
                       function(col){if(is.character(col)) factor(col) else col},
-                      .parallel=.parallel))                                                                                                                                                                                                                                                                           
+                      .parallel=.parallel))
+}
+
+file.to.string <- function(file){
+  readChar(file, file.info(file)$size)
+}
+
+brew.string <- function(s,...){
+  dots <- list(...)
+  e <- if(length(dots) == 0) new.env() else list2env(dots)
+  brewedSql <- tempfile()
+  brew(text=s,output=brewedSql,envir=e)
+  sql <- file.to.string(brewedSql)
+  sql
 }
 
 ####################
@@ -304,9 +318,8 @@ max.element.str.length <- function(data,.parallel=FALSE){
   maxLengths <- llply(names(data),
                       function(i){
                         max(str_length(i),
-                            max(sapply(data[[i]],
-                                       function(j) str_length(j)
-                                       )))},
+                            max(str_length(data[[i]])))
+                      },
                       .parallel=.parallel)
   names(maxLengths) <- names(data)
   maxLengths
@@ -403,11 +416,45 @@ dataframe.to.html.table <- function(x,
                )
   z
 }
+###################
+#### Date
+###################
 
+STANDARD.TIMESTAMP.FORMAT <- "%Y-%m-%d %H:%M:%S"
+EPOCH <- strptime("1970-01-01 00:00:00", STANDARD.TIMESTAMP.FORMAT, tz="UTC")
+MIN.SEC <- 60
+HOUR.SEC <- 60 * MIN.SEC
+DAY.SEC <-  24 * HOUR.SEC
+unix.timestamp.to.fmt <- function(ts,fmt=STANDARD.TIMESTAMP.FORMAT){
+  as.POSIXct(ts,fmt,origin=EPOCH)
+}
 
 ####################
 #### Misc
 ####################
+
+str.fmt <- function(s,...){
+  dots <- list(...)
+  named.pat <- '(^|[^%])(%)\\(([A-Za-z0-9_.]+?)\\)(([0-9.]+)?[sdf])'
+  unnamed.pat <- '(^|[^%])(%[sdf])'
+  named <- str_detect(s,named.pat)
+  ss <- s
+  params <- dots
+  if(named){
+    n <- as.vector(sapply(str_extract_all(s,named.pat),
+                          function(x) gsub(named.pat,'\\3', x)))
+    stop.if(is.null(names(dots)) || any(str_length(names(dots))==0),
+            'requires named parameters')
+    stop.if(any(!n %in% names(dots)), sprintf('missing params %s', csplat(paste,setdiff(n,names(dots)),sep=',')))
+    # first escape things that percent symbols; then replace named params with unnamed params
+    ss <- gsub(named.pat,'\\1\\2\\4',
+               gsub(unnamed.pat,'\\1%\\2',s))
+    # get params in order of appearance
+    params <- dots[n]
+  }
+  csplat(sprintf,ss,params)
+}
+
 
 
 int.to.char.map <- hash(keys=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),values=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))

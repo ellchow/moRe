@@ -50,9 +50,9 @@ yfin.make.url <- function(syms,
   url
 }
 
-get.historical.data <- function(...,verbose=FALSE){
+get.historical.data <- function(...,log.level=c('info','warning','error')){
   u <- yfin.make.url(...)
-  log <- SimpleLog('get.historical.data',level=verbose)
+  log <- SimpleLog('get.historical.data',log.level)
   z <- tryCatch(read.table(u,sep=',',comment.char='',quote='',header=T),
                 error=function(e){
                   write.msg(log,'could not fetch data for %s',u,level='error')
@@ -67,9 +67,8 @@ get.historical.data <- function(...,verbose=FALSE){
 
 ## yfin.archive('~/Documents/investments/data/yd.rda',strsplit('AGG,BIV,BLV,BND,BSV,^DJI,EDV,^FTSE,GLD,^GSPC,^HSI,IAU,^MID,SLV,^SML,VAW,VB,VCR,VDC,VDE,VEU,VFH,VGK,VGT,VHT,VIS,^VIX,VNQ,VOX,VPL,VPU,VSS,VTI,VUG,VWO,VXF',',')[[1]],freq='daily',asSingleTable='~/Documents/investments/data/yd_single.rda',verbose=TRUE) -> z
 ## yfin.archive('~/Documents/investments/data/yd_monthly.rda',strsplit('AGG,BIV,BLV,BND,BSV,^DJI,EDV,^FTSE,GLD,^GSPC,^HSI,IAU,^MID,SLV,^SML,VAW,VB,VCR,VDC,VDE,VEU,VFH,VGK,VGT,VHT,VIS,^VIX,VNQ,VOX,VPL,VPU,VSS,VTI,VUG,VWO,VXF',',')[[1]],freq='monthly',asSingleTable='~/Documents/investments/data/yd_monthly_single.rda',verbose=TRUE) -> z
-yfin.archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq='weekly',update=TRUE, asSingleTable=NULL, .parallel=TRUE, verbose=FALSE){
-  verbose <- if(verbose){'info'}else{NULL}
-  log <- SimpleLog('yfin.archive',level=verbose)
+yfin.archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq='weekly',update=TRUE, asSingleTable=NULL, log.level=c('info','warning','error'),.parallel=FALSE){
+  log <- SimpleLog('yfin.archive',log.level)
 
   archive <- if(file.exists(path)){
     write.msg(log, 'loading saved archive')
@@ -96,13 +95,14 @@ yfin.archive <- function(path,syms,startDate=format(Sys.time(),DATE_FORMAT),freq
                                           startDate=startDate,
                                           endDate=today,
                                           freq=freq,
-                                          verbose=verbose)
+                                          log.level=log.level)
                  x <- rbind(x,subset(y, as.character(date) > startDate))
                }else{
                  x
                }
                x$date <- as.Date(x$date)
                names(x) <- YFIN_COLUMNS
+
                x
              },
              .parallel=.parallel)
