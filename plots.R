@@ -35,6 +35,7 @@ plot.mean.boot <- function(x,g=NULL,...){
 
 plot.points.with.smoother <- function(x,y,
                                       ...,
+                                      model.fit=loess,
                                       p.params=list(xlab='x',ylab='y'),
                                       u.params=list(col='blue'),
                                       l.params=list(col='blue'),
@@ -45,7 +46,7 @@ plot.points.with.smoother <- function(x,y,
   x <- x[ord]
   y <- y[ord]
   do.call(plot, c(list(x=x,y=y),p.params))
-  sm <- predict(loess(y ~ x,...), se=T)
+  sm <- predict(model.fit(y ~ x,...), se=T)
   sm$fit-2*sm$s -> lb
   sm$fit+2*sm$s ->ub
   do.call(polygon, c(list(c(x,x[length(x):1]),c(lb,ub[length(ub):1])),a.params))
