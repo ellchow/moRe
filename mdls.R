@@ -152,18 +152,12 @@ mdls.predict <- function(models, datasets, log.level=c('info','warning','error')
 
                                         features <- x[[2]]$features
                                         predict <- x[[2]]$predict
-                                        if(is.null(x[[2]]$predictions)){
-                                          x[[2]]$predictions <- list()
-                                        }
 
                                         write.msg(logger,sprintf('predicting with "%s"', id))
                                         pr <- predict(m, subset(data,select=features))
 
-                                        ## x[[2]]$predictions[[as.character(dsId)]] <- pr
                                         z <- list(pr)
                                         names(z) <- id
-                                        ## z <- list(z)
-                                        ## names(z) <- dsId
                                         z
                                       }))
                    z <- list(z)
