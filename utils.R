@@ -117,6 +117,10 @@ stop.if <- function(x,msg){
   }
 }
 
+stop.if.not <- function(x,msg){
+  stop.if(!x,msg)
+}
+
 ####################
 #### Files
 ####################
