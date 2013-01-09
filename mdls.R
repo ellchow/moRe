@@ -160,10 +160,12 @@ mdls.predict <- function(models, datasets, log.level=c('info','warning','error')
                                         ## x[[2]]$predictions[[as.character(dsId)]] <- pr
                                         z <- list(pr)
                                         names(z) <- id
-                                        z <- list(z)
-                                        names(z) <- dsId
+                                        ## z <- list(z)
+                                        ## names(z) <- dsId
                                         z
                                       }))
+                   z <- list(z)
+                   names(z) <- dsId
                    stop.timer(timer)
                    z
                  })
