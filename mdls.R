@@ -521,8 +521,6 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   problems
 }
 
-
-
 glm.model.def <- function(id, target.gen, features, ...){
   list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def)
 }

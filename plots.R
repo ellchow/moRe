@@ -57,6 +57,15 @@ plot.points.with.smoother <- function(x,y,
 
 #### ggplot
 
+save.ggplots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
+  llply(plots,function(x){
+    tryCatch(ggsave(filename=paste(outputPath,'/',x$name,'.',ext,sep=''),plot=x$plot,...),
+             error=function(e){
+               NA
+             })
+  }, .parallel=.parallel)
+}
+
 vp.layout <- function(x, y) viewport(layout.pos.row=x, layout.pos.col=y)
 arrange <- function(..., nrow=NULL, ncol=NULL, as.table=FALSE) {
   dots <- list(...)
