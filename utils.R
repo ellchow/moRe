@@ -117,6 +117,10 @@ stop.if <- function(x,msg){
   }
 }
 
+stop.if.not <- function(x,msg){
+  stop.if(!x,msg)
+}
+
 ####################
 #### Files
 ####################
@@ -198,6 +202,8 @@ csplat <- function(f,a,...){
 na.rm <- function(x) x[!is.na(x)]
 
 inf.rm <- function(x) x[!is.infinite(x)]
+
+nan.rm <- function(x) x[!is.nan(x)]
 
 tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, as.df=FALSE) {
   FUN <- if(!is.null(FUN))
@@ -282,15 +288,6 @@ keep.if <- function(x,f){
 
 flatten <- function(x){
   do.call(c,x)
-}
-
-save.ggplots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
-  llply(plots,function(x){
-    tryCatch(ggsave(filename=paste(outputPath,'/',x$name,'.',ext,sep=''),plot=x$plot,...),
-             error=function(e){
-               NA
-             })
-  }, .parallel=.parallel)
 }
 
 merge.lists <- function(all,FUN=function(n,x){x}){

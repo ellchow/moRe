@@ -47,6 +47,7 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
   modelDefs <- list(...) ##if(is.model.def(modelDefs)){list(modelDefs)}else{modelDefs}
 
   timer <- Timer(logger)
+  ## pair dataset with id
   flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{1:length(datasets)},
                       datasets),
                  function(x){
@@ -55,7 +56,7 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
 
                    if(typeof(data) == 'character'){
                      t0 <- start.timer(timer,'loading dataset "%s"', dsId)
-                     data <- get(load(data))
+                     data <- load.data(data)
                      stop.timer(timer)
                    }else{
                      data <- as.data.frame(data)
@@ -75,6 +76,7 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
                                                                        level='error')
                                                              NA
                                                            })
+                                             write.msg(logger, sprintf('adding weights for "%s"', id))
                                              w <- tryCatch(md$weights(data),
                                                            error=function(e){
                                                              write.msg(logger,str_trim(as.character(e)),
@@ -137,7 +139,7 @@ mdls.predict <- function(models, datasets, log.level=c('info','warning','error')
                    data <- x[[2]]
                    if(typeof(data) == 'character'){
                      start.timer(timer,sprintf('loading dataset "%s"', dsId))
-                     data <- get(load(data))
+                     data <- load.data(data)
                      stop.timer(timer)
                    }else{
                      data <- as.data.frame(data)
@@ -150,20 +152,16 @@ mdls.predict <- function(models, datasets, log.level=c('info','warning','error')
 
                                         features <- x[[2]]$features
                                         predict <- x[[2]]$predict
-                                        if(is.null(x[[2]]$predictions)){
-                                          x[[2]]$predictions <- list()
-                                        }
 
                                         write.msg(logger,sprintf('predicting with "%s"', id))
                                         pr <- predict(m, subset(data,select=features))
 
-                                        ## x[[2]]$predictions[[as.character(dsId)]] <- pr
                                         z <- list(pr)
                                         names(z) <- id
-                                        z <- list(z)
-                                        names(z) <- dsId
                                         z
                                       }))
+                   z <- list(z)
+                   names(z) <- dsId
                    stop.timer(timer)
                    z
                  })
@@ -522,8 +520,6 @@ check.lm.model.def <- function(modelDef, target, data, weights){
 
   problems
 }
-
-
 
 glm.model.def <- function(id, target.gen, features, ...){
   list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def)
