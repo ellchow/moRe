@@ -297,7 +297,7 @@ gbm.factor.importance <- function(object, k=min(10,length(object$var.names)),
   ggplot(x, aes(factor,importance)) +
     geom_bar() +
       coord_flip() +
-        opts(title=paste('Top',k,'of',length(object$var.names),'Factors'))
+        ggtitle(paste('Top',k,'of',length(object$var.names),'Factors'))
 }
 
 gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',NA),
