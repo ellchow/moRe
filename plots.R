@@ -66,6 +66,10 @@ save.ggplots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
   }, .parallel=.parallel)
 }
 
+stat.sum.df <- function(fun, geom="crossbar", colour='steelblue', width=0.4,...) {
+  stat_summary(fun.data=fun, colour=colour, geom=geom, width=width, ...)
+}
+
 vp.layout <- function(x, y) viewport(layout.pos.row=x, layout.pos.col=y)
 arrange <- function(..., nrow=NULL, ncol=NULL, as.table=FALSE) {
   dots <- list(...)

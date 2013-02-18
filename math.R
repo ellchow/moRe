@@ -1,11 +1,6 @@
 #### Elliot Chow
 
 source('utils.R', chdir=T)
-better.library('ggplot2')
-
-stat.sum.df <- function(fun, geom="crossbar", colour='steelblue', width=0.4,...) {
-  stat_summary(fun.data=fun, colour=colour, geom=geom, width=width, ...)
-}
 
 linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, na.rm=FALSE, displayLevel=0){
   if(clipMin){
