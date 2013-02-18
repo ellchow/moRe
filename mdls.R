@@ -431,9 +431,6 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   }
 }
 
-
-
-
 feature.contributions <- function(mdl, src, snk, select=which.max, log.level=c('info','warning','error')){
   logger <- SimpleLog('factor.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
@@ -476,18 +473,6 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=c('
   row.names(z) <- NULL
   z
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 #####################################
 #### (g)lm modifications and helpers
