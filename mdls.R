@@ -61,8 +61,15 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=c('info
                      data <- as.data.frame(data)
                    }
 
+                   modelDefs.filtered <- Filter(function(md){
+                     any(sapply(lzip(names(mapping), mapping),
+                                function(mp)
+                                str_detect(dsId, mp[[1]]) && str_detect(md$id, mp[[2]])
+                                ))
+                   }, modelDefs)
+
                    start.timer(timer, sprintf('train models on "%s"', dsId))
-                   models <- flatten(llply(modelDefs,
+                   models <- flatten(llply(modelDefs.filtered,
                                            function(md){
                                              id <- sprintf('%s%s', md$id,
                                                            if(length(datasets) > 1) sprintf("__%s", dsId) else "")
@@ -124,7 +131,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=c('info
                  }))
 }
 
-mdls.predict <- function(models, datasets, log.level=c('info','warning','error')){
+mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=c('info','warning','error')){
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets)) list(datasets) else datasets
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
@@ -141,8 +148,15 @@ mdls.predict <- function(models, datasets, log.level=c('info','warning','error')
                    }else{
                      data <- as.data.frame(data)
                    }
+
+                   models.filtered <- Filter(function(m){
+                     any(sapply(lzip(names(mapping), mapping),
+                                function(mp) str_detect(dsId, mp[[1]]) && str_detect(m[[1]], mp[[2]]) ))
+
+                   }, lzip(names(models), models))
+
                    start.timer(timer,sprintf('computing predictions on "%s"', dsId))
-                   z <- flatten(llply(lzip(names(models), models),
+                   z <- flatten(llply(models.filtered,
                                       function(x){
                                         id <- x[[1]]
                                         m <- x[[2]]$model
