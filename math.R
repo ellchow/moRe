@@ -52,12 +52,19 @@ val.to.quantile <- function(x,...,method='b'){
     f(x)
   }
 }
-  
 
-bucketize <- function(x,buckets){
+trim <- function(x, lb, ub){
+  pmin(ub,pmax(lb,x))
+}
+
+bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1))){
+  ub <- max(buckets)
+  buckets[which.max(buckets)] <- ub + 1
+  ub <- ub + 1
+  lb <- min(buckets)
   f <- approxfun(cbind(sort(buckets),1:length(buckets)))
-  x <- pmin(max(buckets),pmax(min(buckets),x))
-  as.integer(f(x))
+  x <- trim(x, lb, ub)
+  floor(f(x))
 }
 
 rdiscrete <- function(n, prob, domain=1:length(prob)){
