@@ -9,10 +9,10 @@ stat.sum.df <- function(fun, geom="crossbar", colour='steelblue', width=0.4,...)
 
 linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, na.rm=FALSE, displayLevel=0){
   if(clipMin){
-    x <- max(x,lb,na.rm=na.rm)
+    x <- pmax(x,lb,na.rm=na.rm)
   }
   if(clipMax){
-    x <- min(x,ub,na.rm=na.rm)
+    x <- pmin(x,ub,na.rm=na.rm)
   }
   y <- (x - lb) / (ub - lb)
 
