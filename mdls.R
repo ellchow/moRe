@@ -32,7 +32,7 @@ is.model.def <- function(x){
              ))
 }
 
-mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .parallel=TRUE){
+mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=c('info','warning','error'), .parallel=TRUE){
   ## mdls.fit(iris[,1:4],
   ##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
   ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
@@ -45,11 +45,10 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
 
   datasets <- if(is.data.frame(datasets)) list(datasets) else datasets
   modelDefs <- list(...)
+  dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
   timer <- Timer(logger)
-  ## pair dataset with id
-  flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{1:length(datasets)},
-                      datasets),
+  flatten(lapply(lzip(dataset.ids, datasets),
                  function(x){
                    dsId <- x[[1]]
                    data <- x[[2]]
@@ -128,10 +127,10 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
 mdls.predict <- function(models, datasets, log.level=c('info','warning','error')){
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets)) list(datasets) else datasets
+  dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
   timer <- Timer(logger)
-  flatten(lapply(lzip(if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq),
-                      datasets),
+  flatten(lapply(lzip(dataset.ids,datasets),
                  function(x){
                    dsId <- x[[1]]
                    data <- x[[2]]
