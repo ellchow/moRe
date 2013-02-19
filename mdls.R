@@ -32,7 +32,7 @@ is.model.def <- function(x){
              ))
 }
 
-mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .parallel=TRUE){
+mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=c('info','warning','error'), .parallel=TRUE){
   ## mdls.fit(iris[,1:4],
   ##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
   ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
@@ -43,13 +43,12 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
 
   logger <- SimpleLog('mdls.fit',log.level)
 
-  datasets <- if(is.data.frame(datasets))(list(datasets))else{datasets}
-  modelDefs <- list(...) ##if(is.model.def(modelDefs)){list(modelDefs)}else{modelDefs}
+  datasets <- if(is.data.frame(datasets)) list(datasets) else datasets
+  modelDefs <- list(...)
+  dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
   timer <- Timer(logger)
-  ## pair dataset with id
-  flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{1:length(datasets)},
-                      datasets),
+  flatten(lapply(lzip(dataset.ids, datasets),
                  function(x){
                    dsId <- x[[1]]
                    data <- x[[2]]
@@ -62,13 +61,18 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
                      data <- as.data.frame(data)
                    }
 
+                   modelDefs.filtered <- Filter(function(md){
+                     any(sapply(lzip(names(mapping), mapping),
+                                function(mp)
+                                str_detect(dsId, mp[[1]]) && str_detect(md$id, mp[[2]])
+                                ))
+                   }, modelDefs)
+
                    start.timer(timer, sprintf('train models on "%s"', dsId))
-                   models <- flatten(llply(modelDefs,
+                   models <- flatten(llply(modelDefs.filtered,
                                            function(md){
                                              id <- sprintf('%s%s', md$id,
-                                                           if(length(datasets) > 1){
-                                                             sprintf("__%s", dsId)
-                                                           }else{""})
+                                                           if(length(datasets) > 1) sprintf("__%s", dsId) else "")
                                              write.msg(logger, sprintf('building target for "%s"', id))
                                              t <- tryCatch(md$target.gen(data),
                                                            error=function(e){
@@ -127,13 +131,13 @@ mdls.fit <- function(datasets, ..., log.level=c('info','warning','error'), .para
                  }))
 }
 
-mdls.predict <- function(models, datasets, log.level=c('info','warning','error')){
+mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=c('info','warning','error')){
   logger <- SimpleLog('mdls.predict',log.level)
-  datasets <- if(is.data.frame(datasets)){list(datasets)}else{datasets}
+  datasets <- if(is.data.frame(datasets)) list(datasets) else datasets
+  dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
   timer <- Timer(logger)
-  flatten(lapply(lzip(if(!is.null(names(datasets))){names(datasets)}else{sapply(1:length(datasets),int.to.char.seq)},
-                      datasets),
+  flatten(lapply(lzip(dataset.ids,datasets),
                  function(x){
                    dsId <- x[[1]]
                    data <- x[[2]]
@@ -144,8 +148,15 @@ mdls.predict <- function(models, datasets, log.level=c('info','warning','error')
                    }else{
                      data <- as.data.frame(data)
                    }
+
+                   models.filtered <- Filter(function(m){
+                     any(sapply(lzip(names(mapping), mapping),
+                                function(mp) str_detect(dsId, mp[[1]]) && str_detect(m[[1]], mp[[2]]) ))
+
+                   }, lzip(names(models), models))
+
                    start.timer(timer,sprintf('computing predictions on "%s"', dsId))
-                   z <- flatten(llply(lzip(names(models), models),
+                   z <- flatten(llply(models.filtered,
                                       function(x){
                                         id <- x[[1]]
                                         m <- x[[2]]$model
@@ -179,10 +190,10 @@ gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) 
 
 
 gbm.predict <- function(object,newdata,n.trees=NULL,type='response',...){
-  trees = if(is.null(n.trees)) gbm.perf(object,method='test',plot.it=FALSE) else n.trees
-  if(length(trees) != 1){
-    stop('could not determine optimal number of trees')
-  }
+  trees <- if(is.null(n.trees)) gbm.perf(object,method='test',plot.it=FALSE) else n.trees
+
+  stop.if(length(trees) != 1, 'could not determine optimal number of trees')
+
   predict.gbm(object,newdata,n.trees=trees,type=type,...)
 }
 
@@ -198,53 +209,59 @@ check.gbm.model.def <- function(modelDef, target, data, weights){
   if(any(gt1024levels)){problems$too.many.levels <- available[gt1024levels]}
 
   all.na <- sapply(available, function(f){all(is.na(data[[f]]))})
-  if(any(all.na)){problems$all.na <- available[all.na]}
+  if(any(all.na))
+    problems$all.na <- available[all.na]
 
   monotonicity <- (('var.monotone' %in% names(modelDef$params)) &&
                    ((length(modelDef$params$var.monotone) != length(modelDef$features)) ||
                     !all(modelDef$params$var.monotone %in% (-1:1))))
-  if(monotonicity){problems$monotonicity <- NA}
+  if(monotonicity)
+    problems$monotonicity <- NA
 
   na.target <- any(is.na(target))
-  if(na.target){problems$na.target <- NA}
+  if(na.target)
+    problems$na.target <- NA
 
   no.distribution <- !('distribution' %in% names(modelDef$params))
 
-  if(no.distribution){problems$no.distribution <- NA}
+  if(no.distribution)
+    problems$no.distribution <- NA
   else{
     invalid.bernoulli.target <- (modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1)))
-    if(invalid.bernoulli.target){problems$invalid.bernoulli.target <- NA}
+    if(invalid.bernoulli.target)
+      problems$invalid.bernoulli.target <- NA
   }
 
   invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
-  if(invalid.weights){problems$invalid.weights <- NA}
+  if(invalid.weights)
+    problems$invalid.weights <- NA
   else{
     negative.weights <- any(weights < 0)
-    if(negative.weights){problems$negative.weights <- NA}
+    if(negative.weights)
+      problems$negative.weights <- NA
   }
   problems
 }
 
 gbm.opt.n.trees <- function(object, method='test'){
-  gbm.perf(object,method='test',plot.it=F)
+  gbm.perf(object,method=method,plot.it=F)
 }
 
 gbm.tree.as.df <- function(object, i.tree = 1){
-  if ((i.tree < 1) || (i.tree > length(object$trees))) {
-    stop("i.tree is out of range ", length(object$trees))
-  }else{
-    tree <- data.frame(object$trees[[i.tree]])
-    names(tree) <- c("SplitVar", "SplitCodePred", "LeftNode",
-                     "RightNode", "MissingNode", "ErrorReduction", "Weight",
-                     "Prediction")
-    tree$LeftNode <- tree$LeftNode + 1
-    tree$RightNode <- tree$RightNode + 1
-    tree$MissingNode <- tree$MissingNode + 1
-    tree$SplitVarName <- c("",object$var.names)[tree$SplitVar + 2]
-    tree$SplitCodePred <- ifelse(i.tree == 1 & tree$SplitVarName=='', tree$SplitCodePred + object$initF, tree$SplitCodePred)
-    tree$node <- 1:nrow(tree)
-    tree[, c("node", "SplitVarName", "SplitCodePred", "LeftNode", "RightNode", "MissingNode")]
-  }
+  stop.if((i.tree < 1) || (i.tree > length(object$trees)),
+          "i.tree is out of range ", length(object$trees))
+
+  tree <- data.frame(object$trees[[i.tree]])
+  names(tree) <- c("SplitVar", "SplitCodePred", "LeftNode",
+                   "RightNode", "MissingNode", "ErrorReduction", "Weight",
+                   "Prediction")
+  tree$LeftNode <- tree$LeftNode + 1
+  tree$RightNode <- tree$RightNode + 1
+  tree$MissingNode <- tree$MissingNode + 1
+  tree$SplitVarName <- c("",object$var.names)[tree$SplitVar + 2]
+  tree$SplitCodePred <- ifelse(i.tree == 1 & tree$SplitVarName=='', tree$SplitCodePred + object$initF, tree$SplitCodePred)
+  tree$node <- 1:nrow(tree)
+  tree[, c("node", "SplitVarName", "SplitCodePred", "LeftNode", "RightNode", "MissingNode")]
 }
 
 gbm.tree.row.as.json <- function(tree.df, node){
@@ -283,9 +300,9 @@ gbm.model.used.variables <- function(object, trees=object$n.trees){
 }
 
 gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
-  if(is.numeric(var.name)){
+  if(is.numeric(var.name))
     var.name <- object$var.names[var.name]
-  }
+
   subset(do.call(rbind, lapply(1:trees, function(tree) gbm.tree.as.df(object, i.tree=tree))), SplitVarName == var.name)$SplitCodePred
 }
 
@@ -431,9 +448,6 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   }
 }
 
-
-
-
 feature.contributions <- function(mdl, src, snk, select=which.max, log.level=c('info','warning','error')){
   logger <- SimpleLog('factor.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
@@ -477,18 +491,6 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=c('
   z
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 #####################################
 #### (g)lm modifications and helpers
 #####################################
@@ -512,10 +514,12 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   problems <- list()
 
   invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
-  if(invalid.weights){problems$invalid.weights <- NA}
+  if(invalid.weights)
+    problems$invalid.weights <- NA
   else{
     negative.weights <- any(weights < 0)
-    if(negative.weights){problems$negative.weights <- NA}
+    if(negative.weights)
+      problems$negative.weights <- NA
   }
 
   problems
@@ -605,3 +609,27 @@ feature.selection.by.filter <- function(target, features, initSelected, evaluate
   }
   z
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,18 +1,13 @@
 #### Elliot Chow
 
 source('utils.R', chdir=T)
-better.library('ggplot2')
-
-stat.sum.df <- function(fun, geom="crossbar", colour='steelblue', width=0.4,...) {
-  stat_summary(fun.data=fun, colour=colour, geom=geom, width=width, ...)
-}
 
 linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, na.rm=FALSE, displayLevel=0){
   if(clipMin){
-    x <- max(x,lb,na.rm=na.rm)
+    x <- pmax(x,lb,na.rm=na.rm)
   }
   if(clipMax){
-    x <- min(x,ub,na.rm=na.rm)
+    x <- pmin(x,ub,na.rm=na.rm)
   }
   y <- (x - lb) / (ub - lb)
 
@@ -52,12 +47,19 @@ val.to.quantile <- function(x,...,method='b'){
     f(x)
   }
 }
-  
 
-bucketize <- function(x,buckets){
+trim <- function(x, lb, ub){
+  pmin(ub,pmax(lb,x))
+}
+
+bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1))){
+  ub <- max(buckets)
+  buckets[which.max(buckets)] <- ub + 1
+  ub <- ub + 1
+  lb <- min(buckets)
   f <- approxfun(cbind(sort(buckets),1:length(buckets)))
-  x <- pmin(max(buckets),pmax(min(buckets),x))
-  as.integer(f(x))
+  x <- trim(x, lb, ub)
+  floor(f(x))
 }
 
 rdiscrete <- function(n, prob, domain=1:length(prob)){
