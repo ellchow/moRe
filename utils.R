@@ -212,10 +212,11 @@ tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
     ansmat[index] <- ans
   }
 
-  if(ret.type == 'as.df'){
+  if(ret.type == 'df'){
     ansmat <- data.frame(expand.grid(dimnames(ansmat)),y=do.call(rbind,as.list(ansmat)))
-  }else if(ret.type == 'par.x'){
-    ansmat[g]
+  }else if(ret.type == 'par'){
+    stop.if(length(INDEX) != 1, 'INDEX must have length 1 for ret.type == "par"')
+    ansmat <- ansmat[as.character(INDEX[[1]])]
   }else{
     stop.if(ret.type != 'list', sprintf('unknown ret.type "%s"', ret.type))
   }
