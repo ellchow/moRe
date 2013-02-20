@@ -1,5 +1,3 @@
-source('utils.R')
-
 moRe.ROOTDIR <- getwd()
 
 import <- function(...){
@@ -7,9 +5,9 @@ import <- function(...){
   selected <- c(...)
   unknown <- setdiff(selected, available)
 
-  stop.if(length(unknown) > 0,
-          sprintf("unknown libraries in moRe: %s",
-                  csplat(paste, unknown)))
+  if(length(unknown) > 0)
+    stop(sprintf("unknown libraries in moRe: %s",
+                 csplat(paste, unknown)))
 
   invisible(sapply(selected,
          function(s){
