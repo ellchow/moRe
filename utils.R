@@ -205,7 +205,7 @@ inf.rm <- function(x) x[!is.infinite(x)]
 
 nan.rm <- function(x) x[!is.nan(x)]
 
-tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, as.df=FALSE) {
+tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
   FUN <- if(!is.null(FUN))
     match.fun(FUN)
   if(!is.list(INDEX))
@@ -247,9 +247,15 @@ tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, as.df=FALSE) {
     names(ans) <- NULL
     ansmat[index] <- ans
   }
-  if(as.df){
+
+  if(ret.type == 'as.df'){
     ansmat <- data.frame(expand.grid(dimnames(ansmat)),y=do.call(rbind,as.list(ansmat)))
+  }else if(ret.type == 'par.x'){
+    ansmat[g]
+  }else{
+    stop.if(ret.type != 'list', sprintf('unknown ret.type "%s"', ret.type))
   }
+
   ansmat
 }
 
