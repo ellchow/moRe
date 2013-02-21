@@ -1,16 +1,16 @@
 #### Elliot Chow
 
-source('utils.R', chdir=TRUE)
-source('math.R', chdir=TRUE)
-dump <- sapply(c('gdata',
-                 'stringr',
-                 'plyr',
-                 'doMC',
-                 'gbm',
-                 'Hmisc',
-                 'ggplot2',
-                 get.parallel.library()$lib
-                 ), better.library)
+source('import.R',chdir=T)
+import('utils',
+       'math',
+       'gdata',
+       'stringr',
+       'plyr',
+       'doMC',
+       'gbm',
+       'Hmisc',
+       'ggplot2',
+       get.parallel.library()$lib)
 
 #### basic plotting
 
