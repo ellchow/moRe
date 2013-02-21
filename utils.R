@@ -75,9 +75,8 @@ setMethodS3('stop.timer', 'Timer',
 options(warn=0)
 
 stop.if <- function(x,msg){
-  if(x){
+  if(x)
     stop(msg)
-  }
 }
 
 stop.if.not <- function(x,msg){
