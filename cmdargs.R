@@ -4,6 +4,7 @@ import('utils', 'stringr')
 parse.args <- function(filename, arglist, args){
   ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
 
+
   args <- do.call(paste,as.list(c(args,'')))
   success <- TRUE
   ## add help option
@@ -102,11 +103,13 @@ parse.args <- function(filename, arglist, args){
       success <- FALSE
     }
   }
-  if(parsed$help || (!success)){
+  stop.if.not(success, sprintf('failed to parse args\n\n%s\n', make.usage.string(filename, arglist)))
+
+  if(parsed$help){
     cat(make.usage.string(filename, arglist))
-    return(NULL)
+    q(save='no',runLast=FALSE)
   }
-  list(args=parsed,usage=make.usage.string(filename, arglist))
+  parsed
 }
 
 make.usage.string <- function(filename, arglist){
@@ -133,23 +136,23 @@ parse.list <- function(v,sep=',',def='=', useDefaultNames=TRUE){
     vv <- str_split(v,sep)[[1]]
 
     z <- do.call(c,sapply(lzip(1:length(vv), vv),
-                     function(e){
-                       i <- e[[1]]
-                       x <- e[[2]]
-                       y <- str_split(x,def)[[1]]
+                          function(e){
+                            i <- e[[1]]
+                            x <- e[[2]]
+                            y <- str_split(x,def)[[1]]
 
-                       if(length(y) == 1){
-                         key <- if(useDefaultNames){i}else{''}
-                         val <- y[1]
-                       }else{
-                         key <- y[1]
-                         val <- y[2]
-                       }
-                       z <- list(val)
-                       names(z) <- key
-                       z
-                     }
-                     ))
+                            if(length(y) == 1){
+                              key <- if(useDefaultNames){i}else{''}
+                              val <- y[1]
+                            }else{
+                              key <- y[1]
+                              val <- y[2]
+                            }
+                            z <- list(val)
+                            names(z) <- key
+                            z
+                          }
+                          ))
   }else{
     z <- NULL
   }
