@@ -1,5 +1,3 @@
-#### Elliot Chow
-
 source('utils.R', chdir=TRUE)
 source('math.R', chdir=TRUE)
 better.library('gdata',
@@ -609,27 +607,4 @@ feature.selection.by.filter <- function(target, features, initSelected, evaluate
   }
   z
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

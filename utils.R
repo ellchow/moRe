@@ -1,4 +1,3 @@
-#### Elliot Chow
 source('import.R',chdir=T)
 import('gdata',
        'stringr',

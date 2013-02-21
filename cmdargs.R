@@ -1,8 +1,6 @@
 source('import.R',chdir=T)
 import('utils', 'stringr')
 
-
-
 parse.args <- function(filename, arglist, args){
   ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
 
