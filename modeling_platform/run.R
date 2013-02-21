@@ -65,6 +65,10 @@ main <- function(raw.args){
                      list(list(name = 'o',
                                desc = 'output directory',
                                required = T),
+                          list(name = 'sources',
+                               desc = 'extra R files to source',
+                               default = NULL,
+                               parser = function(x) strsplit(x,',')[[1]]),
                           list(name='overwrite',
                                desc = 'overwrite output directory (force execution)',
                                flag = T),
@@ -78,6 +82,11 @@ main <- function(raw.args){
   timer <- Timer(logger)
   write.msg(logger, sprintf('command line arguments: %s', csplat(paste,raw.args)))
 
+  sapply(args$sources,
+         function(f){
+           write.msg(logger, sprintf('sourcing R file: %s', f))
+           source(f, chdir=T)
+         })
 
   config.path <- make.config.path(args$o)
   if(!args$overwrite && file.exists(config.path)){
