@@ -113,6 +113,7 @@ parse.args <- function(filename, arglist, args){
 }
 
 make.usage.string <- function(filename, arglist){
+  std.indent <- '\n        '
   sprintf('USAGE: %s %s\n  ARGS  %s\n', filename,
           do.call(paste, c(lapply(arglist,
                                   function(x){
@@ -124,8 +125,14 @@ make.usage.string <- function(filename, arglist){
                                     }}))),
           do.call(paste, c(lapply(arglist,
                                   function(x){
-                                    paste(x$name,'\t',x$desc,sep='')
-                                  }),sep='\n        '))
+                                    ret.line <- NULL
+                                    if(str_length(x$name) >= 6)
+                                      ret.line <- paste(std.indent,'       ',sep='')
+
+                                    csplat(paste,
+                                           c('-',x$name,ret.line,c('\t',x$desc)),
+                                           sep='')
+                                  }),sep=std.indent))
           )
 }
 
