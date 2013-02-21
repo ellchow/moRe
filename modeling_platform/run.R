@@ -65,7 +65,7 @@ main <- function(raw.args){
                      list(list(name = 'o',
                                desc = 'output directory',
                                required = T),
-                          list(name='-overwrite',
+                          list(name='overwrite',
                                desc = 'overwrite output directory (force execution)',
                                flag = T),
                           list(name = 'log.level',
@@ -80,7 +80,7 @@ main <- function(raw.args){
 
 
   config.path <- make.config.path(args$o)
-  if(!args[['-overwrite']] && file.exists(config.path)){
+  if(!args$overwrite && file.exists(config.path)){
     start.timer(timer,sprintf('loading configuration from %s', config.path))
     ## config <- load.data(config.path)
     stop.timer(timer)
