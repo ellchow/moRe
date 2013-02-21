@@ -3,7 +3,7 @@
 source('../import.R', chdir = TRUE)
 import('utils','cmdargs','mdls')
 
-configure <- function(){
+configure <- function(logger){
 #### define datasets
   training.datasets <- list(tds1 = 'some/training/dataset/01.RData',
                             tds2 = 'some/training/dataset/02.RData')
@@ -56,12 +56,18 @@ configure <- function(){
        metrics.definitions = metrics.definitions)
 }
 
+make.config.path <- function(root){
+  file.path(root, 'config.RData')
+}
 
 main <- function(raw.args){
   args <- parse.args('run.R',
                      list(list(name = 'o',
                                desc = 'output directory',
                                required = T),
+                          list(name='-overwrite',
+                               desc = 'overwrite output directory (force execution)',
+                               flag = T),
                           list(name = 'log.level',
                                desc = 'logging verbosity',
                                default = c('info','warn','error'),
@@ -69,9 +75,24 @@ main <- function(raw.args){
                           ),
                      raw.args)
   logger <- SimpleLog('run.R',args$log.level)
-  write.msg(logger, sprintf('command line arguments: "%s"', csplat(paste,raw.args)))
+  timer <- Timer(logger)
+  write.msg(logger, sprintf('command line arguments: %s', csplat(paste,raw.args)))
 
-  if(file.exists(file.path(args$o,'config.RData'))){}
+
+  config.path <- make.config.path(args$o)
+  if(!args[['-overwrite']] && file.exists(config.path)){
+    start.timer(timer,sprintf('loading configuration from %s', config.path))
+    ## config <- load.data(config.path)
+    stop.timer(timer)
+  }else{
+    write.msg(logger, 'creating configuration')
+    config <- configure(logger)
+    start.timer(timer,sprintf('saving configuration to %s', config.path))
+    ## config <- save(config.path, file=config.path)
+    stop.timer(timer)
+  }
+
+
 
 }
 
