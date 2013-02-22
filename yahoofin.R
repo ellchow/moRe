@@ -1,13 +1,12 @@
-#### Elliot Chow
-
-source('utils.R', chdir=TRUE)
-better.library('gdata',
-               'stringr',
-               'plyr',
-               'doMC',
-               'hash',
-               get.parallel.library()$lib
-               )
+source('import.R',chdir=T)
+import('utils',
+       'gdata',
+       'stringr',
+       'plyr',
+       'doMC',
+       'hash',
+       get.parallel.library()$lib
+       )
 
 get.parallel.library()$activate()
 

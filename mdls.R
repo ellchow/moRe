@@ -1,17 +1,15 @@
-#### Elliot Chow
-
-source('utils.R', chdir=TRUE)
-source('math.R', chdir=TRUE)
-better.library('gdata',
-               'stringr',
-               'plyr',
-               'doMC',
-               'gbm',
-               'infotheo',
-               'rjson',
-               'ggplot2',
-               get.parallel.library()$lib
-               )
+source('import.R',chdir=T)
+import('utils',
+       'math',
+       'gdata',
+       'stringr',
+       'plyr',
+       'doMC',
+       'gbm',
+       'infotheo',
+       'rjson',
+       'ggplot2',
+       get.parallel.library()$lib)
 
 get.parallel.library()$activate()
 
@@ -814,27 +812,4 @@ feature.selection.by.filter <- function(target, features, initSelected, evaluate
   }
   z
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

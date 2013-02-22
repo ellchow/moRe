@@ -1,5 +1,5 @@
-source('utils.R')
-better.library('RJDBC','brew','stringr')
+source('import.R',chdir=T)
+import('utils', 'RJDBC')
 
 #options(java.parameters = "-Xmx4g")
 

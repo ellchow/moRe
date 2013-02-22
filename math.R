@@ -1,6 +1,5 @@
-#### Elliot Chow
-
-source('utils.R', chdir=T)
+source('import.R',chdir=T)
+import('utils')
 
 linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, na.rm=FALSE, displayLevel=0){
   if(clipMin){
