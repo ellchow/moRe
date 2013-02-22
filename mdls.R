@@ -429,7 +429,7 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   ylabel <- paste("f(", x$var.names[i.var], ")",
                     sep = "")
                 }
-                plot(range(X$X1), range(X$y), type = "n", xlab = x$var.names[i.var],
+                plot(range(X$X1), range(X$y), type = "s", xlab = x$var.names[i.var],
                   ylab = ylabel)
                 for (ii in 1:x$num.classes) {
                   lines(X$X1, X$y[, ii], xlab = x$var.names[i.var],
@@ -446,7 +446,7 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   ylabel <- paste("f(", x$var.names[i.var], ")",
                     sep = "")
                 }
-                plot(X$X1, X$y, type = "l", xlab = x$var.names[i.var],
+                plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
                   ylab = ylabel)
             }
             else if (x$distribution$name == "poisson") {
@@ -457,11 +457,11 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   ylabel <- paste("f(", x$var.names[i.var], ")",
                     sep = "")
                 }
-                plot(X$X1, X$y, type = "l", xlab = x$var.names[i.var],
+                plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
                   ylab = ylabel)
             }
             else {
-                plot(X$X1, X$y, type = "l", xlab = x$var.names[i.var],
+                plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
                   ylab = paste("f(", x$var.names[i.var], ")",
                     sep = ""), ...)
             }
