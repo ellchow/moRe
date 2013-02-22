@@ -190,6 +190,9 @@ gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) 
 gbm.predict <- function(object,newdata,n.trees=NULL,type='response',...){
   trees <- if(is.null(n.trees)) gbm.perf(object,method='test',plot.it=FALSE) else n.trees
 
+  if(is.null(object$num.classes))
+    object$num.classes <- 1 ## for compatibility with v1.6.3
+
   stop.if(length(trees) != 1, 'could not determine optimal number of trees')
 
   predict.gbm(object,newdata,n.trees=trees,type=type,...)
@@ -321,6 +324,10 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
     if (!is.element(type, c("link", "response"))) {
         stop("type must be either 'link' or 'response'")
     }
+
+    if(is.null(x$num.classes))
+      x$num.classes <- 1 ## for compatibility with v1.6.3
+
     if (all(is.character(i.var))) {
         i <- match(i.var, x$var.names)
         if (any(is.na(i))) {
