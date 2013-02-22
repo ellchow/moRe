@@ -249,8 +249,8 @@ gbm.opt.n.trees <- function(object, method='test'){
 }
 
 gbm.tree.as.df <- function(object, i.tree = 1){
-  stop.if((i.tree < 1) || (i.tree > length(object$trees)),
-          "i.tree is out of range ", length(object$trees))
+  stop.if((i.tree < 1) || (i.tree > object$n.trees),
+          sprintf("i.tree %d is out of range (%d)", i.tree, object$n.trees))
 
   tree <- data.frame(object$trees[[i.tree]])
   names(tree) <- c("SplitVar", "SplitCodePred", "LeftNode",
@@ -313,7 +313,7 @@ gbm.factor.importance <- function(object, k=min(10,length(object$var.names)),
   names(x) <- c('factor', 'importance')
   x$factor <- ordered(x$factor, x$factor)
   ggplot(x, aes(factor,importance)) +
-    geom_bar() +
+    geom_bar(stat='identity') +
       coord_flip() +
         ggtitle(paste('Top',k,'of',length(object$var.names),'Factors'))
 }
