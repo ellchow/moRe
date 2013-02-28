@@ -275,6 +275,27 @@ merge.lists <- function(all,FUN=function(n,x){x}){
 }
 
 
+make.combinations <- function(lst, name.gen = function(ns) do.call(paste,c(as.list(ns),sep='_'))){
+  xs <- apply(do.call(expand.grid, as.list(lst)), 1,
+              function(z){
+                names(z) <- NULL
+                as.list(z)
+              })
+
+  names(xs) <- apply(do.call(expand.grid, lapply(lst, names)), 1, name.gen)
+  xs
+}
+
+parameter.scan <- function(params.list, f){
+  fs <- lapply(params.list, function(params){
+    do.call(f, as.list(params))
+  })
+
+  names(fs) <- names(params.list)
+  fs
+}
+
+
 
 ####################
 #### Dataframe
