@@ -82,8 +82,8 @@ beta.estimate <- function(x,m=mean,v=var){
   beta.params(a,b)
 }
 
-beta.update <- function(params,s,n){
-  beta.params(s+params$a, n+params$b)
+beta.update <- function(params, s, n){
+  beta.params(s + params['a'], n + params['b'])
 }
 
 ffilter <- function(x,w,indexes=1:length(x),sides=2){
