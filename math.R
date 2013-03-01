@@ -66,7 +66,7 @@ rdiscrete <- function(n, prob, domain=1:length(prob)){
 }
 
 beta.params <- function(a,b){
-  list(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
+  c(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
 }
 
 beta.estimate <- function(x,m=mean,v=var){
