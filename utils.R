@@ -388,7 +388,7 @@ pprint.dataframe <- function(data,sep='  |  ',.parallel=FALSE){
 }
 
 dataframe.to.html.table <- function(x,
-                                    table.attrs='border="1"',
+                                    table.attrs='class="sortable" border="1"',
                                     th.attrs='style=font-size:24px',
                                     add.tr.attr=function(x,i){''},
                                     add.td.attr=function(x,i,j){''},
@@ -421,6 +421,21 @@ dataframe.to.html.table <- function(x,
                )
   z
 }
+
+sorttable.import <- function(loc='http://www.kryogenix.org/code/browser/sorttable/sorttable.js'){
+  sprintf('<script src="%s"></script>
+<style media="screen" type="text/css">
+
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
+
+</style>',loc)
+}
+
 ###################
 #### Date
 ###################
