@@ -250,6 +250,20 @@ zip.to.named <- function(x,nameCol=1,valCol=2){
                    }))
 }
 
+named <- function(x, n, type=''){
+  if(type == 'row')
+    row.names(x) <- n
+  else if(type == 'col')
+    colnames(x) <- n
+  else
+    names(x) <- n
+  x
+}
+
+remove.names <- function(x, type=''){
+  label.list(x, NULL, type)
+}
+
 keep.if <- function(x,f){
   mask <- sapply(x,f)
   x[mask]
