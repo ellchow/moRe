@@ -32,6 +32,10 @@ setConstructorS3('SimpleLog',
                           outputs=outputs)
                  })
 
+SimpleLog.INFO <- 'info'
+SimpleLog.WARNING <- c(SimpleLog.INFO, 'warning')
+SimpleLog.ERROR <- c(SimpleLog.WARNING, 'error')
+
 setMethodS3('write.msg','SimpleLog',
             function(log,...,level='info',sep=' - '){
               check <- TRUE
