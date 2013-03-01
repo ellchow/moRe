@@ -37,7 +37,7 @@ get.parallel.library <- function(){
 }
 
 import <- function(..., from.moRe=TRUE){
-  available <- c('utils', 'mdls', 'yahoofin', 'cmdargs', 'math', 'plots', 'sql')
+  available <- c('utils', 'mdls', 'yahoofin', 'cmdargs', 'math', 'plots', 'sql', 'infor')
   selected <- c(...)
   not.in.moRe <- setdiff(selected, available)
   found.in.moRe <- setdiff(selected, not.in.moRe)

@@ -37,7 +37,7 @@ SimpleLog.WARNING <- c(SimpleLog.INFO, 'warning')
 SimpleLog.ERROR <- c(SimpleLog.WARNING, 'error')
 
 setMethodS3('write.msg','SimpleLog',
-            function(log,...,level='info',sep=' - '){
+            function(log,...,level=SimpleLog.INFO,sep=' - '){
               check <- TRUE
               if(level %in% log$level){
                 check <- all(sapply(log$outputs,
