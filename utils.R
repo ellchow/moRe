@@ -494,3 +494,49 @@ int.to.char.seq <- function(x, offset=0){
   m <- as.integer((x-1) %% 26)
   do.call(paste,c(as.list(rep(int.to.char(m + 97),n)),sep=''))
 }
+
+
+file.size.gb <- function(path){
+  file.info(path)$size / 1024
+}
+
+object.size.gb <- function(x){
+  object.size(x) / 1024
+}
+
+estimate.parallelism <- function(sizes.gb, default.memory.gb = 4, num.nested.par = 1, max.procs.per.core = 2, par.limit = Inf, log.level = SimpleLog.INFO){
+  log <- SimpleLog('estimate.parallelism', log.level)
+
+  floor.8 <- function(x) {
+    f.x <- floor(x)
+    f.x + ((x -f.x) > 0.8)
+  }
+
+  num.cores <- multicore:::detectCores()
+  max.num.procs <- num.cores * max.procs.per.core
+  mul <- 100
+  max.size.gb <- max(unlist(sizes.gb))
+  est.proc.mem.usage <- max.size.gb * mul
+
+  ## get free RAM
+  uname <- system("uname", intern=TRUE)
+  mem.free.gb <- if(uname == 'Linux') {
+    write.msg(log, 'using Ubuntu specific-method of detecting free RAM')
+    as.double(system("free -k | grep 'buffers/cache'|perl -pi -e 's/.+\\s(\\d+)$/$1/'", intern=TRUE)) / 1024^2
+  } else if(uname == 'Darwin'){
+    write.msg(log, 'using Mac-specific method of detecting free RAM')
+    as.double(system("top -l 1 | grep PhysMem|perl -pi -e 's/.* (\\d+)([a-zA-Z] free).*/$1/'", intern=TRUE))
+  }else {
+    write.msg(log, 'Unknown OS type. Using default amount of free RAM')
+    default.memory.gb
+  }
+
+  write.msg(log, 'free memory: %.1f Gb', round(mem.free.gb,1))
+
+  ## choose optimum number of concurrent processes and cap it to make sure it's not above capacity
+  max.par <- floor(mem.free.gb / est.proc.mem.usage)
+  max.par.with.nested <- pmin(max.par, floor.8(max.par ^ (1 / num.nested.par)))
+
+  ## return capped number of cores
+  pmax(1,pmin(par.limit, max.par.with.nested))
+}
