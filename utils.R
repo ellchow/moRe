@@ -265,7 +265,7 @@ named <- function(x, n, type=''){
 }
 
 remove.names <- function(x, type=''){
-  label.list(x, NULL, type)
+  named(x, NULL, type)
 }
 
 keep.if <- function(x,f){
