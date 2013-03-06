@@ -129,7 +129,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                  }))
 }
 
-mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=SimpleLog.ERROR){
+mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=TRUE){
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets)) list(datasets) else datasets
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
@@ -168,7 +168,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
                                         z <- list(pr)
                                         names(z) <- id
                                         z
-                                      }))
+                                      }, .parallel=.parallel))
                    z <- list(z)
                    names(z) <- dsId
                    stop.timer(timer)
