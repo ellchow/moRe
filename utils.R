@@ -165,6 +165,11 @@ csplat <- function(f,a,...){
   do.call(f,c(as.list(a),...))
 }
 
+indices <- function(xs){
+  len <- length(xs)
+  if(len > 0) 1:len else NULL
+}
+
 na.rm <- function(x) x[!is.na(x)]
 
 inf.rm <- function(x) x[!is.infinite(x)]
