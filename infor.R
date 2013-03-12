@@ -17,10 +17,19 @@ ndcg <- function(...){
 }
 
 at.top <- function(n,f=mean){
+  stop.if.not(n > 0, "n must be > 0")
   function(r, x){
     f(x[r <= n])
   }
 }
+
+pos.rank <- function(select=mean, f=function(x) 1 / x){
+  function(r, x){
+    stop.if.not(is.logical(x), "x must be logical")
+    f(select(r[x]))
+  }
+}
+
 
 compute.ranks <- function(s, g, ties.method='random'){
   stop.if.not(length(s) == length(g), "length of s must equal length of g")

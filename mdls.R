@@ -735,8 +735,8 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   problems
 }
 
-glm.model.def <- function(id, target.gen, features, ...){
-  list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def)
+glm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+  list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def, weights=weights)
 }
 
 
@@ -747,7 +747,8 @@ glm.fit.plus <- function(x, y, family=gaussian,..., y.label="y"){
   glm(formula(f), family=family, x, ...)
 }
 
-check.glm.model.def <- function(modelDef, target, data){list()}
+check.glm.model.def <- function(modelDef, target, data, weights)
+  list()
 
 glm.predict <- function(object,newdata,type='response',...){
   predict.glm(object,newdata,type=type,...)
@@ -819,4 +820,47 @@ feature.selection.by.filter <- function(target, features, initSelected, evaluate
   }
   z
 }
+
+######################
+#### Metrics
+######################
+
+clsfy.tfpn <- function(prediction, label){
+  p <- as.logical(prediction)
+  l <- as.logical(label)
+  data.frame(true.positive = sum(p & l),
+       false.positive = sum(p & !l),
+       true.negative = sum(!p & !l),
+       false.negative = sum(!p & l))
+}
+
+clsfy.tfpn.scan <- function(prediction, label, thresholds=quantile(prediction,seq(0,1,0.01))){
+  csplat(rbind,
+         lapply(thresholds,
+                function(t)
+                  clsfy.tfpn(prediction > t,label)
+                ))
+}
+
+## see http://en.wikipedia.org/wiki/Receiver_operating_characteristic for definitions
+
+clsfy.precision <- function(tfpn)
+  tfpn$true.positive / (tfpn$true.positive + tfpn$false.positive)
+
+clsfy.recall <- function(tfpn)
+  tfpn$true.positive / (tfpn$true.positive + tfpn$false.negative)
+
+clsfy.accuracy <- function(tfpn)
+  (tfpn$true.positive + tfpn$true.negative) / (tfpn$true.positive + tfpn$false.positive + tfpn$true.negative + tfpn$false.negative)
+
+clsfy.fallout <- function(tfpn)
+  tfpn$false.positive / (tfpn$false.positive + tfpn$true.negative)
+
+
+
+
+
+
+
+
 
