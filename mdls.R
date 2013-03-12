@@ -826,21 +826,21 @@ feature.selection.by.filter <- function(target, features, initSelected, evaluate
 ######################
 
 clsfy.tfpn <- function(prediction, label){
-  stop.if.not(is.logical(prediction), "prediction must be boolean")
-  stop.if.not(is.logical(label), "label must be boolean")
+  p <- as.logical(prediction)
+  l <- as.logical(label)
   data.frame(true.positive = sum(p & l),
        false.positive = sum(p & !l),
        true.negative = sum(!p & !l),
        false.negative = sum(!p & l))
 }
 
-clsfy.tfpn.scan <- function(prediction, label, thresholds=quantile(prediction,seq(0,1,0.01)))
+clsfy.tfpn.scan <- function(prediction, label, thresholds=quantile(prediction,seq(0,1,0.01))){
   csplat(rbind,
          lapply(thresholds,
                 function(t)
                   clsfy.tfpn(prediction > t,label)
                 ))
-
+}
 
 ## see http://en.wikipedia.org/wiki/Receiver_operating_characteristic for definitions
 
