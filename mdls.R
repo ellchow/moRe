@@ -661,11 +661,12 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
 feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR){
   logger <- SimpleLog('factor.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
-  features <- mdl$model$var.names
+  ## feature.contributions(list(id="m",model=ms$gbmmodel$model,features=ms$gbmmodel$model$var.names,predict=gbm.predict), iris[6,], iris[5,])
+  features <-   mdl$features
   src <- subset(src,select=features) -> osrc
   snk <- subset(snk,select=features) -> osnk
 
-  md <- list(model=mdl)
+  md <- list(this.model=mdl)
   names(md) <- mdl$id
   srcScore <- mdls.predict(md,src,log.level=log.level)[[1]][[1]]
   snkScore <- mdls.predict(md,snk,log.level=log.level)[[1]][[1]]
