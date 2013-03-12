@@ -658,7 +658,7 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
     }
 }
 
-feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR){
+feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR, .parallel=TRUE){
   logger <- SimpleLog('factor.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
   ## feature.contributions(list(id="m",model=ms$gbmmodel$model,features=ms$gbmmodel$model$var.names,predict=gbm.predict), iris[6,], iris[5,])
@@ -674,11 +674,11 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=Sim
   scores <- srcScore
 
   while(length(features) > 0){
-    s <- sapply(features,
+    s <- laply(features,
                 function(ft){
                   src[[ft]] <- snk[[ft]]
                   mdls.predict(md,src,log.level=log.level)[[1]][[1]]
-                })
+                }, .parallel=.parallel)
     selected <- select(snkScore - s)
     ft <- features[selected]
     write.msg(logger,'feature %d selected: %s',length(selected.features)-1,ft)
