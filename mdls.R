@@ -658,50 +658,6 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
     }
 }
 
-feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR, .parallel=TRUE){
-  logger <- SimpleLog('factor.contributions',log.level)
-  ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
-  ## feature.contributions(list(id="m",model=ms$gbmmodel$model,features=ms$gbmmodel$model$var.names,predict=gbm.predict), iris[6,], iris[5,])
-  features <-   mdl$features
-  src <- subset(src,select=features) -> osrc
-  snk <- subset(snk,select=features) -> osnk
-
-  md <- list(this.model=mdl)
-  names(md) <- mdl$id
-  srcScore <- mdls.predict(md,src,log.level=log.level)[[1]][[1]]
-  snkScore <- mdls.predict(md,snk,log.level=log.level)[[1]][[1]]
-  selected.features <- NA
-  scores <- srcScore
-
-  while(length(features) > 0){
-    s <- laply(features,
-                function(ft){
-                  src[[ft]] <- snk[[ft]]
-                  mdls.predict(md,src,log.level=log.level)[[1]][[1]]
-                }, .parallel=.parallel)
-    selected <- select(snkScore - s)
-    ft <- features[selected]
-    write.msg(logger,'feature %d selected: %s',length(selected.features)-1,ft)
-
-    selected.features <- c(selected.features,ft)
-    features <- setdiff(features,ft)
-    scores <- c(scores,s[selected])
-
-    src[[ft]] <- snk[[ft]]
-  }
-
-  z <- data.frame(tail(selected.features,-1),
-                  diff(scores),
-                  t(osrc[,tail(selected.features,-1)]),
-                  t(osnk[,tail(selected.features,-1)]),
-                  head(scores,-1),
-                  tail(scores,-1)
-                  )
-  names(z) <- c('var','delta','src.feature','snk.feature','score.before','score.after')
-  row.names(z) <- NULL
-  z
-}
-
 #####################################
 #### (g)lm modifications and helpers
 #####################################
@@ -759,6 +715,50 @@ glm.predict <- function(object,newdata,type='response',...){
 #######################################
 #### Feature Helpers ##################
 #######################################
+
+feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR, .parallel=TRUE){
+  logger <- SimpleLog('factor.contributions',log.level)
+  ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
+  ## feature.contributions(list(id="m",model=ms$gbmmodel$model,features=ms$gbmmodel$model$var.names,predict=gbm.predict), iris[6,], iris[5,])
+  features <-   mdl$features
+  src <- subset(src,select=features) -> osrc
+  snk <- subset(snk,select=features) -> osnk
+
+  md <- list(this.model=mdl)
+  names(md) <- mdl$id
+  srcScore <- mdls.predict(md,src,log.level=log.level)[[1]][[1]]
+  snkScore <- mdls.predict(md,snk,log.level=log.level)[[1]][[1]]
+  selected.features <- NA
+  scores <- srcScore
+
+  while(length(features) > 0){
+    s <- laply(features,
+                function(ft){
+                  src[[ft]] <- snk[[ft]]
+                  mdls.predict(md,src,log.level=log.level)[[1]][[1]]
+                }, .parallel=.parallel)
+    selected <- select(snkScore - s)
+    ft <- features[selected]
+    write.msg(logger,'feature %d selected: %s',length(selected.features)-1,ft)
+
+    selected.features <- c(selected.features,ft)
+    features <- setdiff(features,ft)
+    scores <- c(scores,s[selected])
+
+    src[[ft]] <- snk[[ft]]
+  }
+
+  z <- data.frame(tail(selected.features,-1),
+                  diff(scores),
+                  t(osrc[,tail(selected.features,-1)]),
+                  t(osnk[,tail(selected.features,-1)]),
+                  head(scores,-1),
+                  tail(scores,-1)
+                  )
+  names(z) <- c('var','delta','src.feature','snk.feature','score.before','score.after')
+  row.names(z) <- NULL
+  z
+}
 
 interinfo.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=SimpleLog.ERROR){
   logger <- SimpleLog('interinfo.feature.selection.filter',log.level)
