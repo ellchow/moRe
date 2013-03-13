@@ -31,34 +31,23 @@ mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
   as.data.frame(as.list(z))
 }
 
-val.to.quantile <- function(x,...,method='b'){
-  stop.if(!method %in% c('b','l'))
-  qtls <- seq(0,1,...)
-  vals <- quantile(x, qtls)
-  if(method=='b'){
-    sapply(x,
-           function(y) {
-             z <- y <= vals
-             qtls[z][1]
-           })
-  }else if(method=='l'){
-    f <- approxfun(vals, qtls)
-    f(x)
-  }
-}
-
 trim <- function(x, lb, ub){
   pmin(ub,pmax(lb,x))
 }
 
-bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1))){
+bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1)),label=TRUE){
   ub <- max(buckets)
   buckets[which.max(buckets)] <- ub + 1
   ub <- ub + 1
   lb <- min(buckets)
   f <- approxfun(cbind(sort(buckets),1:length(buckets)))
   x <- trim(x, lb, ub)
-  floor(f(x))
+
+  b <- floor(f(x))
+  if(label)
+    factor(names(buckets)[b],levels=(names(buckets)), ordered=T)
+  else
+    b
 }
 
 rdiscrete <- function(n, prob, domain=1:length(prob)){
