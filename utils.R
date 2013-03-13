@@ -523,9 +523,18 @@ get.free.mem.gb <- function(default.memory.gb = 1, log.level=SimpleLog.INFO){
   if(uname == 'Linux'){
     cmd <- "free -k | grep 'buffers/cache' | sed -r 's/\\s+/\\t/g' |cut -f4"
     write.msg(log,str.fmt('OS detected: Linux - command to get free memory\n  #> %(cmd)s', cmd=cmd))
+
     as.double(system(cmd, intern=TRUE)) / 1024^2
-  # }else if(uname == 'Darwin'){
-  #   as.double(system("top -l 1 | grep PhysMem|perl -pi -e 's/.* (\\d+)([a-zA-Z] free).*/$1/'", intern=TRUE))
+  }else if(uname == 'Darwin'){
+    cmd <- "top -l 1 | grep PhysMem| awk -F', ' '{ print $NF }' | sed 's/\\s*free.*//g'"
+    write.msg(log,str.fmt('OS detected: Mac - command to get free memory\n  #> %(cmd)s', cmd=cmd))
+
+    mem.str <- str_trim(system(cmd, intern=TRUE))
+    mem.unit <- str_sub(mem.str,start=str_length(mem.str))
+    mem.n <- as.double(str_sub(mem.str,end=str_length(mem.str)-1))
+    d <- if(mem.unit == 'G') 1 else if(mem.unit == 'M') 1024 else if(mem.unit == 'K') 1024^2 else 1024^3
+
+    mem.n / d
   }else
     default.memory.gb
 
