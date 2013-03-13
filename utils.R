@@ -22,8 +22,7 @@ setConstructorS3('SimpleLog',
                               if(is.character(x)){
                                 file.remove(x)
                               }
-                            }
-                            )
+                            })
                    }
                    extend(Object(), 'SimpleLog',
                           id=id,
@@ -39,7 +38,7 @@ SimpleLog.ERROR <- c(SimpleLog.WARNING, 'error')
 setMethodS3('write.msg','SimpleLog',
             function(log,...,level=SimpleLog.INFO,sep=' - '){
               check <- TRUE
-              if(level %in% log$level){
+              if(any(level %in% log$level)){
                 check <- all(sapply(log$outputs,
                                     function(o){
                                       sapply(intersect(level,log$level),
@@ -78,14 +77,13 @@ setMethodS3('stop.timer', 'Timer',
             })
 options(warn=0)
 
-stop.if <- function(x,msg){
-  if(x)
-    stop(msg)
-}
+stop.if <- function(x,msg)
+  if(x) stop(msg)
 
-stop.if.not <- function(x,msg){
+
+stop.if.not <- function(x,msg)
   stop.if(!x,msg)
-}
+
 
 ####################
 #### Files
@@ -137,9 +135,9 @@ load.data.many <- function(paths,...,.parallel=FALSE){
                       .parallel=.parallel))
 }
 
-file.to.string <- function(file){
+file.to.string <- function(file)
   readChar(file, file.info(file)$size)
-}
+
 
 brew.string <- function(s,...){
   dots <- list(...)
@@ -161,9 +159,9 @@ get.or.else <- function(x, field, default){
   z
 }
 
-csplat <- function(f,a,...){
+csplat <- function(f,a,...)
   do.call(f,c(as.list(a),...))
-}
+
 
 indices <- function(xs){
   len <- length(xs)
@@ -234,9 +232,9 @@ tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
 lzip <- function(...,simplify=TRUE){
   args <- list(...)
   n <- min(sapply(args,length))
-  if(n == 0){
+  if(n == 0)
     return(NULL)
-  }
+
   lapply(1:n,
          function(i){
            sapply(1:length(args),
@@ -333,20 +331,6 @@ max.element.str.length <- function(data,.parallel=FALSE){
                       .parallel=.parallel)
   names(maxLengths) <- names(data)
   maxLengths
-}
-
-rename.cols <- function(data, old, new){
-  cbind(data,
-        do.call(c,
-                lapply(1:length(old),
-                       function(i){
-                         z <- list(data[[old[i]]])
-                         names(z) <- new[i]
-                         z
-                       }
-                       )
-                )
-        )
 }
 
 str.align <- function(data, maxLengths, .parallel=FALSE){
@@ -501,47 +485,48 @@ int.to.char.seq <- function(x, offset=0){
 }
 
 
-file.size.gb <- function(path){
-  file.info(path)$size / 1024
-}
+file.size.gb <- function(path)
+  file.info(path)$size / (1024^3)
 
-object.size.gb <- function(x){
-  object.size(x) / 1024
-}
+object.size.gb <- function(x)
+  object.size(x) / (8 * 1024^3)
 
 estimate.parallelism <- function(sizes.gb, default.memory.gb = 4, num.nested.par = 1, max.procs.per.core = 2, par.limit = Inf, log.level = SimpleLog.INFO){
-  log <- SimpleLog('estimate.parallelism', log.level)
 
   floor.8 <- function(x) {
     f.x <- floor(x)
     f.x + ((x -f.x) > 0.8)
   }
 
+  log <- SimpleLog('estimate.parallelism', log.level)
+
   num.cores <- multicore:::detectCores()
   max.num.procs <- num.cores * max.procs.per.core
   mul <- 100
   max.size.gb <- max(unlist(sizes.gb))
   est.proc.mem.usage <- max.size.gb * mul
+  write.msg(log, sprintf('estimated memory usage: %.2f Gb', est.proc.mem.usage))
 
-  ## get free RAM
-  uname <- system("uname", intern=TRUE)
-  mem.free.gb <- if(uname == 'Linux') {
-    write.msg(log, 'using Ubuntu specific-method of detecting free RAM')
-    as.double(system("free -k | grep 'buffers/cache'|perl -pi -e 's/.+\\s(\\d+)$/$1/'", intern=TRUE)) / 1024^2
-  } else if(uname == 'Darwin'){
-    write.msg(log, 'using Mac-specific method of detecting free RAM')
-    as.double(system("top -l 1 | grep PhysMem|perl -pi -e 's/.* (\\d+)([a-zA-Z] free).*/$1/'", intern=TRUE))
-  }else {
-    write.msg(log, 'Unknown OS type. Using default amount of free RAM')
-    default.memory.gb
-  }
+  mem.free.gb <- get.free.mem.gb(default.memory.gb)
+  write.msg(log, sprintf('free memory: %.2f Gb', mem.free.gb))
 
-  write.msg(log, 'free memory: %.1f Gb', round(mem.free.gb,1))
-
-  ## choose optimum number of concurrent processes and cap it to make sure it's not above capacity
   max.par <- floor(mem.free.gb / est.proc.mem.usage)
   max.par.with.nested <- pmin(max.par, floor.8(max.par ^ (1 / num.nested.par)))
 
-  ## return capped number of cores
   pmax(1,pmin(par.limit, max.par.with.nested))
+}
+
+get.free.mem.gb <- function(default.memory.gb = 1, log.level=SimpleLog.INFO){
+  log <- SimpleLog('get.free.mem.gb', log.level)
+
+  uname <- system("uname", intern=TRUE)
+  if(uname == 'Linux'){
+    cmd <- "free -k | grep 'buffers/cache' | sed -r 's/\\s+/\\t/g' |cut -f4"
+    write.msg(log,str.fmt('OS detected: Linux - command to get free memory\n  #> %(cmd)s', cmd=cmd))
+    as.double(system(cmd, intern=TRUE)) / 1024^2
+  # }else if(uname == 'Darwin'){
+  #   as.double(system("top -l 1 | grep PhysMem|perl -pi -e 's/.* (\\d+)([a-zA-Z] free).*/$1/'", intern=TRUE))
+  }else
+    default.memory.gb
+
 }
