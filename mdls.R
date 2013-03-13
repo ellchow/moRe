@@ -826,7 +826,7 @@ feature.selection.by.filter <- function(target, features, initSelected, evaluate
 #### Metrics
 ######################
 
-clsfy.tfpn <- function(prediction, label){
+clsfy.confusion <- function(prediction, label){
   p <- as.logical(prediction)
   l <- as.logical(label)
   data.frame(true.positive = sum(p & l),
@@ -835,27 +835,27 @@ clsfy.tfpn <- function(prediction, label){
        false.negative = sum(!p & l))
 }
 
-clsfy.tfpn.scan <- function(prediction, label, thresholds=quantile(prediction,seq(0,1,0.01))){
+clsfy.confusion.scan <- function(prediction, label, thresholds=quantile(prediction,seq(0,1,0.01))){
   csplat(rbind,
          lapply(thresholds,
                 function(t)
-                  clsfy.tfpn(prediction > t,label)
+                  clsfy.confusion(prediction > t,label)
                 ))
 }
 
 ## see http://en.wikipedia.org/wiki/Receiver_operating_characteristic for definitions
 
-clsfy.precision <- function(tfpn)
-  tfpn$true.positive / (tfpn$true.positive + tfpn$false.positive)
+clsfy.precision <- function(confusion)
+  confusion$true.positive / (confusion$true.positive + confusion$false.positive)
 
-clsfy.recall <- function(tfpn)
-  tfpn$true.positive / (tfpn$true.positive + tfpn$false.negative)
+clsfy.recall <- function(confusion)
+  confusion$true.positive / (confusion$true.positive + confusion$false.negative)
 
-clsfy.accuracy <- function(tfpn)
-  (tfpn$true.positive + tfpn$true.negative) / (tfpn$true.positive + tfpn$false.positive + tfpn$true.negative + tfpn$false.negative)
+clsfy.accuracy <- function(confusion)
+  (confusion$true.positive + confusion$true.negative) / (confusion$true.positive + confusion$false.positive + confusion$true.negative + confusion$false.negative)
 
-clsfy.fallout <- function(tfpn)
-  tfpn$false.positive / (tfpn$false.positive + tfpn$true.negative)
+clsfy.fallout <- function(confusion)
+  confusion$false.positive / (confusion$false.positive + confusion$true.negative)
 
 
 
