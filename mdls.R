@@ -827,6 +827,7 @@ feature.selection.by.filter <- function(target, features, initSelected, evaluate
 ######################
 
 clsfy.confusion <- function(prediction, label){
+  p <- as.logical(prediction)
   l <- as.logical(label)
   data.frame(true.positive = sum(p & l),
              false.positive = sum(p & !l),
