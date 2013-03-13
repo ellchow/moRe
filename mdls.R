@@ -829,17 +829,18 @@ feature.selection.by.filter <- function(target, features, initSelected, evaluate
 clsfy.confusion <- function(prediction, label){
   l <- as.logical(label)
   data.frame(true.positive = sum(p & l),
-       false.positive = sum(p & !l),
-       true.negative = sum(!p & !l),
-       false.negative = sum(!p & l))
+             false.positive = sum(p & !l),
+             true.negative = sum(!p & !l),
+             false.negative = sum(!p & l))
 }
 
-clsfy.confusion.scan <- function(prediction, label, thresholds=quantile(prediction,seq(0,1,0.01))){
+clsfy.confusion.scan <- function(prediction, label, thresholds=quantile(prediction,seq(0,1,0.01)),.parallel=TRUE){
   csplat(rbind,
-         lapply(thresholds,
+         llply(thresholds,
                 function(t)
                   clsfy.confusion(prediction > t,label)
-                ))
+                ),
+         .parallel=.parallel)
 }
 
 ## see http://en.wikipedia.org/wiki/Receiver_operating_characteristic for definitions
