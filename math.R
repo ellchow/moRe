@@ -2,15 +2,13 @@ source('import.R',chdir=T)
 import('utils')
 
 linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, na.rm=FALSE, displayLevel=0){
-  if(clipMin){
+  if(clipMin)
     x <- pmax(x,lb,na.rm=na.rm)
-  }
-  if(clipMax){
-    x <- pmin(x,ub,na.rm=na.rm)
-  }
-  y <- (x - lb) / (ub - lb)
 
-  y
+  if(clipMax)
+    x <- pmin(x,ub,na.rm=na.rm)
+
+  (x - lb) / (ub - lb)
 }
 
 mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
@@ -31,11 +29,10 @@ mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
   as.data.frame(as.list(z))
 }
 
-trim <- function(x, lb, ub){
+trim <- function(x, lb, ub)
   pmin(ub,pmax(lb,x))
-}
 
-bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1)),label=TRUE){
+bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1)),label=!is.null(names(buckets))){
   ub <- max(buckets)
   buckets[which.max(buckets)] <- ub + 1
   ub <- ub + 1
@@ -50,13 +47,11 @@ bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1)),label=TRUE){
     b
 }
 
-rdiscrete <- function(n, prob, domain=1:length(prob)){
+rdiscrete <- function(n, prob, domain=1:length(prob))
   bucketize(runif(n), c(0,cumsum(prob / sum(prob))))
-}
 
-beta.params <- function(a,b){
+beta.params <- function(a,b)
   c(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
-}
 
 beta.estimate <- function(x,m=mean,v=var){
   if(is.null(dim(x)) || ncol(x) != 2){
