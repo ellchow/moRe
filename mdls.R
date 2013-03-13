@@ -717,7 +717,7 @@ glm.predict <- function(object,newdata,type='response',...){
 #######################################
 
 feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR, .parallel=TRUE){
-  logger <- SimpleLog('factor.contributions',log.level)
+  logger <- SimpleLog('feature.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
   ## feature.contributions(list(id="m",model=ms$gbmmodel$model,features=ms$gbmmodel$model$var.names,predict=gbm.predict), iris[6,], iris[5,])
   features <-   mdl$features
