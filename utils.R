@@ -168,11 +168,21 @@ indices <- function(xs){
   if(len > 0) 1:len else NULL
 }
 
-na.rm <- function(x) x[!is.na(x)]
+na.rm <- function(x, required, discard = is.na) {
+  if(is.data.frame(x)){
+    if(missing(required))
+      required <- names(x)
+    keep <- Reduce(function(a,b) a & b, lapply(subset(x,select=required), function(y) !discard(y)), init=TRUE)
+    x[keep,]
+  }else
+    x[!discard(x)]
+}
 
-inf.rm <- function(x) x[!is.infinite(x)]
+inf.rm <- function(...) na.rm(..., discard = is.infinite)
 
-nan.rm <- function(x) x[!is.nan(x)]
+nan.rm <- function(...) na.rm(..., discard = is.nan)
+
+invalid.rm <- function(...) na.rm(..., discard = function(z) is.na(z) | is.nan(z) | is.infinite(z))
 
 tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
   FUN <- if(!is.null(FUN))
