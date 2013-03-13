@@ -129,7 +129,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                  }))
 }
 
-mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=SimpleLog.ERROR){
+mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=TRUE){
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets)) list(datasets) else datasets
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
@@ -168,7 +168,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
                                         z <- list(pr)
                                         names(z) <- id
                                         z
-                                      }))
+                                      }, .parallel=.parallel))
                    z <- list(z)
                    names(z) <- dsId
                    stop.timer(timer)
@@ -658,14 +658,15 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
     }
 }
 
-feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR){
+feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR, .parallel=TRUE){
   logger <- SimpleLog('factor.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
-  features <- mdl$model$var.names
+  ## feature.contributions(list(id="m",model=ms$gbmmodel$model,features=ms$gbmmodel$model$var.names,predict=gbm.predict), iris[6,], iris[5,])
+  features <-   mdl$features
   src <- subset(src,select=features) -> osrc
   snk <- subset(snk,select=features) -> osnk
 
-  md <- list(model=mdl)
+  md <- list(this.model=mdl)
   names(md) <- mdl$id
   srcScore <- mdls.predict(md,src,log.level=log.level)[[1]][[1]]
   snkScore <- mdls.predict(md,snk,log.level=log.level)[[1]][[1]]
@@ -673,11 +674,11 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=Sim
   scores <- srcScore
 
   while(length(features) > 0){
-    s <- sapply(features,
+    s <- laply(features,
                 function(ft){
                   src[[ft]] <- snk[[ft]]
                   mdls.predict(md,src,log.level=log.level)[[1]][[1]]
-                })
+                }, .parallel=.parallel)
     selected <- select(snkScore - s)
     ft <- features[selected]
     write.msg(logger,'feature %d selected: %s',length(selected.features)-1,ft)
