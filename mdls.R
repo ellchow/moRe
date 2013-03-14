@@ -224,8 +224,15 @@ check.gbm.model.def <- function(modelDef, target, data, weights){
   if(na.target)
     problems$na.target <- NA
 
-  no.distribution <- !('distribution' %in% names(modelDef$params))
+  nan.target <- any(is.nan(target))
+  if(nan.target)
+    problems$nan.target <- NA
 
+  infinite.target <- any(is.infinite(target))
+  if(infinite.target)
+    problems$infinite.target <- NA
+
+  no.distribution <- !('distribution' %in% names(modelDef$params))
   if(no.distribution)
     problems$no.distribution <- NA
   else{
@@ -686,6 +693,16 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   if(length(missing) != 0)
     problems$missing.factors <- missing
 
+  na.target <- any(is.na(target))
+  if(na.target)
+    problems$na.target <- NA
+
+  if(nan.target)
+    problems$nan.target <- NA
+
+  infinite.target <- any(is.infinite(target))
+  if(infinite.target)
+    problems$infinite.target <- NA
 
   invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
   if(invalid.weights)
@@ -704,7 +721,7 @@ glm.model.def <- function(id, target.gen, features, ..., weights=function(data) 
 }
 
 
-glm.fit.plus <- function(x, y, family=gaussian,..., y.label="y"){
+glm.fit.plus <- function(x, y, family=NA,..., y.label="y"){
   features <- names(x)
   x[[y.label]] <- y
   f <- sprintf("%s ~ %s", y.label, do.call(paste,c(as.list(features),sep=" + ")))
@@ -712,15 +729,49 @@ glm.fit.plus <- function(x, y, family=gaussian,..., y.label="y"){
 }
 
 check.glm.model.def <- function(modelDef, target, data, weights){
+  problems <- list()
+
   missing <- setdiff(modelDef$features, names(data))
   available <- setdiff(modelDef$features, missing)
   if(length(missing) != 0)
     problems$missing.factors <- missing
+
+  na.target <- any(is.na(target))
+  if(na.target)
+    problems$na.target <- NA
+
+  nan.target <- any(is.nan(target))
+  if(nan.target)
+    problems$nan.target <- NA
+
+  infinite.target <- any(is.infinite(target))
+  if(infinite.target)
+    problems$infinite.target <- NA
+
+  no.family <- !('family' %in% names(modelDef$params))
+  if(no.family)
+    problems$no.family <- NA
+  else{
+    invalid.binomial.target <- (modelDef$params$family == 'binomial') && (!all(target %in% (0:1)))
+    if(invalid.binomial.target)
+      problems$invalid.binomial.target <- NA
+  }
+
+  invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
+  if(invalid.weights)
+    problems$invalid.weights <- NA
+  else{
+    negative.weights <- any(weights < 0)
+    if(negative.weights)
+      problems$negative.weights <- NA
+  }
+
+  problems
 }
 
-glm.predict <- function(object,newdata,type='response',...){
+glm.predict <- function(object,newdata,type='response',...)
   predict.glm(object,newdata,type=type,...)
-}
+
 
 
 #######################################
