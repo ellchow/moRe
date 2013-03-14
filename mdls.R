@@ -846,11 +846,11 @@ clsfy.confusion <- function(prediction, label){
              false.negative = sum(!p & l))
 }
 
-clsfy.confusion.scan <- function(prediction, label, thresholds=quantile(prediction,seq(0,1,0.01)),.parallel=TRUE){
+clsfy.confusion.scan <- function(score, label, to.prediction = function(t){ function(s) s > t }, params.list=as.list(quantile(score,seq(0,1,0.01))), .parallel=FALSE){
   csplat(rbind,
-         llply(thresholds,
-                function(t)
-                  clsfy.confusion(prediction > t,label),
+         llply(named(parameter.scan(params.list, to.prediction), names(params.list)),
+                function(f)
+                  clsfy.confusion(f(score),label),
                 .parallel=.parallel)
          )
 }
