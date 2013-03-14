@@ -839,9 +839,9 @@ clsfy.confusion.scan <- function(prediction, label, thresholds=quantile(predicti
   csplat(rbind,
          llply(thresholds,
                 function(t)
-                  clsfy.confusion(prediction > t,label)
-                ),
-         .parallel=.parallel)
+                  clsfy.confusion(prediction > t,label),
+                .parallel=.parallel)
+         )
 }
 
 ## see http://en.wikipedia.org/wiki/Receiver_operating_characteristic for definitions
