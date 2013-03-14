@@ -204,7 +204,7 @@ check.gbm.model.def <- function(modelDef, target, data, weights){
   missing <- setdiff(modelDef$features, names(data))
   available <- setdiff(modelDef$features, missing)
   if(length(missing) != 0)
-    problems$missing.factors <- missing
+    problems$missing.features <- missing
 
   gt1024levels <- sapply(available,
                          function(f){is.factor(data[[f]]) && (length(levels(data[[f]])) > 1024)})
@@ -224,8 +224,15 @@ check.gbm.model.def <- function(modelDef, target, data, weights){
   if(na.target)
     problems$na.target <- NA
 
-  no.distribution <- !('distribution' %in% names(modelDef$params))
+  nan.target <- any(is.nan(target))
+  if(nan.target)
+    problems$nan.target <- NA
 
+  infinite.target <- any(is.infinite(target))
+  if(infinite.target)
+    problems$infinite.target <- NA
+
+  no.distribution <- !('distribution' %in% names(modelDef$params))
   if(no.distribution)
     problems$no.distribution <- NA
   else{
@@ -293,7 +300,7 @@ gbm.model.json <- function(object, trees=object$n.trees, name=""){
               n.minobsinnode=object$n.minobsinnode,
               n.trees=trees,
               shrinkage=object$shrinkage,
-              factors = usedVariables,
+              features = usedVariables,
               trees=jsonTree))
 }
 
@@ -308,15 +315,17 @@ gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
   subset(do.call(rbind, lapply(1:trees, function(tree) gbm.tree.as.df(object, i.tree=tree))), SplitVarName == var.name)$SplitCodePred
 }
 
-gbm.factor.importance <- function(object, k=min(10,length(object$var.names)),
+gbm.feature.importance <- function(object, k=min(10,length(object$var.names)),
                                   n.trees=gbm.opt.n.trees(object), ...){
+  stop.if(k < 1, "k must be >= 1")
+
   x <- as.data.frame(as.list(summary(object, n.trees=n.trees, plotit=FALSE)[k:1,]))
-  names(x) <- c('factor', 'importance')
-  x$factor <- ordered(x$factor, x$factor)
-  ggplot(x, aes(factor,importance)) +
+  names(x) <- c('feature', 'importance')
+  x$feature <- ordered(x$feature, x$feature)
+  ggplot(x, aes(feature,importance)) +
     geom_bar(stat='identity') +
       coord_flip() +
-        ggtitle(paste('Top',k,'of',length(object$var.names),'Factors'))
+        ggtitle(paste('Top',k,'of',length(object$var.names),'Features'))
 }
 
 gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',NA),
@@ -431,15 +440,15 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                     sep = "")
                 }
                 plot(range(X$X1), range(X$y), type = "s", xlab = x$var.names[i.var],
-                  ylab = ylabel)
+                     ylab = ylabel)
+
                 for (ii in 1:x$num.classes) {
                   lines(X$X1, X$y[, ii], xlab = x$var.names[i.var],
                     ylab = paste("f(", x$var.names[i.var], ")",
                       sep = ""), col = ii, ...)
                 }
             }
-            else if (is.element(x$distribution$name, c("bernoulli",
-                "pairwise"))) {
+            else if (is.element(x$distribution$name, c("bernoulli", "pairwise"))) {
                 if (type == "response") {
                   ylabel <- "Predicted probability"
                 }
@@ -447,8 +456,11 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   ylabel <- paste("f(", x$var.names[i.var], ")",
                     sep = "")
                 }
-                plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
-                  ylab = ylabel)
+
+                ggplot(X,aes(X1,y)) + geom_step(direction='hv', color='steelblue') +
+                  geom_point(color='red') +
+                    xlab(x$var.names[i.var]) +
+                      ylab(str.fmt('f(%(i.var)s)',i.var=x$var.names[i.var]))
             }
             else if (x$distribution$name == "poisson") {
                 if (type == "response") {
@@ -458,13 +470,17 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   ylabel <- paste("f(", x$var.names[i.var], ")",
                     sep = "")
                 }
-                plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
-                  ylab = ylabel)
+
+                ggplot(X,aes(X1,y)) + geom_step(direction='hv', color='steelblue') +
+                  geom_point(color='red') +
+                    xlab(x$var.names[i.var]) +
+                      ylab(str.fmt('f(%(i.var)s)',i.var=x$var.names[i.var]))
             }
             else {
-                plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
-                  ylab = paste("f(", x$var.names[i.var], ")",
-                    sep = ""), ...)
+              ggplot(X,aes(X1,y)) + geom_step(direction='hv', color='steelblue') +
+                geom_point(color='red') +
+                  xlab(x$var.names[i.var]) +
+                    ylab(str.fmt('f(%(i.var)s)',i.var=x$var.names[i.var]))
             }
         }
         else {
@@ -488,11 +504,10 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   y1 = as.vector(t(X$y)), x2 = rep(1:nX - 0.25,
                     each = dim.y[2]), col = 1:dim.y[2])
             }
-            else if (is.element(x$distribution$name, c("bernoulli",
-                "pairwise")) && type == "response") {
+            else if (is.element(x$distribution$name, c("bernoulli", "pairwise")) && type == "response") {
                 ylabel <- "Predicted probability"
                 plot(X$X1, X$y, type = "l", xlab = x$var.names[i.var],
-                  ylab = ylabel)
+                     ylab = ylabel)
             }
             else if (x$distribution$name == "poisson" & type ==
                 "response") {
@@ -684,8 +699,18 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   missing <- setdiff(modelDef$features, names(data))
   available <- setdiff(modelDef$features, missing)
   if(length(missing) != 0)
-    problems$missing.factors <- missing
+    problems$missing.features <- missing
 
+  na.target <- any(is.na(target))
+  if(na.target)
+    problems$na.target <- NA
+
+  if(nan.target)
+    problems$nan.target <- NA
+
+  infinite.target <- any(is.infinite(target))
+  if(infinite.target)
+    problems$infinite.target <- NA
 
   invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
   if(invalid.weights)
@@ -704,7 +729,7 @@ glm.model.def <- function(id, target.gen, features, ..., weights=function(data) 
 }
 
 
-glm.fit.plus <- function(x, y, family=gaussian,..., y.label="y"){
+glm.fit.plus <- function(x, y, family=NA,..., y.label="y"){
   features <- names(x)
   x[[y.label]] <- y
   f <- sprintf("%s ~ %s", y.label, do.call(paste,c(as.list(features),sep=" + ")))
@@ -712,15 +737,49 @@ glm.fit.plus <- function(x, y, family=gaussian,..., y.label="y"){
 }
 
 check.glm.model.def <- function(modelDef, target, data, weights){
+  problems <- list()
+
   missing <- setdiff(modelDef$features, names(data))
   available <- setdiff(modelDef$features, missing)
   if(length(missing) != 0)
-    problems$missing.factors <- missing
+    problems$missing.features <- missing
+
+  na.target <- any(is.na(target))
+  if(na.target)
+    problems$na.target <- NA
+
+  nan.target <- any(is.nan(target))
+  if(nan.target)
+    problems$nan.target <- NA
+
+  infinite.target <- any(is.infinite(target))
+  if(infinite.target)
+    problems$infinite.target <- NA
+
+  no.family <- !('family' %in% names(modelDef$params))
+  if(no.family)
+    problems$no.family <- NA
+  else{
+    invalid.binomial.target <- (modelDef$params$family == 'binomial') && (!all(target %in% (0:1)))
+    if(invalid.binomial.target)
+      problems$invalid.binomial.target <- NA
+  }
+
+  invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
+  if(invalid.weights)
+    problems$invalid.weights <- NA
+  else{
+    negative.weights <- any(weights < 0)
+    if(negative.weights)
+      problems$negative.weights <- NA
+  }
+
+  problems
 }
 
-glm.predict <- function(object,newdata,type='response',...){
+glm.predict <- function(object,newdata,type='response',...)
   predict.glm(object,newdata,type=type,...)
-}
+
 
 
 #######################################
@@ -803,7 +862,7 @@ forward.filter.feature.selection <- function(target, features, evaluate=interinf
   feature.selection.by.filter(target, features, NULL, function(...) evaluate(...,.parallel=.parallel),
                               function(z, scores){
                                 are.na <- names(scores)[is.na(scores)]
-                                write.msg(logger,'score for factors "%s" is na - dropping',csplat(paste,are.na,sep=','),level='warn')
+                                write.msg(logger,'score for features "%s" is na - dropping',csplat(paste,are.na,sep=','),level='warn')
                                 bestScore <- choose.best(na.rm(scores))
                                 best <- match(TRUE,scores == bestScore)
                                 z$selected <- c(z$selected, names(scores[best]))
