@@ -204,7 +204,7 @@ check.gbm.model.def <- function(modelDef, target, data, weights){
   missing <- setdiff(modelDef$features, names(data))
   available <- setdiff(modelDef$features, missing)
   if(length(missing) != 0)
-    problems$missing.factors <- missing
+    problems$missing.features <- missing
 
   gt1024levels <- sapply(available,
                          function(f){is.factor(data[[f]]) && (length(levels(data[[f]])) > 1024)})
@@ -300,7 +300,7 @@ gbm.model.json <- function(object, trees=object$n.trees, name=""){
               n.minobsinnode=object$n.minobsinnode,
               n.trees=trees,
               shrinkage=object$shrinkage,
-              factors = usedVariables,
+              features = usedVariables,
               trees=jsonTree))
 }
 
@@ -315,15 +315,17 @@ gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
   subset(do.call(rbind, lapply(1:trees, function(tree) gbm.tree.as.df(object, i.tree=tree))), SplitVarName == var.name)$SplitCodePred
 }
 
-gbm.factor.importance <- function(object, k=min(10,length(object$var.names)),
+gbm.feature.importance <- function(object, k=min(10,length(object$var.names)),
                                   n.trees=gbm.opt.n.trees(object), ...){
+  stop.if(k < 1, "k must be >= 1")
+
   x <- as.data.frame(as.list(summary(object, n.trees=n.trees, plotit=FALSE)[k:1,]))
-  names(x) <- c('factor', 'importance')
-  x$factor <- ordered(x$factor, x$factor)
-  ggplot(x, aes(factor,importance)) +
+  names(x) <- c('feature', 'importance')
+  x$feature <- ordered(x$feature, x$feature)
+  ggplot(x, aes(feature,importance)) +
     geom_bar(stat='identity') +
       coord_flip() +
-        ggtitle(paste('Top',k,'of',length(object$var.names),'Factors'))
+        ggtitle(paste('Top',k,'of',length(object$var.names),'Features'))
 }
 
 gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',NA),
@@ -691,7 +693,7 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   missing <- setdiff(modelDef$features, names(data))
   available <- setdiff(modelDef$features, missing)
   if(length(missing) != 0)
-    problems$missing.factors <- missing
+    problems$missing.features <- missing
 
   na.target <- any(is.na(target))
   if(na.target)
@@ -734,7 +736,7 @@ check.glm.model.def <- function(modelDef, target, data, weights){
   missing <- setdiff(modelDef$features, names(data))
   available <- setdiff(modelDef$features, missing)
   if(length(missing) != 0)
-    problems$missing.factors <- missing
+    problems$missing.features <- missing
 
   na.target <- any(is.na(target))
   if(na.target)
@@ -854,7 +856,7 @@ forward.filter.feature.selection <- function(target, features, evaluate=interinf
   feature.selection.by.filter(target, features, NULL, function(...) evaluate(...,.parallel=.parallel),
                               function(z, scores){
                                 are.na <- names(scores)[is.na(scores)]
-                                write.msg(logger,'score for factors "%s" is na - dropping',csplat(paste,are.na,sep=','),level='warn')
+                                write.msg(logger,'score for features "%s" is na - dropping',csplat(paste,are.na,sep=','),level='warn')
                                 bestScore <- choose.best(na.rm(scores))
                                 best <- match(TRUE,scores == bestScore)
                                 z$selected <- c(z$selected, names(scores[best]))
