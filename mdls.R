@@ -203,7 +203,8 @@ check.gbm.model.def <- function(modelDef, target, data, weights){
 
   missing <- setdiff(modelDef$features, names(data))
   available <- setdiff(modelDef$features, missing)
-  if(length(missing) != 0){problems$missing.factors <- missing}
+  if(length(missing) != 0)
+    problems$missing.factors <- missing
 
   gt1024levels <- sapply(available,
                          function(f){is.factor(data[[f]]) && (length(levels(data[[f]])) > 1024)})
@@ -680,6 +681,12 @@ lm.fit.plus <- function(x, y, ..., y.label="y"){
 check.lm.model.def <- function(modelDef, target, data, weights){
   problems <- list()
 
+  missing <- setdiff(modelDef$features, names(data))
+  available <- setdiff(modelDef$features, missing)
+  if(length(missing) != 0)
+    problems$missing.factors <- missing
+
+
   invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
   if(invalid.weights)
     problems$invalid.weights <- NA
@@ -704,8 +711,12 @@ glm.fit.plus <- function(x, y, family=gaussian,..., y.label="y"){
   glm(formula(f), family=family, x, ...)
 }
 
-check.glm.model.def <- function(modelDef, target, data, weights)
-  list()
+check.glm.model.def <- function(modelDef, target, data, weights){
+  missing <- setdiff(modelDef$features, names(data))
+  available <- setdiff(modelDef$features, missing)
+  if(length(missing) != 0)
+    problems$missing.factors <- missing
+}
 
 glm.predict <- function(object,newdata,type='response',...){
   predict.glm(object,newdata,type=type,...)
