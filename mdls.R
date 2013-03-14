@@ -440,15 +440,15 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                     sep = "")
                 }
                 plot(range(X$X1), range(X$y), type = "s", xlab = x$var.names[i.var],
-                  ylab = ylabel)
+                     ylab = ylabel)
+
                 for (ii in 1:x$num.classes) {
                   lines(X$X1, X$y[, ii], xlab = x$var.names[i.var],
                     ylab = paste("f(", x$var.names[i.var], ")",
                       sep = ""), col = ii, ...)
                 }
             }
-            else if (is.element(x$distribution$name, c("bernoulli",
-                "pairwise"))) {
+            else if (is.element(x$distribution$name, c("bernoulli", "pairwise"))) {
                 if (type == "response") {
                   ylabel <- "Predicted probability"
                 }
@@ -456,8 +456,11 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   ylabel <- paste("f(", x$var.names[i.var], ")",
                     sep = "")
                 }
-                plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
-                  ylab = ylabel)
+
+                ggplot(X,aes(X1,y)) + geom_step(direction='hv', color='steelblue') +
+                  geom_point(color='red') +
+                    xlab(x$var.names[i.var]) +
+                      ylab(str.fmt('f(%(i.var)s)',i.var=x$var.names[i.var]))
             }
             else if (x$distribution$name == "poisson") {
                 if (type == "response") {
@@ -467,13 +470,17 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   ylabel <- paste("f(", x$var.names[i.var], ")",
                     sep = "")
                 }
-                plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
-                  ylab = ylabel)
+
+                ggplot(X,aes(X1,y)) + geom_step(direction='hv', color='steelblue') +
+                  geom_point(color='red') +
+                    xlab(x$var.names[i.var]) +
+                      ylab(str.fmt('f(%(i.var)s)',i.var=x$var.names[i.var]))
             }
             else {
-                plot(X$X1, X$y, type = "s", xlab = x$var.names[i.var],
-                  ylab = paste("f(", x$var.names[i.var], ")",
-                    sep = ""), ...)
+              ggplot(X,aes(X1,y)) + geom_step(direction='hv', color='steelblue') +
+                geom_point(color='red') +
+                  xlab(x$var.names[i.var]) +
+                    ylab(str.fmt('f(%(i.var)s)',i.var=x$var.names[i.var]))
             }
         }
         else {
@@ -497,11 +504,10 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
                   y1 = as.vector(t(X$y)), x2 = rep(1:nX - 0.25,
                     each = dim.y[2]), col = 1:dim.y[2])
             }
-            else if (is.element(x$distribution$name, c("bernoulli",
-                "pairwise")) && type == "response") {
+            else if (is.element(x$distribution$name, c("bernoulli", "pairwise")) && type == "response") {
                 ylabel <- "Predicted probability"
                 plot(X$X1, X$y, type = "l", xlab = x$var.names[i.var],
-                  ylab = ylabel)
+                     ylab = ylabel)
             }
             else if (x$distribution$name == "poisson" & type ==
                 "response") {
