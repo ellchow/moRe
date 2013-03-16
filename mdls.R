@@ -308,9 +308,9 @@ gbm.tree.row.as.list <- function(tree, node){
 gbm.tree.as.list <- function(object, i.tree)
   gbm.tree.row.as.list(gbm.tree.as.df(object, i.tree), 1)
 
-gbm.model.as.list <- function(object, trees=object$n.trees, name=""){
+gbm.model.as.list <- function(object, trees=object$n.trees, name="", .parallel=TRUE){
   usedVariables <- gbm.model.used.variables(object)
-  trees <- lapply(1:trees, function(tree) gbm.tree.as.list(object, i.tree=tree))
+  trees <- llply(1:trees, function(tree) gbm.tree.as.list(object, i.tree=tree), .parallel=.parallel)
 
   list(name=name,
        bag.fraction=object$bag.fraction,
