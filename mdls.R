@@ -252,61 +252,79 @@ check.gbm.model.def <- function(modelDef, target, data, weights){
   problems
 }
 
-gbm.opt.n.trees <- function(object, method='test'){
+gbm.opt.n.trees <- function(object, method='test')
   gbm.perf(object,method=method,plot.it=F)
-}
 
 gbm.tree.as.df <- function(object, i.tree = 1){
   stop.if((i.tree < 1) || (i.tree > object$n.trees),
           sprintf("i.tree %d is out of range (%d)", i.tree, object$n.trees))
+  tree <- named(data.frame(object$trees[[i.tree]]),
+                c("SplitVar", "SplitCodePred", "LeftNode",
+                  "RightNode", "MissingNode", "ErrorReduction", "Weight",
+                  "Prediction")) ## tree from gbm
 
-  tree <- data.frame(object$trees[[i.tree]])
-  names(tree) <- c("SplitVar", "SplitCodePred", "LeftNode",
-                   "RightNode", "MissingNode", "ErrorReduction", "Weight",
-                   "Prediction")
-  tree$LeftNode <- tree$LeftNode + 1
-  tree$RightNode <- tree$RightNode + 1
-  tree$MissingNode <- tree$MissingNode + 1
-  tree$SplitVarName <- c("",object$var.names)[tree$SplitVar + 2]
-  tree$SplitCodePred <- ifelse(i.tree == 1 & tree$SplitVarName=='', tree$SplitCodePred + object$initF, tree$SplitCodePred)
-  tree$node <- 1:nrow(tree)
-  tree[, c("node", "SplitVarName", "SplitCodePred", "LeftNode", "RightNode", "MissingNode")]
-}
+  df <- data.frame(node.id = 1:nrow(tree))
+  df$is.leaf <- tree$SplitVar == -1 ## leaf node marked as -1
+  df$var.id <- ifelse(df$is.leaf, NA , tree$SplitVar + 1) ## var id
+  df$is.cat <- ifelse(df$is.leaf, NA, c(NA,object$var.type > 0)[df$var.id + 1]) ## is variable categorical
+  df$var.name <- ifelse(df$is.leaf, NA , object$var.names[df$var.id]) ## name of variable
+  df$op <- ifelse(df$is.cat, 'in', 'less_than') ## operator - when true, go left
+  df$condition <- ifelse(df$is.leaf, NA, ## condition to satisify to go left
+                         ifelse(df$is.cat,
+                                sapply(lzip(c(NA,object$c.splits)[(tree$SplitCodePred + 1) * df$is.cat + 1], ## look up grouping of categorical factors
+                                            df$var.id),
+                                       function(x){
+                                         var.id <- x[[2]]
+                                         level.names <- object$var.levels[[var.id]][x[[1]] < 0] ## get level names to split left
+                                         paste('{',csplat(paste,level.names,sep=','),'}',sep='')
+                                       }),
+                                tree$SplitCodePred)
+                         )
+  df$left.id <- ifelse(df$is.leaf, NA, tree$LeftNode + 1)
+  df$right.id <- ifelse(df$is.leaf, NA, tree$RightNode+ 1)
+  df$missing.id <- ifelse(df$is.leaf, NA, tree$MissingNode + 1)
+  df$prediction <- ifelse(df$is.leaf, tree$Prediction + (i.tree == 1) * object$initF, NA)
 
-gbm.tree.row.as.json <- function(tree.df, node){
-  row <- tree.df[tree.df$node == node,]
-  if (row$SplitVarName != "") {
-    list(cond=list(var=row$SplitVarName,op="<", val=row$SplitCodePred),
-         if_true = gbm.tree.row.as.json(tree.df, row$LeftNode),
-         if_false = gbm.tree.row.as.json(tree.df, row$RightNode),
-         if_missing = gbm.tree.row.as.json(tree.df, row$MissingNode))
-  } else {
-    list(prediction=row$SplitCodePred)
+  df
+ }
+
+gbm.tree.row.as.list <- function(tree, node){
+  row <- tree[tree$node == node,]
+  if(row$is.leaf)
+    list(prediction=row$prediction)
+  else{
+    list(split=list(
+           var.name = row$var.name,
+           op = row$op,
+           val = row$condition
+           ),
+         if_true = gbm.tree.row.as.json(tree, row$left.id),
+         if_false = gbm.tree.row.as.json(tree, row$right.id),
+         if_missing = gbm.tree.row.as.json(tree, row$missing.id)
+         )
   }
 }
 
-gbm.tree.as.json <- function(object, n.trees=object$n.trees, i.tree=1){
-  gbm.tree.row.as.json(gbm.tree.as.df(object, i.tree), 1)
-}
+gbm.tree.as.list <- function(object, i.tree)
+  gbm.tree.row.as.list(gbm.tree.as.df(object, i.tree), 1)
 
-gbm.model.json <- function(object, trees=object$n.trees, name=""){
+gbm.model.as.list <- function(object, trees=object$n.trees, name=""){
   usedVariables <- gbm.model.used.variables(object)
-  jsonTree <- lapply(1:trees, function(tree) gbm.tree.as.json(object, i.tree=tree, n.trees=trees))
+  trees <- lapply(1:trees, function(tree) gbm.tree.as.list(object, i.tree=tree))
 
-  toJSON(list(name=name,
-              bag.fraction=object$bag.fraction,
-              distribution= object$distribution$name,
-              interaction.depth=object$interaction.depth,
-              n.minobsinnode=object$n.minobsinnode,
-              n.trees=trees,
-              shrinkage=object$shrinkage,
-              features = usedVariables,
-              trees=jsonTree))
+  list(name=name,
+       bag.fraction=object$bag.fraction,
+       distribution= object$distribution$name,
+       interaction.depth=object$interaction.depth,
+       n.minobsinnode=object$n.minobsinnode,
+       n.trees=trees,
+       shrinkage=object$shrinkage,
+       features = usedVariables,
+       trees=trees)
 }
 
-gbm.model.used.variables <- function(object, trees=object$n.trees){
+gbm.model.used.variables <- function(object, trees=object$n.trees)
   as.character(subset(summary.gbm(object,plotit=F), rel.inf > 0,)$var)
-}
 
 gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
   if(is.numeric(var.name))
