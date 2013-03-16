@@ -318,10 +318,10 @@ make.combinations <- function(lst, name.gen = function(ns) do.call(paste,c(as.li
 }
 
 parameter.scan <- function(params.list, f){
-  fs <- lapply(params.list, function(params){
-    do.call(f, as.list(params))
-  })
-
+  fs <- lapply(params.list,
+               function(params)
+               do.call(f, as.list(params))
+             )
   names(fs) <- names(params.list)
   fs
 }
