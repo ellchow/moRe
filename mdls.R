@@ -819,7 +819,6 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=Sim
   snkScore <- mdls.predict(md,snk,log.level=log.level)[[1]][[1]]
   selected.features <- NA
   scores <- srcScore
-
   while(length(features) > 0){
     s <- laply(features,
                 function(ft){
@@ -844,9 +843,10 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=Sim
                   head(scores,-1),
                   tail(scores,-1)
                   )
-  names(z) <- c('var','delta','src.feature','snk.feature','score.before','score.after')
+
+  names(z) <- c('var.name','delta','src.var.value','snk.var.value','score.before','score.after')
   row.names(z) <- NULL
-  z
+  z[order(z$delta,decreasing=TRUE),]
 }
 
 interinfo.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=SimpleLog.ERROR){
