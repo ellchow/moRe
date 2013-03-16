@@ -705,6 +705,7 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   if(na.target)
     problems$na.target <- NA
 
+  nan.target <- any(is.nan(target))
   if(nan.target)
     problems$nan.target <- NA
 
