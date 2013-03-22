@@ -38,12 +38,20 @@ get.parallel.library <- function(){
 
 import <- function(..., from.moRe=TRUE){
   available <- c('utils', 'mdls', 'yahoofin', 'cmdargs', 'math', 'plots', 'sql', 'infor')
+  from.source <- c('rstan')
+
   selected <- c(...)
   not.in.moRe <- setdiff(selected, available)
   found.in.moRe <- setdiff(selected, not.in.moRe)
 
+  ## RStan http://code.google.com/p/stan/wiki/RStanGettingStarted#RStan_Getting_Started
+  options(repos = c(getOption("repos"), rstan = "http://wiki.stan.googlecode.com/git/R"))
+
+
   invisible(sapply(found.in.moRe,
          function(s) source(paste(moRe.ROOTDIR, '/', s, '.R', sep=''), chdir=T) ))
-  invisible(sapply(not.in.moRe, better.library))
+  invisible(sapply(setdiff(not.in.moRe, from.source), better.library))
+  invisible(sapply(intersect(from.source, selected), function(s) install.packages(s, type='source')))
+
 }
 
