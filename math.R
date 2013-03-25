@@ -42,7 +42,7 @@ bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1)),label=!is.null(names(bu
 
   b <- floor(f(x))
   if(label)
-    factor(names(buckets)[b],levels=(names(buckets)), ordered=T)
+    factor(names(buckets)[b],levels=names(buckets), ordered=T)
   else
     b
 }
