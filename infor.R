@@ -4,9 +4,8 @@ import('utils')
 
 
 dcg <- function(value=I, discount=function(i) pmax(1, log(i,2))){
-  function(r, x){
+  function(r, x)
     sum(value(x[r]) / discount(1:length(x)))
-  }
 }
 
 ndcg <- function(...){
@@ -18,21 +17,28 @@ ndcg <- function(...){
 
 at.top <- function(n,f=mean){
   stop.if.not(n > 0, "n must be > 0")
-  function(r, x){
+
+  function(r, x)
     f(x[r <= n])
-  }
 }
 
 pos.rank <- function(select=mean, f=function(x) 1 / x){
   function(r, x){
     stop.if.not(is.logical(x), "x must be logical")
+
     f(select(r[x]))
   }
+}
+
+rel.to <- function(ref, f=cor){
+  function(r, ...)
+    f(ref, r, ...)
 }
 
 
 compute.ranks <- function(s, g, ties.method='random'){
   stop.if.not(length(s) == length(g), "length of s must equal length of g")
+
   x <- vector('integer',length=length(s))
   split(x,g) <- tapply(s, g,function(x) rank(-x, ties.method=ties.method))
   x
