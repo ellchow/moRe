@@ -1,5 +1,5 @@
 source('import.R',chdir=T)
-import('utils','psych')
+import('utils')
 
 linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, na.rm=FALSE, displayLevel=0){
   if(clipMin)
@@ -29,8 +29,20 @@ mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
   as.data.frame(as.list(z))
 }
 
-trim <- function(x, lb, ub)
+cap <- function(x, lb, ub)
   pmin(ub,pmax(lb,x))
+
+winsor.mean <- function(x, trim=0.02){
+  stop.if.not(trim >= 0 && trim <= 1, "trim must be between 0 and 1")
+
+  mean(cap(x,quantile(x,trim), quantile(x,1 - trim)))
+}
+
+winsor.var <- function(x, trim=0.02){
+  stop.if.not(trim >= 0 && trim <= 1, "trim must be between 0 and 1")
+
+  var(cap(x,quantile(x,trim), quantile(x,1 - trim)))
+}
 
 bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1)),label=!is.null(names(buckets))){
   ub <- max(buckets)
@@ -38,7 +50,7 @@ bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1)),label=!is.null(names(bu
   ub <- ub + 1
   lb <- min(buckets)
   f <- approxfun(cbind(sort(buckets),1:length(buckets)))
-  x <- trim(x, lb, ub)
+  x <- cap(x, lb, ub)
 
   b <- floor(f(x))
   if(label)
@@ -91,3 +103,4 @@ cumdist.df <- function(x,buckets=seq(min(x),max(x),length=1000),values=rep(1,len
   dist <- tapply(values,b,sum)/sum(values)
   data.frame(x=sort(lookup(as.integer(names(dist)))),'F(x)'=cumsum(dist[order(lookup(as.integer(names(dist))))]))
 }
+
