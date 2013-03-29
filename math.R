@@ -1,5 +1,5 @@
 source('import.R',chdir=T)
-import('utils')
+import('utils','psych')
 
 linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, na.rm=FALSE, displayLevel=0){
   if(clipMin)
@@ -91,5 +91,3 @@ cumdist.df <- function(x,buckets=seq(min(x),max(x),length=1000),values=rep(1,len
   dist <- tapply(values,b,sum)/sum(values)
   data.frame(x=sort(lookup(as.integer(names(dist)))),'F(x)'=cumsum(dist[order(lookup(as.integer(names(dist))))]))
 }
-
-
