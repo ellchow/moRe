@@ -117,7 +117,7 @@ rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
 }
 
 cache.data <- function(path, cachePath='.cache', forceDownload=FALSE){
-  if(str_detect(path,'http://')){
+  if(str_detect(path,'http[s]?://')){
     pathHash <- digest(path, 'md5')
     cachedFile <- file.path(cachePath, pathHash)
     if(!file.exists(cachedFile) || forceDownload){
