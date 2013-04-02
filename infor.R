@@ -35,7 +35,6 @@ rel.to <- function(ref, f=cor){
     f(ref, r, ...)
 }
 
-
 compute.ranks <- function(s, g, ties.method='random'){
   stop.if.not(length(s) == length(g), "length of s must equal length of g")
 
