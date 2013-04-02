@@ -243,9 +243,13 @@ tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
 
   if(ret.type == 'df'){
     ansmat <- data.frame(expand.grid(dimnames(ansmat)),y=do.call(rbind,as.list(ansmat)))
-  }else if(ret.type == 'par'){
+  }else if(ret.type == 'join'){
     stop.if(length(INDEX) != 1, 'INDEX must have length 1 for ret.type == "par"')
     ansmat <- ansmat[as.character(INDEX[[1]])]
+  }else if(ret.type == 'par'){
+    z <- vector('list',length(X[[1]]))
+    split(z, group) <- ansmat
+    ansmat <- unlist(z)
   }else{
     stop.if(ret.type != 'list', sprintf('unknown ret.type "%s"', ret.type))
   }
