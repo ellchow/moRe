@@ -344,7 +344,11 @@ gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
   if(is.numeric(var.name))
     var.name <- object$var.names[var.name]
 
-  subset(do.call(rbind, lapply(1:trees, function(tree) gbm.tree.as.df(object, i.tree=tree))), SplitVarName == var.name)$SplitCodePred
+  do.call(c, lapply(1:trees,
+                    function(tree){
+                      z <- gbm.tree.as.df(object, i.tree=tree)
+                      z$condition[ !is.na(z$var.name) & (z$var.name == var.name) ]
+                    }))
 }
 
 gbm.feature.importance <- function(object, k=min(10,length(object$var.names)),
