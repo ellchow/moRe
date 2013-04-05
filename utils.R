@@ -23,6 +23,9 @@ import('gdata',
        get.parallel.library()$lib
        )
 
+
+options(width=1000,scipen=6)
+
 ####################
 #### Logging
 ####################
