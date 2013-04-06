@@ -14,7 +14,7 @@
 
 source('import.R',chdir=T)
 
-import('utils')
+import('utils', 'mdls')
 
 
 dcg <- function(value=I, discount=function(i) pmax(1, log(i,2))){
@@ -79,4 +79,21 @@ compute.metric <- function(rnk, values, g, metric){
 }
 
 
+feature.contributions.infor.metric <- function(mdl, d, iss, values, g, metric, log.level=SimpleLog.INFO, .parallel=TRUE){
+  logger <- SimpleLog('feature.contributions.infor.metric',log.level)
+  named(llply(iss,
+        function(is){
+          write.msg(logger,sprintf('randomizing features: %s',csplat(paste,is,sep=',')))
+          d.r <- d
+          for(i in is)
+            d.r[[i]] <- sample(d.r[[i]])
+
+          s.r <- mdl$predict(mdl$model, d.r[,mdl$features])
+          r.r <- compute.ranks(s.r, d.r$QueryID)
+
+          compute.metric(r.r, values, g, metric)
+        },
+        .parallel=.parallel),
+        sapply(iss, function(is) csplat(paste,is,sep=',')))
+}
 

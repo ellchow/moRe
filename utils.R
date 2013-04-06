@@ -24,7 +24,7 @@ import('gdata',
        )
 
 
-options(width=1000,scipen=6)
+options(width=110,scipen=6)
 
 ####################
 #### Logging
