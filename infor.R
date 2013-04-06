@@ -88,6 +88,7 @@ feature.contributions.infor.metric <- function(mdl, d, iss, values, g, metric, l
           for(i in is)
             d.r[[i]] <- sample(d.r[[i]])
 
+          write.msg(logger,sprintf('scoring model with randomized %s',csplat(paste,is,sep=',')))
           s.r <- mdl$predict(mdl$model, d.r[,mdl$features])
           r.r <- compute.ranks(s.r, d.r$QueryID)
 
