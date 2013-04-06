@@ -56,15 +56,17 @@ configure <- function(logger){
        metrics.definitions = metrics.definitions)
 }
 
-make.config.path <- function(root){
-  file.path(root, 'config.RData')
-}
+make.config.path <- function(root,filename='config.RData')
+  file.path(root, filename)
 
 main <- function(raw.args){
   args <- parse.args('run.R',
                      list(list(name = 'o',
                                desc = 'output directory',
                                required = T),
+                          list(name = 'c',
+                               desc = 'config path (default to <output directory>/config.RData)',
+                               default = NULL),
                           list(name = 'sources',
                                desc = 'extra R files to source',
                                default = NULL,
@@ -82,26 +84,27 @@ main <- function(raw.args){
   timer <- Timer(logger)
   write.msg(logger, sprintf('command line arguments: %s', csplat(paste,raw.args)))
 
+  ## source extra files
   sapply(args$sources,
          function(f){
            write.msg(logger, sprintf('sourcing R file: %s', f))
            source(f, chdir=T)
          })
 
-  config.path <- make.config.path(args$o)
+  ## load/run config
+  config.path <- if(is.null(args$c)) make.config.path(args$o) else args$c
   if(!args$overwrite && file.exists(config.path)){
     start.timer(timer,sprintf('loading configuration from %s', config.path))
-    ## config <- load.data(config.path)
+    config <- load.data(config.path)
     stop.timer(timer)
   }else{
     write.msg(logger, 'creating configuration')
     config <- configure(logger)
     start.timer(timer,sprintf('saving configuration to %s', config.path))
-    ## config <- save(config.path, file=config.path)
+    dir.create(dirname(config.path),recursive=T)
+    save(config, file=config.path)
     stop.timer(timer)
   }
-
-
 
 }
 
