@@ -20,8 +20,8 @@ import('gdata',
        'R.oo',
        'digest',
        'gsubfn',
-       get.parallel.library()$lib
-       )
+       get.parallel.library()$lib,
+       as.library='utils')
 
 
 options(width=110,scipen=6)
