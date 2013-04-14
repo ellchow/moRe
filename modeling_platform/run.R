@@ -1,7 +1,22 @@
 #!/usr/bin/env Rscript
 
+## Copyright 2013 Elliot Chow
+
+## Licensed under the Apache License, Version 2.0 (the "License")
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+
+## http://www.apache.org/licenses/LICENSE-2.0
+
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+
+
 source('../import.R', chdir = TRUE)
-import('utils','cmdargs','mdls')
+import('utils','cmdargs','mdls', 'infor')
 
 configure <- function(logger){
 #### define datasets
@@ -13,7 +28,9 @@ configure <- function(logger){
 
 #### define models
   model.definitions <- list(m1 =
-                            list(model.def = gbm.model.def('gbm1',
+                            list(
+                                 model.def =
+                                 gbm.model.def('gbm1',
                                    function(x) as.integer(x$target > 0),
                                    c('feature1', 'feature2'),
                                    distribution = 'bernoulli',
@@ -22,7 +39,8 @@ configure <- function(logger){
                                  evaluation.datasets = c('eds1','eds2')
                                  ),
                             m2 =
-                            list(model.def = lm.model.def('lm1',
+                            list(model.def =
+                                 lm.model.def('lm1',
                                    function(x) as.integer(x$target > 0),
                                    c('feature1', 'feature2'),
                                    link='binomial'),
@@ -32,22 +50,37 @@ configure <- function(logger){
 
 #### define metrics
   metrics.definitions <- list(
-                              precision = function(score, data){
-                                pred <- as.integer(score > 0.5)
-                                tpos <- as.integer(data$target > 0)
-                                list(sum(pred * tpos) / sum(pred))
-                              },
-                              grouped = function(score, data){
-                                r <- tapply(list(score, as.integer(data$target > 0)),
-                                            data$group.id,
-                                            function(x){
-                                              s <- x[[1]]
-                                              t <- x[[2]]
-                                              min(rank(-s,ties.method='random')[t])
-                                            })
-                                list(r, smean.cl.boot(r))
-                              })
-
+                              'eds.*' =
+                              list(
+                                   'raw' =
+                                   list(
+                                        metrics =
+                                        list(
+                                             squared.error = function(score, data){
+                                               (score - data$target)^2
+                                             }
+                                             )
+                                        )
+                                   ),
+                              'eds2' =
+                              list(
+                                   'ranking' =
+                                   list(
+                                        preprocess =
+                                        function(score, data){
+                                          list(rnk = compute.ranks(score, data$group.id),
+                                               group.id = data$group.id)
+                                        },
+                                        metrics =
+                                        list(
+                                             click.rank = function(score, data, rnk, group.id){
+                                               cr <- compute.metric(rnk, data$clicked == 1, group.id, pos.rank())
+                                               list(mean.cl.boot(cr))
+                                             }
+                                             )
+                                        )
+                                   )
+                              )
 
 #### make config object
   list(training.datasets = training.datasets,
