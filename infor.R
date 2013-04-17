@@ -71,7 +71,7 @@ compute.skips <- function(rnk, pos, g){
   x
 }
 
-compute.metric <- function(rnk, values, g, metric){
+compute.infor.metric <- function(rnk, values, g, metric){
   tapply(list(rnk, values), g,
          function(r, x){
            metric(r, x)
@@ -92,7 +92,7 @@ feature.contributions.infor.metric <- function(mdl, d, iss, values, g, metric, l
           s.r <- mdl$predict(mdl$model, d.r[,mdl$features])
           r.r <- compute.ranks(s.r, d.r$QueryID)
 
-          compute.metric(r.r, values, g, metric)
+          compute.infor.metric(r.r, values, g, metric)
         },
         .parallel=.parallel),
         sapply(iss, function(is) csplat(paste,is,sep=',')))
