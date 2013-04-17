@@ -42,12 +42,13 @@ parse.args <- function(filename, arglist, args){
                            function(x){
                              if(('flag' %in% names(x))){
                                if(x$flag){
-                                 z<-list(FALSE)
+                                 z<-list(!is.null(x$negate) && x$negate)
                                  names(z)<- x$name
                                  z
                                }
                              }else{NULL}
                            }))
+
   ## process defaults
   defaults <- c(do.call(c,lapply(arglist,
                                  function(x){
@@ -80,7 +81,7 @@ parse.args <- function(filename, arglist, args){
                                    return(NA)
                                  }
                                  if(y[1] %in% names(flag)){
-                                   z <- list(TRUE)
+                                   z <- list(!flag[[y[1]]])
                                  }else if(y[1] %in% names(parsers)){
                                    z <- list(parsers[[y[1]]](y[2]))
                                  }

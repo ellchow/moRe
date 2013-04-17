@@ -50,11 +50,12 @@ get.parallel.library <- function(){
   }
 }
 
-import <- function(..., from.moRe=TRUE){
+import <- function(..., as.library=NULL){
   available <- c('utils', 'mdls', 'yahoofin', 'cmdargs', 'math', 'plots', 'sql', 'infor')
   from.source <- c('rstan')
 
   selected <- c(...)
+
   not.in.moRe <- setdiff(selected, available)
   found.in.moRe <- setdiff(selected, not.in.moRe)
 
@@ -64,7 +65,9 @@ import <- function(..., from.moRe=TRUE){
 
   invisible(sapply(found.in.moRe,
          function(s) source(paste(moRe.ROOTDIR, '/', s, '.R', sep=''), chdir=T) ))
-  invisible(sapply(setdiff(not.in.moRe, from.source), better.library))
+
+  invisible(sapply(union(setdiff(not.in.moRe, from.source),as.library), better.library))
+
   invisible(sapply(intersect(from.source, selected), function(s) install.packages(s, type='source')))
 
 }

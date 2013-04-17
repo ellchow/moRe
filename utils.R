@@ -20,8 +20,8 @@ import('gdata',
        'R.oo',
        'digest',
        'gsubfn',
-       get.parallel.library()$lib
-       )
+       get.parallel.library()$lib,
+       as.library='utils')
 
 
 options(width=110,scipen=6)
@@ -327,27 +327,17 @@ merge.lists <- function(all,FUN=function(n,x){x}){
 }
 
 
-make.combinations <- function(lst, name.gen = function(ns) do.call(paste,c(as.list(ns),sep='_'))){
-  xs <- apply(do.call(expand.grid, as.list(lst)), 1,
-              function(z){
-                names(z) <- NULL
-                as.list(z)
-              })
-
-  names(xs) <- apply(do.call(expand.grid, lapply(lst, names)), 1, name.gen)
-  xs
+make.combinations <- function(...){
+  dots <- list(...)
+  apply(do.call(expand.grid, dots), 1,
+              function(z) as.list(z))
 }
 
 parameter.scan <- function(params.list, f){
-  fs <- lapply(params.list,
-               function(params)
-               do.call(f, as.list(params))
-             )
-  names(fs) <- names(params.list)
-  fs
+  named(lapply(params.list,
+               function(params) do.call(f, as.list(params)) ),
+        names(params.list))
 }
-
-
 
 ####################
 #### Dataframe

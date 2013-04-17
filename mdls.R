@@ -25,7 +25,7 @@ import('utils',
        'ggplot2',
        get.parallel.library()$lib)
 
-get.parallel.library()$activate()
+get.parallel.library()$activate(5)
 
 ##############################################
 #### Model Building
@@ -40,7 +40,8 @@ is.model.def <- function(x){
              "predict", # function for computing a prediction of the same form as gbm.predict
              "params", # extra parameters for the fitting function
              "check", # function that takes in a model definition, target, and data and checks if there are any issues
-             "weights" # weights on training examples
+             "weights", # weights on training examples
+             "report" # function that generates report for model
              ))
 }
 
@@ -127,7 +128,8 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                                 model=m,
                                                                 id=id,
                                                                 predict=md$predict,
-                                                                features=md$features))
+                                                                features=md$features,
+                                                                report=md$report))
                                                  names(z) <- id
                                                  return(z)
                                                }
@@ -197,7 +199,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
 
 
 gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
-  list(id=id, target.gen=target.gen, fit=function(...,weights=NULL)gbm.fit(...,w=weights), features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def, weights=weights)
+  list(id=id, target.gen=target.gen, fit=function(...,weights=NULL)gbm.fit(...,w=weights), features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def, weights=weights, report=gbm.model.report)
 }
 
 
@@ -702,16 +704,26 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   }
 }
 
+gbm.model.report <- function(object){
+  stop("gbm.model.report is not implemented yet")
+}
+## gbm.model.report.plots <- function(object){
+
+## }
+## gbm.model.report.html <- function(object){
+
+## }
+## gbm.model.report.string <- function(object){
+
+## }
 
 #####################################
 #### (g)lm modifications and helpers
 #####################################
 
 lm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
-  list(id=id, target.gen=target.gen, fit=lm.fit.plus, features=features, predict=predict.lm, params=list(...), check=check.lm.model.def, weights=weights)
+  list(id=id, target.gen=target.gen, fit=lm.fit.plus, features=features, predict=predict.lm, params=list(...), check=check.lm.model.def, weights=weights, report=lm.model.report)
 }
-
-
 
 lm.fit.plus <- function(x, y, ..., y.label="y"){
   features <- names(x)
@@ -754,8 +766,22 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   problems
 }
 
+lm.model.report <- function(object){
+  stop("lm.model.report is not implemented yet")
+}
+## lm.model.report.plots <- function(object){
+
+## }
+## lm.model.report.html <- function(object){
+
+## }
+## lm.model.report.string <- function(object){
+
+## }
+
+
 glm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
-  list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def, weights=weights)
+  list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def, weights=weights, report=glm.model.report)
 }
 
 
@@ -810,6 +836,18 @@ check.glm.model.def <- function(modelDef, target, data, weights){
 glm.predict <- function(object,newdata,type='response',...)
   predict.glm(object,newdata,type=type,...)
 
+glm.model.report <- function(object){
+  stop("glm.model.report is not implemented yet")
+}
+## glm.model.report.plots <- function(object){
+
+## }
+## glm.model.report.html <- function(object){
+
+## }
+## glm.model.report.string <- function(object){
+
+## }
 
 
 #######################################
