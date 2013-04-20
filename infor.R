@@ -98,3 +98,4 @@ feature.contributions.infor.metric <- function(mdl, d, iss, values, g, metric, l
         sapply(iss, function(is) csplat(paste,is,sep=',')))
 }
 
+
