@@ -58,6 +58,13 @@ winsor.var <- function(x, trim=0.02){
   var(cap(x,quantile(x,trim), quantile(x,1 - trim)))
 }
 
+skewness <- function(x, ...)
+  mean((x - mean(x, ...)) ^ 3, ...) / (mean((x - mean(x, ...)) ^ 2) ^ 1.5)
+
+
+kurtosis <- function(x, ...)
+  -3 + mean((x - mean(x, ...)) ^ 4, ...) / (mean((x - mean(x, ...)) ^ 2, ...) ^ 2)
+
 bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1)),label=!is.null(names(buckets))){
   ub <- max(buckets)
   buckets[which.max(buckets)] <- ub + 1
