@@ -198,7 +198,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
           )
 }
 
-mdls.report <- function(mdls, root, log.level = SimpleLog.INFO, .parallel=TRUE){
+mdls.report <- function(mdls, root, text.as = 'html', log.level = SimpleLog.INFO, .parallel=TRUE){
   ## import('mdls'); mdls.fit(iris, gbm.model.def("gbmmodel",function(x) x$Sepal.Length + as.integer(x$Species), c('Sepal.Width','Petal.Length','Petal.Width','Species'),distribution='gaussian',weights=function(data) runif(nrow(data)), train.fraction=0.8),glm.model.def('glmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'), family='gaussian'),lm.model.def('lmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'))) -> ms; system('rm -r ~/tmp/test/'); mdls.report(ms,'~/tmp/test')
   stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
 
@@ -213,7 +213,7 @@ mdls.report <- function(mdls, root, log.level = SimpleLog.INFO, .parallel=TRUE){
 
                     write.msg(logger, sprintf('saving report for "%s"', id))
 
-                    m$report(m$model, file.path(root, id), log.level = log.level, .parallel = .parallel)
+                    m$report(m$model, file.path(root, id), text.as = text.as, log.level = log.level, .parallel = .parallel)
                   },
                   .parallel=.parallel))
 }
@@ -840,7 +840,7 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   problems
 }
 
-lm.model.report <- function(object, root, log.level = SimpleLog.INFO, .parallel = TRUE){
+lm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
   stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
 
   logger <- SimpleLog('lm.model.report', log.level)
@@ -907,7 +907,7 @@ check.glm.model.def <- function(modelDef, target, data, weights){
 glm.predict <- function(object,newdata,type='response',...)
   predict.glm(object,newdata,type=type,...)
 
-glm.model.report <- function(object, root, log.level = SimpleLog.INFO, .parallel = TRUE){
+glm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
   stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
 
   logger <- SimpleLog('glm.model.report', log.level)
