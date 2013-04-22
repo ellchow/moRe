@@ -351,11 +351,17 @@ gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
   if(is.numeric(var.name))
     var.name <- object$var.names[var.name]
 
-  do.call(c, lapply(1:trees,
-                    function(tree){
-                      z <- gbm.tree.as.df(object, i.tree=tree)
-                      z$condition[ !is.na(z$var.name) & (z$var.name == var.name) ]
-                    }))
+  sp <- csplat(c, lapply(1:trees,
+                         function(tree){
+                           z <- gbm.tree.as.df(object, i.tree=tree)
+                           z$condition[ !is.na(z$var.name) & (z$var.name == var.name) ]
+                         }))
+
+  sp.n <- as.numeric(sp)
+  if(any(is.na(sp.n)))
+    sp
+  else
+    sp.n
 }
 
 gbm.feature.importance <- function(object, k=min(10,length(object$var.names)),
@@ -709,18 +715,62 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   }
 }
 
-gbm.model.report <- function(object){
-  stop("gbm.model.report is not implemented yet")
+gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log.level = SimpleLog.INFO, .parallel = TRUE){
+  ## import('mdls'); mdls.fit(iris, gbm.model.def("gbmmodel",function(x) x$Sepal.Length + as.integer(x$Species), c('Sepal.Width','Petal.Length','Petal.Width','Species'),distribution='gaussian',weights=function(data) runif(nrow(data)), train.fraction=0.8),glm.model.def('glmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'), family='gaussian'),lm.model.def('lmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'))) -> ms; system('rm -r ~/tmp/test/'); glm.model.report(ms$glmmodel$model, '~/tmp/test')
+
+  stop.if.not(text.as %in% c('txt','html'),
+              sprintf('unknown text format: %s', text.as))
+  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+
+  logger <- SimpleLog('gbm.model.report', log.level)
+
+  dir.create(root, recursive = TRUE)
+  dep.plots.dir <- file.path(root, 'dependency-plots')
+  dir.create(dep.plots.dir)
+
+  if('txt' == text.as)
+    format.fun <- pprint.dataframe
+  else if('html' == text.as)
+    format.fun <- dataframe.to.html.table
+
+  ## model performance
+  if(object$train.fraction < 1){
+    png(file.path(root, 'error-test.png'))
+    gbm.perf(object, method = 'test')
+    dev.off()
+  }else{
+    png(file.path(root, 'error-oob.png'))
+    gbm.perf(object, method = 'OOB')
+    dev.off()
+  }
+
+  ## feature importance
+  write.msg(logger, 'saving feature importance')
+  x <- summary(object, plotit=F)
+  names(x) <- c('feature', 'importance')
+  x$feature <- ordered(x$feature, x$feature)
+  x <- cbind(" "=1:nrow(x), x)
+  cat(format.fun(x), file=file.path(root, sprintf('feature-importance.%s', text.as)))
+
+  ## dependency plots
+  nonzero.features <- as.character(x$feature[x$importance > 0])
+  invisible(llply(nonzero.features,
+        function(f){
+          write.msg(logger, sprintf('saving dependency plot for %s', f))
+          dp <- gbm.plot(object, f, return.grid=T)
+          cat(format.fun(dp), file=file.path(dep.plots.dir, sprintf('%s.%s', f, text.as)))
+
+          if(plot.it){
+            png(file.path(dep.plots.dir, sprintf('%s.png', f)))
+            gbm.plot(object, f, return.grid=F)
+            dev.off()
+          }
+        },
+        .parallel=.parallel))
+
 }
-## gbm.model.report.plots <- function(object){
 
-## }
-## gbm.model.report.html <- function(object){
 
-## }
-## gbm.model.report.string <- function(object){
-
-## }
 
 #####################################
 #### (g)lm modifications and helpers
@@ -771,18 +821,15 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   problems
 }
 
-lm.model.report <- function(object){
-  stop("lm.model.report is not implemented yet")
+lm.model.report <- function(object, root, log.level = SimpleLog.INFO){
+  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+
+  logger <- SimpleLog('lm.model.report', log.level)
+
+  dir.create(root, recursive = TRUE)
+  cat(str_replace_all(csplat(paste,capture.output(summary(object)),sep='\n'), '[’‘]', '"'),
+      file=file.path(root, 'summary.txt'))
 }
-## lm.model.report.plots <- function(object){
-
-## }
-## lm.model.report.html <- function(object){
-
-## }
-## lm.model.report.string <- function(object){
-
-## }
 
 
 glm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
@@ -841,18 +888,15 @@ check.glm.model.def <- function(modelDef, target, data, weights){
 glm.predict <- function(object,newdata,type='response',...)
   predict.glm(object,newdata,type=type,...)
 
-glm.model.report <- function(object){
-  stop("glm.model.report is not implemented yet")
+glm.model.report <- function(object, root, log.level = SimpleLog.INFO){
+  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+
+  logger <- SimpleLog('glm.model.report', log.level)
+
+  dir.create(root, recursive = TRUE)
+  cat(str_replace_all(csplat(paste,capture.output(summary(object)),sep='\n'), '[’‘]', '"'),
+      file=file.path(root, 'summary.txt'))
 }
-## glm.model.report.plots <- function(object){
-
-## }
-## glm.model.report.html <- function(object){
-
-## }
-## glm.model.report.string <- function(object){
-
-## }
 
 
 #######################################
