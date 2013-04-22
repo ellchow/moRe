@@ -339,6 +339,20 @@ parameter.scan <- function(params.list, f){
         names(params.list))
 }
 
+sample.by <- function(x,...,as.filter=TRUE){
+  if(is.factor(x))
+    g <- levels(x)
+  else
+    g <- unique(x)
+
+  g.s <- sample(g, ...)
+
+  if(as.filter)
+    x %in% g.s
+  else
+    x[x %in% g.s]
+}
+
 ####################
 #### Dataframe
 ####################
