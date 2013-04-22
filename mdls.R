@@ -56,7 +56,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
 
   logger <- SimpleLog('mdls.fit',log.level)
 
-  datasets <- if(is.data.frame(datasets)) list(datasets) else datasets
+  datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
   modelDefs <- list(...)
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
@@ -66,10 +66,12 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                    dsId <- x[[1]]
                    data <- x[[2]]
 
-                   if(typeof(data) == 'character'){
+                   if(is.character(data)){
                      t0 <- start.timer(timer,'loading dataset "%s"', dsId)
                      data <- load.data(data)
                      stop.timer(timer)
+                   }else if(is.function(data)){
+                     data <- data()
                    }else{
                      data <- as.data.frame(data)
                    }
@@ -147,7 +149,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
 
 mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=TRUE){
   logger <- SimpleLog('mdls.predict',log.level)
-  datasets <- if(is.data.frame(datasets)) list(datasets) else datasets
+  datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
   timer <- Timer(logger)
@@ -155,10 +157,13 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
                  function(x){
                    dsId <- x[[1]]
                    data <- x[[2]]
-                   if(typeof(data) == 'character'){
-                     start.timer(timer,sprintf('loading dataset "%s"', dsId))
+
+                   if(is.character(data)){
+                     t0 <- start.timer(timer,'loading dataset "%s"', dsId)
                      data <- load.data(data)
                      stop.timer(timer)
+                   }else if(is.function(data)){
+                     data <- data()
                    }else{
                      data <- as.data.frame(data)
                    }
