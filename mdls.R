@@ -750,7 +750,7 @@ gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log
   if('txt' == text.as)
     format.fun <- pprint.dataframe
   else if('html' == text.as)
-    format.fun <- dataframe.to.html.table
+    format.fun <- function(...) paste(sorttable.import(), dataframe.to.html.table(...), sep='\n')
 
   ## model performance
   if(object$train.fraction < 1){
