@@ -56,9 +56,11 @@ configure <- function(logger){
                                    list(
                                         metrics =
                                         list(
-                                             squared.error = function(score, data){
-                                               (score - data$target)^2
-                                             }
+                                             squared.error =
+                                             list(
+                                                  f = function(score, data) (score - data$target)^2,
+                                                  report = function(..., path){}
+                                                  )
                                              )
                                         )
                                    ),
@@ -73,10 +75,14 @@ configure <- function(logger){
                                         },
                                         metrics =
                                         list(
-                                             click.rank = function(score, data, rnk, group.id){
-                                               cr <- compute.metric(rnk, data$clicked == 1, group.id, pos.rank())
-                                               list(mean.cl.boot(cr))
-                                             }
+                                             click.rank =
+                                             list(
+                                                  f = function(score, data, rnk, group.id){
+                                                    cr <- compute.metric(rnk, data$clicked == 1, group.id, pos.rank())
+                                                    list(mean.cl.boot(cr))
+                                                  },
+                                                  report = function(..., path) {}
+                                                  )
                                              )
                                         )
                                    )
