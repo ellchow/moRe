@@ -15,14 +15,14 @@
 source('import.R',chdir=T)
 import('utils', 'stringr')
 
-parse.args <- function(filename, arglist, args){
+parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
   ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
 
 
   args <- do.call(paste,as.list(c(args,'')))
-  success <- TRUE
+  failures <- list()
   ## add help option
-  arglist <- c(arglist,list(list(name='help',desc='show this help message',flag=TRUE)))
+  arglist <- c(arglist,list(list(name='-help',desc='show this help message',flag=TRUE)))
   ## get names
   argnames <- lapply(arglist,
                      function(x){
@@ -100,36 +100,39 @@ parse.args <- function(filename, arglist, args){
                      z
                    })
   names(parsed) <- allNames
-  success <- !any(is.na(parsed))
   options(warn=0)
   ## check
-  if(!parsed$help && success){
+  if(!parsed[['-help']]){
     ## check required
     missing <- setdiff(required, names(parsed))
     if(length(missing) > 0){
-      ## cat(sprintf('ERROR: missing arguments %s\n', do.call(paste,as.list(c(missing,sep=', ')))))
-      success <- FALSE
+      failures <- c(failures, sprintf("missing args %s",
+                                      csplat(paste,paste('-',missing,sep=''),sep=', ')))
     }
 
     ## check types
     invalidTypes <- is.na(parsed)
     if(any(invalidTypes)){
-      ## cat(sprintf('ERROR: invalid types %s\n', do.call(paste,as.list(c(names(parsed)[invalidTypes],sep=', ')))))
-      success <- FALSE
+      failures <- sprintf('invalid values for %s\n',
+                          csplat(paste,paste('-',names(parsed)[invalidTypes],sep=''),sep=', '))
     }
   }
-  stop.if.not(success, sprintf('failed to parse args\n\n%s\n', make.usage.string(filename, arglist)))
+  stop.if.not(length(failures) == 0, sprintf('failed to parse args - problems:\n    %s\n\n%s\n',
+                                            csplat(paste, failures, sep='\n    '),
+                                            make.usage.string(filename, arglist, prologue, epilogue)))
 
-  if(parsed$help){
-    cat(make.usage.string(filename, arglist))
+  if(parsed[['-help']]){
+    cat(make.usage.string(filename, arglist, prologue, epilogue))
     q(save='no',runLast=FALSE)
   }
   parsed
 }
 
-make.usage.string <- function(filename, arglist){
+make.usage.string <- function(filename, arglist, prologue, epilogue){
   std.indent <- '\n        '
-  sprintf('USAGE: %s %s\n  ARGS  %s\n', filename,
+  sprintf('%s\nUSAGE: %s %s\n  ARGS  %s\n%s\n',
+          prologue,
+          filename,
           do.call(paste, c(lapply(arglist,
                                   function(x){
                                     v <- x$name
@@ -147,8 +150,8 @@ make.usage.string <- function(filename, arglist){
                                     csplat(paste,
                                            c('-',x$name,ret.line,c('\t',x$desc)),
                                            sep='')
-                                  }),sep=std.indent))
-          )
+                                  }),sep=std.indent)),
+          epilogue)
 }
 
 
