@@ -198,6 +198,26 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
           )
 }
 
+mdls.report <- function(mdls, root, log.level = SimpleLog.INFO, .parallel=TRUE){
+  ## import('mdls'); mdls.fit(iris, gbm.model.def("gbmmodel",function(x) x$Sepal.Length + as.integer(x$Species), c('Sepal.Width','Petal.Length','Petal.Width','Species'),distribution='gaussian',weights=function(data) runif(nrow(data)), train.fraction=0.8),glm.model.def('glmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'), family='gaussian'),lm.model.def('lmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'))) -> ms; system('rm -r ~/tmp/test/'); mdls.report(ms,'~/tmp/test')
+  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+
+  logger <- SimpleLog('mdls.report',log.level)
+
+  dir.create(root, recursive = TRUE)
+
+  invisible(llply(lzip(names(mdls), mdls),
+                  function(x){
+                    id <- x[[1]]
+                    m <- x[[2]]
+
+                    write.msg(logger, sprintf('saving report for "%s"', id))
+
+                    m$report(m$model, file.path(root, id), log.level = log.level, .parallel = .parallel)
+                  },
+                  .parallel=.parallel))
+}
+
 #####################################
 #### gbm modifications and helpers
 #####################################
@@ -716,7 +736,6 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
 }
 
 gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log.level = SimpleLog.INFO, .parallel = TRUE){
-  ## import('mdls'); mdls.fit(iris, gbm.model.def("gbmmodel",function(x) x$Sepal.Length + as.integer(x$Species), c('Sepal.Width','Petal.Length','Petal.Width','Species'),distribution='gaussian',weights=function(data) runif(nrow(data)), train.fraction=0.8),glm.model.def('glmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'), family='gaussian'),lm.model.def('lmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'))) -> ms; system('rm -r ~/tmp/test/'); glm.model.report(ms$glmmodel$model, '~/tmp/test')
 
   stop.if.not(text.as %in% c('txt','html'),
               sprintf('unknown text format: %s', text.as))
@@ -821,7 +840,7 @@ check.lm.model.def <- function(modelDef, target, data, weights){
   problems
 }
 
-lm.model.report <- function(object, root, log.level = SimpleLog.INFO){
+lm.model.report <- function(object, root, log.level = SimpleLog.INFO, .parallel = TRUE){
   stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
 
   logger <- SimpleLog('lm.model.report', log.level)
@@ -888,7 +907,7 @@ check.glm.model.def <- function(modelDef, target, data, weights){
 glm.predict <- function(object,newdata,type='response',...)
   predict.glm(object,newdata,type=type,...)
 
-glm.model.report <- function(object, root, log.level = SimpleLog.INFO){
+glm.model.report <- function(object, root, log.level = SimpleLog.INFO, .parallel = TRUE){
   stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
 
   logger <- SimpleLog('glm.model.report', log.level)
