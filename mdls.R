@@ -862,17 +862,19 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=Sim
   src <- subset(src,select=features) -> osrc
   snk <- subset(snk,select=features) -> osnk
 
+  predict.log.level <- if('debug' %in% log.level) SimpleLog.DEBUG else c('warning', 'error')
+
   md <- list(this.model=mdl)
   names(md) <- mdl$id
-  srcScore <- mdls.predict(md,src,log.level=log.level)[[1]][[1]]
-  snkScore <- mdls.predict(md,snk,log.level=log.level)[[1]][[1]]
+  srcScore <- mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]]
+  snkScore <- mdls.predict(md,snk,log.level=predict.log.level)[[1]][[1]]
   selected.features <- NA
   scores <- srcScore
   while(length(features) > 0){
     s <- laply(features,
                 function(ft){
                   src[[ft]] <- snk[[ft]]
-                  mdls.predict(md,src,log.level=log.level)[[1]][[1]]
+                  mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]]
                 }, .parallel=.parallel)
     selected <- select(snkScore - s)
     ft <- features[selected]
