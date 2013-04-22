@@ -21,10 +21,12 @@ import('utils','cmdargs','mdls', 'infor')
 configure <- function(logger){
 #### define datasets
   training.datasets <- list(tds1 = 'some/training/dataset/01.RData',
-                            tds2 = 'some/training/dataset/02.RData')
+                            tds2 = function() load.data('some/training/dataset/02.RData')
+                            )
 
   evaluation.datasets <- list(eds1 = 'some/evaluation/dataset/01.RData',
-                              eds2 = 'some/training/dataset/02.RData')
+                              eds2 = function() load.data('some/evaluation/dataset/02.RData')
+                              )
 
 #### define models
   model.definitions <- list(m1 =
@@ -45,7 +47,8 @@ configure <- function(logger){
                                    c('feature1', 'feature2'),
                                    link='binomial'),
                                  training.datasets = c('tds.*'),
-                                 evaluation.datasets = c('eds2'))
+                                 evaluation.datasets = c('eds2')
+                                 )
                             )
 
 #### define metrics
@@ -144,6 +147,8 @@ main <- function(raw.args){
     save(config, file=config.path)
     stop.timer(timer)
   }
+
+
 
 }
 
