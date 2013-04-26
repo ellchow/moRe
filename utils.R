@@ -425,17 +425,17 @@ pprint.dataframe <- function(data,sep='  |  ',.parallel=FALSE){
 }
 
 dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T, .parallel = TRUE){
-  row.to.tt <- function(row) paste('|', csplat(paste, as.character(row), sep = ' | '), '|')
+  row.to.tt <- function(row) paste('|', csplat(paste, as.character(row), sep = ' |'), ' |', sep='')
 
   add.attr <- function(e, i, j) {
     attr <- attr.for(e, i, j)
 
-    if(is.na(attr)) e else paste(attr, e, sep='.')
+    if(is.na(attr)) paste(' ', e, sep='') else paste(attr, e, sep='. ')
   }
 
-  zz <- if(header) paste('_', names(x), sep='.') else NULL
+  zz <- if(header) paste('_', names(x), sep='. ') else NULL
   csplat(paste,
-         list(if(header) row.to.tt(paste('_', names(x), sep='.')) else NULL),
+         list(if(header) row.to.tt(paste('_', names(x), sep='. ')) else NULL),
          llply(indices(x, 'row'),
                function(i){
                  row.to.tt(sapply(indices(x, 'col'),
