@@ -181,8 +181,17 @@ csplat <- function(f,a,...)
   do.call(f,c(as.list(a),...))
 
 
-indices <- function(xs){
-  len <- length(xs)
+indices <- function(xs, type=NULL){
+  if(is.null(type))
+    f <- length
+  if(type == 'col')
+    f <- ncol
+  else if(type == 'row')
+    f <- nrow
+  else
+    stop(sprintf("unknown index type %s", type))
+
+  len <- f(xs)
   if(len > 0) 1:len else NULL
 }
 
@@ -327,6 +336,9 @@ merge.lists <- function(all,FUN=function(n,x){x}){
   z
 }
 
+setdiff2 <- function(x,y){
+  list(setdiff(x,y), setdiff(y, x))
+}
 
 make.combinations <- function(...){
   dots <- list(...)
@@ -410,6 +422,27 @@ pprint.dataframe <- function(data,sep='  |  ',.parallel=FALSE){
         '',
         sep='\n'
         )
+}
+
+dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T, .parallel = TRUE){
+  row.to.tt <- function(row) paste('|', csplat(paste, as.character(row), sep = ' | '), '|')
+
+  add.attr <- function(e, i, j) {
+    attr <- attr.for(e, i, j)
+
+    if(is.na(attr)) e else paste(attr, e, sep='.')
+  }
+
+  zz <- if(header) paste('_', names(x), sep='.') else NULL
+  csplat(paste,
+         list(if(header) row.to.tt(paste('_', names(x), sep='.')) else NULL),
+         llply(indices(x, 'row'),
+               function(i){
+                 row.to.tt(sapply(indices(x, 'col'),
+                                  function(j) add.attr(x[i,j], i, j)))
+             },
+               .parallel=.parallel),
+         sep = '\n')
 }
 
 dataframe.to.html.table <- function(x,
