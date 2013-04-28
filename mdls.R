@@ -737,7 +737,7 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
 
 gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log.level = SimpleLog.INFO, .parallel = TRUE){
 
-  stop.if.not(text.as %in% c('txt','html'),
+  stop.if.not(text.as %in% c('txt','html','textile'),
               sprintf('unknown text format: %s', text.as))
   stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
 
@@ -751,6 +751,8 @@ gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log
     format.fun <- pprint.dataframe
   else if('html' == text.as)
     format.fun <- function(...) paste(sorttable.import(), dataframe.to.html.table(...), sep='\n')
+  else if('textile' == text.as)
+    format.fun <- dataframe.to.textile
 
   ## model performance
   if(object$train.fraction < 1){
@@ -786,7 +788,6 @@ gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log
           }
         },
         .parallel=.parallel))
-
 }
 
 
