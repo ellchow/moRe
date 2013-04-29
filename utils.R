@@ -56,13 +56,12 @@ SimpleLog.DEBUG <- c(SimpleLog.ERROR, 'debug')
 setMethodS3('write.msg','SimpleLog',
             function(log,...,level=SimpleLog.INFO,sep=' - '){
               check <- TRUE
-              if(any(level %in% log$level)){
+              if(tail(level,1) %in% log$level){
                 check <- all(sapply(log$outputs,
                                     function(o){
                                       sapply(intersect(tail(level,1),log$level),
                                              function(lvl){
-                                               msg <- do.call(paste,c(as.list(keep.if(c(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)),
-                                                                                      function(i){!is.null(i)})), sep=sep))
+                                               msg <- csplat(paste, list(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)), sep=sep)
                                                tryCatch(is.null(cat(msg,'\n', file=o, append=TRUE)), error=function(e){FALSE})
                                              })
                                     }))
