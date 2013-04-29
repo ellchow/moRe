@@ -59,7 +59,7 @@ setMethodS3('write.msg','SimpleLog',
               if(any(level %in% log$level)){
                 check <- all(sapply(log$outputs,
                                     function(o){
-                                      sapply(intersect(level,log$level),
+                                      sapply(intersect(tail(level,1),log$level),
                                              function(lvl){
                                                msg <- do.call(paste,c(as.list(keep.if(c(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)),
                                                                                       function(i){!is.null(i)})), sep=sep))
