@@ -258,7 +258,8 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                    z
                  })
 
-  list(scores = lapply(z, function(x) x[[1]]), metrics = lapply(z, function(x) x[[2]]))
+  list(scores = flatten(lapply(z, function(x) x[[1]])),
+       metrics = flatten(lapply(z, function(x) x[[2]])))
 }
 
 mdls.report <- function(mdls, root, text.as = 'html', log.level = SimpleLog.INFO, .parallel=TRUE){
