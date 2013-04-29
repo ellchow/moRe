@@ -57,17 +57,17 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
   logger <- SimpleLog('mdls.fit',log.level)
 
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
-  modelDefs <- list(...)
+  model.defs <- list(...)
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
   timer <- Timer(logger)
   flatten(lapply(lzip(dataset.ids, datasets),
                  function(x){
-                   dsId <- x[[1]]
+                   ds.id <- x[[1]]
                    data <- x[[2]]
 
                    if(is.character(data)){
-                     t0 <- start.timer(timer,'loading dataset "%s"', dsId)
+                     t0 <- start.timer(timer,'loading dataset "%s"', ds.id)
                      data <- load.data(data)
                      stop.timer(timer)
                    }else if(is.function(data)){
@@ -76,18 +76,18 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                      data <- as.data.frame(data)
                    }
 
-                   modelDefs.filtered <- Filter(function(md){
+                   model.defs.filtered <- Filter(function(md){
                      any(sapply(lzip(names(mapping), mapping),
                                 function(mp)
-                                str_detect(dsId, mp[[1]]) && str_detect(md$id, mp[[2]])
+                                str_detect(ds.id, mp[[1]]) && str_detect(md$id, mp[[2]])
                                 ))
-                   }, modelDefs)
+                   }, model.defs)
 
-                   start.timer(timer, sprintf('train models on "%s"', dsId))
-                   models <- flatten(llply(modelDefs.filtered,
+                   start.timer(timer, sprintf('train models on "%s"', ds.id))
+                   models <- flatten(llply(model.defs.filtered,
                                            function(md){
                                              id <- sprintf('%s%s', md$id,
-                                                           if(length(datasets) > 1) sprintf("__%s", dsId) else "")
+                                                           if(length(datasets) > 1) sprintf("__%s", ds.id) else "")
                                              write.msg(logger, sprintf('building target for "%s"', id))
                                              t <- tryCatch(md$target.gen(data),
                                                            error=function(e){
@@ -126,13 +126,14 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                                NA
                                                              })
                                                if(!any(is.na(m))){
-                                                 z <- list(list(target=t,
+                                                 z <- named(list(list(target=t,
                                                                 model=m,
                                                                 id=id,
                                                                 predict=md$predict,
                                                                 features=md$features,
-                                                                report=md$report))
-                                                 names(z) <- id
+                                                                report=md$report)),
+                                                            id)
+
                                                  return(z)
                                                }
                                              }
@@ -155,11 +156,11 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
   timer <- Timer(logger)
   flatten(lapply(lzip(dataset.ids,datasets),
                  function(x){
-                   dsId <- x[[1]]
+                   ds.id <- x[[1]]
                    data <- x[[2]]
 
                    if(is.character(data)){
-                     t0 <- start.timer(timer,'loading dataset "%s"', dsId)
+                     t0 <- start.timer(timer,'loading dataset "%s"', ds.id)
                      data <- load.data(data)
                      stop.timer(timer)
                    }else if(is.function(data)){
@@ -170,11 +171,11 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
 
                    models.filtered <- Filter(function(m){
                      any(sapply(lzip(names(mapping), mapping),
-                                function(mp) str_detect(dsId, mp[[1]]) && str_detect(m[[1]], mp[[2]]) ))
+                                function(mp) str_detect(ds.id, mp[[1]]) && str_detect(m[[1]], mp[[2]]) ))
 
                    }, lzip(names(models), models))
 
-                   start.timer(timer,sprintf('computing predictions on "%s"', dsId))
+                   start.timer(timer,sprintf('computing predictions on "%s"', ds.id))
                    z <- flatten(llply(models.filtered,
                                       function(x){
                                         id <- x[[1]]
@@ -190,8 +191,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
                                         names(z) <- id
                                         z
                                       }, .parallel=.parallel))
-                   z <- list(z)
-                   names(z) <- dsId
+                   z <- named(list(z), ds.id)
                    stop.timer(timer)
                    z
                  })
@@ -239,11 +239,11 @@ gbm.predict <- function(object,newdata,n.trees=NULL,type='response',...){
   predict.gbm(object,newdata,n.trees=trees,type=type,...)
 }
 
-check.gbm.model.def <- function(modelDef, target, data, weights){
+check.gbm.model.def <- function(model.def, target, data, weights){
   problems <- list()
 
-  missing <- setdiff(modelDef$features, names(data))
-  available <- setdiff(modelDef$features, missing)
+  missing <- setdiff(model.def$features, names(data))
+  available <- setdiff(model.def$features, missing)
   if(length(missing) != 0)
     problems$missing.features <- missing
 
@@ -255,9 +255,9 @@ check.gbm.model.def <- function(modelDef, target, data, weights){
   if(any(all.na))
     problems$all.na <- available[all.na]
 
-  monotonicity <- (('var.monotone' %in% names(modelDef$params)) &&
-                   ((length(modelDef$params$var.monotone) != length(modelDef$features)) ||
-                    !all(modelDef$params$var.monotone %in% (-1:1))))
+  monotonicity <- (('var.monotone' %in% names(model.def$params)) &&
+                   ((length(model.def$params$var.monotone) != length(model.def$features)) ||
+                    !all(model.def$params$var.monotone %in% (-1:1))))
   if(monotonicity)
     problems$monotonicity <- NA
 
@@ -273,11 +273,11 @@ check.gbm.model.def <- function(modelDef, target, data, weights){
   if(infinite.target)
     problems$infinite.target <- NA
 
-  no.distribution <- !('distribution' %in% names(modelDef$params))
+  no.distribution <- !('distribution' %in% names(model.def$params))
   if(no.distribution)
     problems$no.distribution <- NA
   else{
-    invalid.bernoulli.target <- (modelDef$params$distribution == 'bernoulli') && (!all(target %in% (0:1)))
+    invalid.bernoulli.target <- (model.def$params$distribution == 'bernoulli') && (!all(target %in% (0:1)))
     if(invalid.bernoulli.target)
       problems$invalid.bernoulli.target <- NA
   }
@@ -809,11 +809,11 @@ lm.fit.plus <- function(x, y, ..., y.label="y"){
   m
 }
 
-check.lm.model.def <- function(modelDef, target, data, weights){
+check.lm.model.def <- function(model.def, target, data, weights){
   problems <- list()
 
-  missing <- setdiff(modelDef$features, names(data))
-  available <- setdiff(modelDef$features, missing)
+  missing <- setdiff(model.def$features, names(data))
+  available <- setdiff(model.def$features, missing)
   if(length(missing) != 0)
     problems$missing.features <- missing
 
@@ -864,11 +864,11 @@ glm.fit.plus <- function(x, y, family=NA,..., y.label="y"){
   glm(formula(f), family=family, x, ...)
 }
 
-check.glm.model.def <- function(modelDef, target, data, weights){
+check.glm.model.def <- function(model.def, target, data, weights){
   problems <- list()
 
-  missing <- setdiff(modelDef$features, names(data))
-  available <- setdiff(modelDef$features, missing)
+  missing <- setdiff(model.def$features, names(data))
+  available <- setdiff(model.def$features, missing)
   if(length(missing) != 0)
     problems$missing.features <- missing
 
@@ -884,11 +884,11 @@ check.glm.model.def <- function(modelDef, target, data, weights){
   if(infinite.target)
     problems$infinite.target <- NA
 
-  no.family <- !('family' %in% names(modelDef$params))
+  no.family <- !('family' %in% names(model.def$params))
   if(no.family)
     problems$no.family <- NA
   else{
-    invalid.binomial.target <- (modelDef$params$family == 'binomial') && (!all(target %in% (0:1)))
+    invalid.binomial.target <- (model.def$params$family == 'binomial') && (!all(target %in% (0:1)))
     if(invalid.binomial.target)
       problems$invalid.binomial.target <- NA
   }
