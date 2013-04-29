@@ -181,15 +181,13 @@ csplat <- function(f,a,...)
   do.call(f,c(as.list(a),...))
 
 
-indices <- function(xs, type=NULL){
-  if(is.null(type))
+indices <- function(xs, type){
+  if(missing(type))
     f <- length
-  if(type == 'col')
+  else if(type == 'col')
     f <- ncol
   else if(type == 'row')
     f <- nrow
-  else
-    stop(sprintf("unknown index type %s", type))
 
   len <- f(xs)
   if(len > 0) 1:len else NULL
@@ -202,7 +200,7 @@ na.rm <- function(x, required, discard = is.na) {
     keep <- Reduce(function(a,b) a & b, lapply(subset(x,select=required), function(y) !discard(y)), init=TRUE)
     x[keep,]
   }else
-    x[!discard(x)]
+  x[!discard(x)]
 }
 
 inf.rm <- function(...) na.rm(..., discard = is.infinite)
@@ -270,22 +268,22 @@ tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
   ansmat
 }
 
-lzip <- function(...,simplify=TRUE){
-  args <- list(...)
+lzip <- function(...){
+  args <- lapply(list(...), as.list)
   n <- min(sapply(args,length))
-  if(n == 0)
+  if(n <= 0)
     return(NULL)
 
   lapply(1:n,
          function(i){
-           sapply(1:length(args),
+           zip.to.named(lapply(indices(args),
                   function(j){
                     y <- args[[j]]
                     if(typeof(y) == 'list')
-                      y[[i]]
+                      list(names(y)[i], y[[i]])
                     else
-                      y[i]
-                  },simplify=simplify)
+                      list(names(y)[i], y[[i]])
+                  }))
          })
 }
 
@@ -343,7 +341,7 @@ setdiff2 <- function(x,y){
 make.combinations <- function(...){
   dots <- list(...)
   apply(do.call(expand.grid, dots), 1,
-              function(z) as.list(z))
+        function(z) as.list(z))
 }
 
 parameter.scan <- function(params.list, f){
@@ -440,7 +438,7 @@ dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T,
                function(i){
                  row.to.tt(sapply(indices(x, 'col'),
                                   function(j) add.attr(x[i,j], i, j)))
-             },
+               },
                .parallel=.parallel),
          sep = '\n')
 }
@@ -524,10 +522,10 @@ str.fmt <- function(s,...){
     stop.if(is.null(names(dots)) || any(str_length(names(dots))==0),
             'requires named parameters')
     stop.if(any(!n %in% names(dots)), sprintf('missing params %s', csplat(paste,setdiff(n,names(dots)),sep=',')))
-    # first escape things that percent symbols; then replace named params with unnamed params
+                                        # first escape things that percent symbols; then replace named params with unnamed params
     ss <- gsub(named.pat,'\\1\\2\\4',
                gsub(unnamed.pat,'\\1%\\2',s))
-    # get params in order of appearance
+                                        # get params in order of appearance
     params <- dots[n]
   }
   csplat(sprintf,ss,params)
@@ -605,6 +603,6 @@ get.free.mem.gb <- function(default.memory.gb = 1, log.level=SimpleLog.INFO){
 
     mem.n / d
   }else
-    default.memory.gb
+  default.memory.gb
 
 }
