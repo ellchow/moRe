@@ -1130,8 +1130,27 @@ clsfy.accuracy <- function(confusion)
 clsfy.fallout <- function(confusion)
   confusion$false.positive / (confusion$false.positive + confusion$true.negative)
 
+#### helpers for creating mapping used in mdls.predict
 
+mdls.metric.def <- function(name, f, report = function(..., path) {})
+  named(list(list(f = f, report = report)), name)
 
+mdls.metric.group.def <- function(name, metric.defs, preprocess = NULL){
+  ## named(list(metric.group.def('foo', c(metric.def('abs.rel.err', function(score,data) list(abs(score - data$target) / data$target))))), '.*')
+  named(list(list(preprocess = preprocess,
+                  metrics = metric.defs)),
+        name)
+}
+
+mdls.raw.metrics <- function(target){
+  c(metric.def('absolute.error',
+               function(score,data) list(abs(score - data[[target]]))),
+    metric.def('absolute.relative.error',
+               function(score,data) list(abs(score - data[[target]]) / data[[target]])),
+    metric.def('squared.error',
+               function(score,data) list(abs(score - data[[target]]) / data[[target]]))
+    )
+}
 
 
 ## list(
