@@ -82,9 +82,13 @@ configure <- function(logger){
                                              list(
                                                   f = function(score, data, rnk, group.id){
                                                     cr <- compute.metric(rnk, data$clicked == 1, group.id, pos.rank())
-                                                    list(mean.cl.boot(cr))
+                                                    list(click.rank = cr)
                                                   },
-                                                  report = function(..., path) {}
+                                                  report = function(..., path) {
+                                                    dots <- list(...)
+
+                                                    cat(mean.cl.boot(dots$click.rank), file=path)
+                                                  }
                                                   )
                                              )
                                         )
