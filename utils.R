@@ -421,7 +421,7 @@ pprint.dataframe <- function(data,sep='  |  ',.parallel=FALSE){
         )
 }
 
-dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T, .parallel = TRUE){
+dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T, .parallel=FALSE){
   row.to.tt <- function(row) paste('|', csplat(paste, as.character(row), sep = ' |'), ' |', sep='')
 
   add.attr <- function(e, i, j) {

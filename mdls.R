@@ -45,7 +45,7 @@ is.model.def <- function(x){
              ))
 }
 
-mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=TRUE){
+mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=FALSE){
   ## mdls.fit(iris[,1:4],
   ##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
   ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
@@ -148,7 +148,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                  }))
 }
 
-mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=TRUE){
+mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=FALSE){
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
@@ -198,7 +198,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
           )
 }
 
-mdls.report <- function(mdls, root, text.as = 'html', log.level = SimpleLog.INFO, .parallel=TRUE){
+mdls.report <- function(mdls, root, text.as = 'html', log.level = SimpleLog.INFO, .parallel=FALSE){
   ## import('mdls'); mdls.fit(iris, gbm.model.def("gbmmodel",function(x) x$Sepal.Length + as.integer(x$Species), c('Sepal.Width','Petal.Length','Petal.Width','Species'),distribution='gaussian',weights=function(data) runif(nrow(data)), train.fraction=0.8),glm.model.def('glmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'), family='gaussian'),lm.model.def('lmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'))) -> ms; system('rm -r ~/tmp/test/'); mdls.report(ms,'~/tmp/test')
   stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
 
@@ -349,7 +349,7 @@ gbm.tree.row.as.list <- function(tree, node){
 gbm.tree.as.list <- function(object, i.tree)
   gbm.tree.row.as.list(gbm.tree.as.df(object, i.tree), 1)
 
-gbm.model.as.list <- function(object, trees=object$n.trees, name="", .parallel=TRUE){
+gbm.model.as.list <- function(object, trees=object$n.trees, name="", .parallel=FALSE){
   usedVariables <- gbm.model.used.variables(object)
   trees <- llply(1:trees, function(tree) gbm.tree.as.list(object, i.tree=tree), .parallel=.parallel)
 
@@ -923,7 +923,7 @@ glm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLo
 #### Feature Helpers ##################
 #######################################
 
-feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR, .parallel=TRUE){
+feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR, .parallel=FALSE){
   logger <- SimpleLog('feature.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
   ## feature.contributions(list(id="m",model=ms$gbmmodel$model,features=ms$gbmmodel$model$var.names,predict=gbm.predict), iris[6,], iris[5,])
