@@ -129,11 +129,11 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                              })
                                                if(!any(is.na(m))){
                                                  z <- named(list(list(target=t,
-                                                                model=m,
-                                                                id=id,
-                                                                predict=md$predict,
-                                                                features=md$features,
-                                                                report=md$report)),
+                                                                      model=m,
+                                                                      id=id,
+                                                                      predict=md$predict,
+                                                                      features=md$features,
+                                                                      report=md$report)),
                                                             id)
 
                                                  return(z)
@@ -159,104 +159,103 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
 
   timer <- Timer(logger)
   z <- lapply(lzip(dataset.ids,datasets),
-                 function(x){
-                   ds.id <- x[[1]]
-                   data <- x[[2]]
+              function(x){
+                ds.id <- x[[1]]
+                data <- x[[2]]
 
-                   write.msg(logger, sprintf('predictions for dataset %s', ds.id))
+                write.msg(logger, sprintf('predictions for dataset %s', ds.id))
 
-                   if(is.character(data)){
-                     t0 <- start.timer(timer,'loading "%s"', ds.id)
-                     data <- load.data(data)
-                     stop.timer(timer)
-                   }else if(is.function(data)){
-                     data <- data()
-                   }else{
-                     data <- as.data.frame(data)
-                   }
+                if(is.character(data)){
+                  t0 <- start.timer(timer,'loading "%s"', ds.id)
+                  data <- load.data(data)
+                  stop.timer(timer)
+                }else if(is.function(data)){
+                  data <- data()
+                }else{
+                  data <- as.data.frame(data)
+                }
 
-                   models.filtered <- Filter(function(m){
-                     any(sapply(lzip(names(mapping), mapping),
-                                function(mp) str_detect(ds.id, mp[[1]]) && str_detect(m[[1]], mp[[2]]) ))
+                models.filtered <- Filter(function(m){
+                  any(sapply(lzip(names(mapping), mapping),
+                             function(mp) str_detect(ds.id, mp[[1]]) && str_detect(m[[1]], mp[[2]]) ))
 
-                   }, lzip(names(models), models))
+                }, lzip(names(models), models))
 
-                   start.timer(timer,sprintf('computing predictions on "%s"', ds.id))
-                   z <- flatten(llply(models.filtered,
-                                      function(x){
-                                        id <- x[[1]]
-                                        m <- x[[2]]$model
+                start.timer(timer,sprintf('computing predictions on "%s"', ds.id))
+                z <- flatten(llply(models.filtered,
+                                   function(x){
+                                     id <- x[[1]]
+                                     m <- x[[2]]$model
 
-                                        features <- x[[2]]$features
-                                        predict <- x[[2]]$predict
+                                     features <- x[[2]]$features
+                                     predict <- x[[2]]$predict
 
-                                        write.msg(logger,sprintf('predicting with "%s"', id))
-                                        pr <- predict(m, subset(data,select=features))
+                                     write.msg(logger,sprintf('predicting with "%s"', id))
+                                     pr <- predict(m, subset(data,select=features))
 
-                                        z <- list(pr)
-                                        names(z) <- id
-                                        z
-                                      }, .parallel=.parallel))
+                                     z <- list(pr)
+                                     names(z) <- id
+                                     z
+                                   }, .parallel=.parallel))
 
-                   metric.defs.filter <- if(length(metric.defs) > 0) str_detect(ds.id, names(metric.defs)) else NULL
-                   metric.defs.filtered <- metric.defs[metric.defs.filter]
-                   metric.values <- named(llply(lzip(names(metric.defs.filtered), metric.defs.filtered),
-                                                function(dsg){
-                                                  ds.group.name <- dsg[[1]]
-                                                  ds.group <- dsg[[2]]
+                metric.defs.filter <- if(length(metric.defs) > 0) str_detect(ds.id, names(metric.defs)) else NULL
+                metric.defs.filtered <- metric.defs[metric.defs.filter]
+                metric.values <- named(llply(lzip(names(metric.defs.filtered), metric.defs.filtered),
+                                             function(dsg){
+                                               ds.group.name <- dsg[[1]]
+                                               ds.group <- dsg[[2]]
 
-                                                  write.msg(logger, sprintf('computing metrics on dataset %s', ds.id))
+                                               write.msg(logger, sprintf('computing metrics on dataset %s', ds.id))
 
-                                                  named(lapply(lzip(names(ds.group), ds.group),
-                                                               function(metric.group){
-                                                                 metric.group.name <- metric.group[[1]]
-                                                                 preprocess <- metric.group[[2]]$preprocess
-                                                                 metrics <- metric.group[[2]]$metrics
+                                               named(lapply(lzip(names(ds.group), ds.group),
+                                                            function(metric.group){
+                                                              metric.group.name <- metric.group[[1]]
+                                                              preprocess <- metric.group[[2]]$preprocess
+                                                              metrics <- metric.group[[2]]$metrics
 
-                                                                 write.msg(logger, sprintf('computing metrics on dataset %s', ds.id), level = SimpleLog.DEBUG)
-                                                                 named(lapply(z,
-                                                                              function(score){
-                                                                                if(is.null(preprocess))
-                                                                                  preprocessed.args <- NULL
-                                                                                else
-                                                                                  preprocessed.args <- preprocess(score, data)
+                                                              write.msg(logger, sprintf('computing metrics on dataset %s', ds.id), level = SimpleLog.DEBUG)
+                                                              named(lapply(z,
+                                                                           function(score){
+                                                                             if(is.null(preprocess))
+                                                                               preprocessed.args <- NULL
+                                                                             else
+                                                                               preprocessed.args <- preprocess(score, data)
 
-                                                                                metric.args <- c(list(score = score, data = data),
-                                                                                                 preprocessed.args)
-                                                                                named(lapply(lzip(names(metrics), metrics),
-                                                                                             function(m){
-                                                                                               metric.name <- m[[1]]
-                                                                                               metric <- m[[2]]
+                                                                             metric.args <- c(list(score = score, data = data), preprocessed.args)
+                                                                             named(lapply(lzip(names(metrics), metrics),
+                                                                                          function(m){
+                                                                                            metric.name <- m[[1]]
+                                                                                            metric <- m[[2]]
 
-                                                                                               write.msg(logger, sprintf('computing metric %s', metric.name), level = SimpleLog.DEBUG)
+                                                                                            write.msg(logger, sprintf('computing metric %s', metric.name), level = SimpleLog.DEBUG)
 
-                                                                                               metric.values <- csplat(metric$f, metric.args)
+                                                                                            metric.values <- csplat(metric$f, metric.args)
 
-                                                                                               if(!is.null(output.path)){
-                                                                                                 metric.report.dir <- file.path(output.path,
-                                                                                                                                ds.id,
-                                                                                                                                metric.group.name,
-                                                                                                                                metric.name)
-                                                                                                 write.msg(logger, sprintf('writing metric report for %s to %s', metric.name, metric.report.dir), level = SimpleLog.DEBUG)
+                                                                                            if(!is.null(output.path)){
+                                                                                              metric.report.dir <- file.path(output.path,
+                                                                                                                             ds.id,
+                                                                                                                             metric.group.name,
+                                                                                                                             metric.name)
+                                                                                              write.msg(logger, sprintf('writing metric report for %s to %s', metric.name, metric.report.dir), level = SimpleLog.DEBUG)
 
-                                                                                                 dir.create(metric.report.dir, recursive=T)
+                                                                                              dir.create(metric.report.dir, recursive=T)
 
-                                                                                                 csplat(metric$report, metric.values, path = metric.report.dir)
-                                                                                               }
-                                                                                               metric.values
-                                                                                             }),
-                                                                                      names(metrics))
-                                                                              }),
-                                                                       names(z))
-                                                               }),
-                                                        ds.id)
-                                                }),
-                                          names(metric.defs.filtered))
+                                                                                              csplat(metric$report, metric.values, path = metric.report.dir)
+                                                                                            }
+                                                                                            metric.values
+                                                                                          }),
+                                                                                   names(metrics))
+                                                                           }),
+                                                                    names(z))
+                                                            }),
+                                                     ds.id)
+                                             }),
+                                       names(metric.defs.filtered))
 
-                   z <- named(list(z, metric.values), c(ds.id, 'metric.values'))
-                   stop.timer(timer)
-                   z
-                 })
+                z <- named(list(z, metric.values), c(ds.id, 'metric.values'))
+                stop.timer(timer)
+                z
+              })
 
   list(scores = flatten(lapply(z, function(x) x[[1]])),
        metrics = flatten(lapply(z, function(x) x[[2]])))
