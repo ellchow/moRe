@@ -23,6 +23,7 @@ import('utils',
        'infotheo',
        'rjson',
        'ggplot2',
+       'Hmisc',
        get.parallel.library()$lib)
 
 get.parallel.library()$activate(5)
@@ -234,8 +235,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                                                                                             if(!is.null(output.path)){
                                                                                               metric.report.dir <- file.path(output.path,
                                                                                                                              ds.id,
-                                                                                                                             metric.group.name,
-                                                                                                                             metric.name)
+                                                                                                                             metric.group.name)
                                                                                               write.msg(logger, sprintf('writing metric report for %s to %s', metric.name, metric.report.dir), level = SimpleLog.DEBUG)
 
                                                                                               dir.create(metric.report.dir, recursive=T)
@@ -1143,11 +1143,20 @@ mdls.metric.group.def <- function(name, metric.defs, preprocess = NULL){
 
 mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
   ms <- c(mdls.metric.def('absolute.error',
-                          function(score,data) list(abs(score - data[[target]]))),
+                          function(score,data) list(x = abs(score - data[[target]])),
+                          function(x, path) {
+                            cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))), file = file.path(path, 'absolute_error.html'))
+                          }),
           mdls.metric.def('absolute.relative.error',
-                          function(score,data) list(abs(score - data[[target]]) / data[[target]])),
+                          function(score,data) list(x = abs(score - data[[target]]) / data[[target]]),
+                          function(x, path) {
+                            cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))), file = file.path(path, 'absolute_relative_error.html'))
+                          }),
           mdls.metric.def('squared.error',
-                          function(score,data) list((score - data[[target]])^2))
+                          function(score,data) list(x = (score - data[[target]])^2),
+                          function(x, path) {
+                            cat(dataframe.to.html.table(as.data.frame(t(smean.cl.boot(x)))), file = file.path(path, 'squared_error.html'))
+                          })
           )
   if(!is.null(metrics))
     ms <- ms[names(ms) %in% metrics]
@@ -1159,13 +1168,18 @@ mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
   preprocess <- function(score, data)
     list(conf.mx = clsfy.confusion.scan(score, data[[target]]))
 
-  ms <- c(mdls.metric.def('precision',
-                          function(score,data,conf.mx) clsfy.precision(conf.mx)),
+  ms <- c(mdls.metric.def('precision.recall',
+                          function(score,data,conf.mx){
+                            list(precision = clsfy.precision(conf.mx),
+                                 recall = clsfy.recall(conf.mx))
+                          },
+                          function(precision, recall, path){
+                            ggsave(ggplot(data.frame(precision = precision, recall = recall), aes(precision, recall)) + geom_line(),
+                                   file = file.path(path, 'precision_recall.png'))
+                          }),
           mdls.metric.def('recall',
                           function(score,data,conf.mx) clsfy.recall(conf.mx))
           )
-
-
 
   if(!is.null(metrics))
     ms <- ms[names(ms) %in% metrics]
