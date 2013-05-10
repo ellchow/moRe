@@ -1192,9 +1192,7 @@ mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
                             png(file.path(path, 'precision_recall.png'))
                             plot(precision, recall, type='l')
                             dev.off()
-                          }),
-          mdls.metric.def('recall',
-                          function(score,data,conf.mx) clsfy.recall(conf.mx))
+                          })
           )
 
   if(!is.null(metrics))
