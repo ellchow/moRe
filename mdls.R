@@ -194,6 +194,11 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                                      write.msg(logger,sprintf('predicting with "%s"', id))
                                      pr <- predict(m, subset(data,select=features))
 
+                                     check <- sum(is.na(pr) | is.nan(pr) | is.infinite(pr))
+                                     if(check > 0)
+                                       write.msg(logger, sprintf('model "%s" produced %d invalid scores', id, check),
+                                                 level = SimpleLog.WARNING)
+
                                      named(list(pr), id)
                                    }, .parallel=.parallel))
 
