@@ -158,7 +158,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
   timer <- Timer(logger)
-  z <- lapply(lzip(dataset.ids,datasets),
+  z <- named(lapply(lzip(dataset.ids,datasets),
               function(x){
                 ds.id <- x[[1]]
                 data <- x[[2]]
@@ -255,10 +255,11 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                 z <- named(list(z, metric.values), c(ds.id, 'metric.values'))
                 stop.timer(timer)
                 z
-              })
+              }), dataset.ids)
 
-  list(scores = flatten(lapply(z, function(x) x[[1]])),
-       metrics = flatten(lapply(z, function(x) x[[2]])))
+
+  list(scores = lapply(z, function(x) x[[1]]),
+       metrics = lapply(z, function(x) x[[2]]))
 }
 
 mdls.report <- function(mdls, root, text.as = 'html', log.level = SimpleLog.INFO, .parallel=TRUE){
@@ -1136,7 +1137,7 @@ mdls.metric.def <- function(name, f, report = function(..., path) {})
   named(list(list(f = f, report = report)), name)
 
 mdls.metric.group.def <- function(name, metric.defs, preprocess = NULL){
-  ## named(list(metric.group.def('foo', c(metric.def('abs.rel.err', function(score,data) list(abs(score - data$target) / data$target))))), '.*')
+  ## named(list(mdls.metric.group.def('foo', c(mdls.metric.def('abs.rel.err', function(score,data) list(abs(score - data$target) / data$target))))), '.*')
   named(list(list(preprocess = preprocess,
                   metrics = metric.defs)),
         name)
