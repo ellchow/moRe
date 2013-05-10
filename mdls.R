@@ -1155,6 +1155,24 @@ mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
   list(mdls.metric.group.def(group.name, ms))
 }
 
+mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
+  preprocess <- function(score, data)
+    list(conf.mx = clsfy.confusion.scan(score, data[[target]]))
+
+  ms <- c(mdls.metric.def('precision',
+                          function(score,data,conf.mx) clsfy.precision(conf.mx)),
+          mdls.metric.def('recall',
+                          function(score,data,conf.mx) clsfy.recall(conf.mx))
+          )
+
+
+
+  if(!is.null(metrics))
+    ms <- ms[names(ms) %in% metrics]
+
+  list(mdls.metric.group.def(group.name, ms, preprocess))
+}
+
 
 ## list(
 ##      '^eds.*$' =
