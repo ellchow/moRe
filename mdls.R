@@ -207,13 +207,13 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
 
                                                write.msg(logger, sprintf('computing metrics on dataset %s', ds.id))
 
-                                               named(lapply(lzip(names(ds.group), ds.group),
+                                               flatten(lapply(lzip(names(ds.group), ds.group),
                                                             function(metric.group){
                                                               metric.group.name <- metric.group[[1]]
                                                               preprocess <- metric.group[[2]]$preprocess
                                                               metrics <- metric.group[[2]]$metrics
 
-                                                              write.msg(logger, sprintf('computing metrics on dataset %s', ds.id), level = SimpleLog.DEBUG)
+                                                              write.msg(logger, sprintf('computing metric group %s on dataset %s', metric.group.name, ds.id), level = SimpleLog.DEBUG)
                                                               named(lapply(z,
                                                                            function(score){
                                                                              if(is.null(preprocess))
@@ -247,11 +247,9 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                                                                                    names(metrics))
                                                                            }),
                                                                     names(z))
-                                                            }),
-                                                     ds.id)
+                                                            }))
                                              }),
                                        names(metric.defs.filtered))
-
                 z <- named(list(z, metric.values), c(ds.id, 'metric.values'))
                 stop.timer(timer)
                 z
@@ -259,6 +257,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
 
 
   list(scores = lapply(z, function(x) x[[1]]),
+       ## metrics = named(flatten(lapply(z, function(x) x[[2]][[1]])), names(z)))
        metrics = lapply(z, function(x) x[[2]]))
 }
 
@@ -1143,14 +1142,16 @@ mdls.metric.group.def <- function(name, metric.defs, preprocess = NULL){
         name)
 }
 
-mdls.raw.metrics <- function(target){
-  c(metric.def('absolute.error',
-               function(score,data) list(abs(score - data[[target]]))),
-    metric.def('absolute.relative.error',
-               function(score,data) list(abs(score - data[[target]]) / data[[target]])),
-    metric.def('squared.error',
-               function(score,data) list(abs(score - data[[target]]) / data[[target]]))
-    )
+mdls.raw.metrics <- function(target, group.name = 'raw'){
+  list(mdls.metric.group.def(group.name,
+                        c(mdls.metric.def('absolute.error',
+                                     function(score,data) list(abs(score - data[[target]]))),
+                          mdls.metric.def('absolute.relative.error',
+                                     function(score,data) list(abs(score - data[[target]]) / data[[target]])),
+                          mdls.metric.def('squared.error',
+                                     function(score,data) list((score - data[[target]])^2))
+                          )
+                        ))
 }
 
 
