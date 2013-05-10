@@ -156,7 +156,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                          ## output.path = NULL,
                          log.level=SimpleLog.ERROR, .parallel=TRUE){
 
-  ## mdls.predict(ms,iris, metric.defs = named(mdls.raw.metrics('Sepal.Length'),'.*'))
+  ## import('mdls');mdls.predict(ms,iris, metric.defs = named(list(c(mdls.raw.metrics('Sepal.Length'),mdls.clsfy.metrics('Sepal.Length'))),'.*'))
 
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
@@ -1150,7 +1150,7 @@ mdls.metric.group.def <- function(name, metric.defs, preprocess = NULL){
 
 mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
   ms <- c(mdls.metric.def('absolute.error',
-                          function(score,data) list(x = abs(score - data[[target]]))##,
+                          function(score,data) data.frame(x = abs(score - data[[target]]))##,
                           ## function(x, path) {
                           ##   cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))),
                           ##       file = file.path(path, 'absolute_error.html'))
@@ -1161,7 +1161,7 @@ mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
                           ## }
                           ),
           mdls.metric.def('absolute.relative.error',
-                          function(score,data) list(x = abs(score - data[[target]]) / data[[target]])##,
+                          function(score,data) data.frame(x = abs(score - data[[target]]) / data[[target]])##,
                           ## function(x, path) {
                           ##   cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))),
                           ##       file = file.path(path, 'absolute_relative_error.html'))
@@ -1172,7 +1172,7 @@ mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
                           ## }
                           ),
           mdls.metric.def('squared.error',
-                          function(score,data) list(x = (score - data[[target]])^2)##,
+                          function(score,data) data.frame(x = (score - data[[target]])^2)##,
                           ## function(x, path) {
                           ##   cat(dataframe.to.html.table(as.data.frame(t(smean.cl.boot(x)))),
                           ##       file = file.path(path, 'squared_error.html'))
@@ -1186,7 +1186,7 @@ mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
   if(!is.null(metrics))
     ms <- ms[names(ms) %in% metrics]
 
-  list(mdls.metric.group.def(group.name, ms))
+  mdls.metric.group.def(group.name, ms)
 }
 
 mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
@@ -1196,7 +1196,7 @@ mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
 
   ms <- c(mdls.metric.def('precision.recall',
                           function(score,data,conf.mx){
-                            list(precision = clsfy.precision(conf.mx),
+                            data.frame(precision = clsfy.precision(conf.mx),
                                  recall = clsfy.recall(conf.mx))
                           }##,
                           ## function(precision, recall, path){
@@ -1210,7 +1210,7 @@ mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
   if(!is.null(metrics))
     ms <- ms[names(ms) %in% metrics]
 
-  list(mdls.metric.group.def(group.name, ms, preprocess))
+  mdls.metric.group.def(group.name, ms, preprocess)
 }
 
 ## mdls.ranking.metrics <- function(group.id, group.name = 'ranking'){
