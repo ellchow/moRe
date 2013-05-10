@@ -1145,17 +1145,32 @@ mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
   ms <- c(mdls.metric.def('absolute.error',
                           function(score,data) list(x = abs(score - data[[target]])),
                           function(x, path) {
-                            cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))), file = file.path(path, 'absolute_error.html'))
+                            cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))),
+                                file = file.path(path, 'absolute_error.html'))
+
+                            png(file.path(path, 'absolute_error.png'))
+                            hist(x, breaks = 30)
+                            dev.off()
                           }),
           mdls.metric.def('absolute.relative.error',
                           function(score,data) list(x = abs(score - data[[target]]) / data[[target]]),
                           function(x, path) {
-                            cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))), file = file.path(path, 'absolute_relative_error.html'))
+                            cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))),
+                                file = file.path(path, 'absolute_relative_error.html'))
+
+                            png(file.path(path, 'absolute_relative_error.png'))
+                            hist(x, breaks = 30)
+                            dev.off()
                           }),
           mdls.metric.def('squared.error',
                           function(score,data) list(x = (score - data[[target]])^2),
                           function(x, path) {
-                            cat(dataframe.to.html.table(as.data.frame(t(smean.cl.boot(x)))), file = file.path(path, 'squared_error.html'))
+                            cat(dataframe.to.html.table(as.data.frame(t(smean.cl.boot(x)))),
+                                file = file.path(path, 'squared_error.html'))
+
+                            png(file.path(path, 'squared_error.png'))
+                            hist(x, breaks = 30)
+                            dev.off()
                           })
           )
   if(!is.null(metrics))
@@ -1174,8 +1189,9 @@ mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
                                  recall = clsfy.recall(conf.mx))
                           },
                           function(precision, recall, path){
-                            ggsave(ggplot(data.frame(precision = precision, recall = recall), aes(precision, recall)) + geom_line(),
-                                   file = file.path(path, 'precision_recall.png'))
+                            png(file.path(path, 'precision_recall.png'))
+                            plot(precision, recall, type='l')
+                            dev.off()
                           }),
           mdls.metric.def('recall',
                           function(score,data,conf.mx) clsfy.recall(conf.mx))
