@@ -196,7 +196,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
 
                                      check <- sum(is.na(pr) | is.nan(pr) | is.infinite(pr))
                                      if(check > 0)
-                                       write.msg(logger, sprintf('model "%s" produced %d invalid scores', id, check),
+                                       write.msg(logger, sprintf('model "%s" produced %d invalid score(s) on dataset %s', id, check, ds.id),
                                                  level = SimpleLog.WARNING)
 
                                      named(list(pr), id)
@@ -233,7 +233,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                                                                                             metric.name <- m[[1]]
                                                                                             metric <- m[[2]]
 
-                                                                                            write.msg(logger, sprintf('computing metric %s', metric.name), level = SimpleLog.DEBUG)
+                                                                                            write.msg(logger, sprintf('computing metric %s on dataset %s', metric.name, ds.id), level = SimpleLog.DEBUG)
 
                                                                                             metric.values <- csplat(metric$f, metric.args)
 
@@ -1205,6 +1205,11 @@ mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
   list(mdls.metric.group.def(group.name, ms, preprocess))
 }
 
+## mdls.ranking.metrics <- function(group.id, group.name = 'ranking'){
+##   preprocess <- function(score, data)
+##     list(rnk = compute.ranks(score, data[[group.id]])
+##          group.id = data[[group.id]])
+## }
 
 ## list(
 ##      '^eds.*$' =
