@@ -402,7 +402,15 @@ str.align <- function(data, maxLengths, .parallel=FALSE){
 }
 
 
-pprint.dataframe <- function(data,sep='  |  ',.parallel=FALSE){
+pprint.dataframe <- function(data, sep='  |  ', prepend.row.names = ' ', .parallel=FALSE){
+  if(is.matrix(data))
+    data <- as.data.frame(data)
+
+  stop.if.not(is.data.frame(data), 'input must be data.frame')
+
+  if(!is.null(prepend.row.names) && !is.null(row.names(data)))
+    data <- named(cbind(row.names(data), data), c(prepend.row.names, names(data)))
+
   maxLengths <- max.element.str.length(data,.parallel=.parallel)
   header <- as.list(names(maxLengths))
   names(header) <- header
