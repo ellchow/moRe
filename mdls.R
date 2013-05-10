@@ -152,8 +152,12 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
 }
 
 mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
-                         metric.defs = list(), output.path = NULL,
+                         metric.defs = list(),
+                         ## output.path = NULL,
                          log.level=SimpleLog.ERROR, .parallel=TRUE){
+
+  ## mdls.predict(ms,iris, metric.defs = named(mdls.raw.metrics('Sepal.Length'),'.*'))
+
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
@@ -237,14 +241,14 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
 
                                                                                             metric.values <- csplat(metric$f, metric.args)
 
-                                                                                            if(!is.null(output.path)){
-                                                                                              metric.report.dir <- file.path(output.path, ds.id, metric.group.name, model.id)
-                                                                                              write.msg(logger, sprintf('writing metric report for %s to %s', metric.name, metric.report.dir), level = SimpleLog.DEBUG)
+                                                                                            ## if(!is.null(output.path)){
+                                                                                            ##   metric.report.dir <- file.path(output.path, ds.id, metric.group.name, model.id)
+                                                                                            ##   write.msg(logger, sprintf('writing metric report for %s to %s', metric.name, metric.report.dir), level = SimpleLog.DEBUG)
 
-                                                                                              dir.create(metric.report.dir, recursive=T)
+                                                                                            ##   dir.create(metric.report.dir, recursive=T)
 
-                                                                                              csplat(metric$report, metric.values, path = metric.report.dir)
-                                                                                            }
+                                                                                            ##   csplat(metric$report, metric.values, path = metric.report.dir)
+                                                                                            ## }
                                                                                             metric.values
                                                                                           }),
                                                                                    names(metrics))
@@ -1146,35 +1150,38 @@ mdls.metric.group.def <- function(name, metric.defs, preprocess = NULL){
 
 mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
   ms <- c(mdls.metric.def('absolute.error',
-                          function(score,data) list(x = abs(score - data[[target]])),
-                          function(x, path) {
-                            cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))),
-                                file = file.path(path, 'absolute_error.html'))
+                          function(score,data) list(x = abs(score - data[[target]]))##,
+                          ## function(x, path) {
+                          ##   cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))),
+                          ##       file = file.path(path, 'absolute_error.html'))
 
-                            png(file.path(path, 'absolute_error.png'))
-                            hist(x, breaks = 30)
-                            dev.off()
-                          }),
+                          ##   png(file.path(path, 'absolute_error.png'))
+                          ##   hist(x, breaks = 30)
+                          ##   dev.off()
+                          ## }
+                          ),
           mdls.metric.def('absolute.relative.error',
-                          function(score,data) list(x = abs(score - data[[target]]) / data[[target]]),
-                          function(x, path) {
-                            cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))),
-                                file = file.path(path, 'absolute_relative_error.html'))
+                          function(score,data) list(x = abs(score - data[[target]]) / data[[target]])##,
+                          ## function(x, path) {
+                          ##   cat(dataframe.to.html.table(t(as.data.frame(smean.cl.boot(x)))),
+                          ##       file = file.path(path, 'absolute_relative_error.html'))
 
-                            png(file.path(path, 'absolute_relative_error.png'))
-                            hist(x, breaks = 30)
-                            dev.off()
-                          }),
+                          ##   png(file.path(path, 'absolute_relative_error.png'))
+                          ##   hist(x, breaks = 30)
+                          ##   dev.off()
+                          ## }
+                          ),
           mdls.metric.def('squared.error',
-                          function(score,data) list(x = (score - data[[target]])^2),
-                          function(x, path) {
-                            cat(dataframe.to.html.table(as.data.frame(t(smean.cl.boot(x)))),
-                                file = file.path(path, 'squared_error.html'))
+                          function(score,data) list(x = (score - data[[target]])^2)##,
+                          ## function(x, path) {
+                          ##   cat(dataframe.to.html.table(as.data.frame(t(smean.cl.boot(x)))),
+                          ##       file = file.path(path, 'squared_error.html'))
 
-                            png(file.path(path, 'squared_error.png'))
-                            hist(x, breaks = 30)
-                            dev.off()
-                          })
+                          ##   png(file.path(path, 'squared_error.png'))
+                          ##   hist(x, breaks = 30)
+                          ##   dev.off()
+                          ## }
+                          )
           )
   if(!is.null(metrics))
     ms <- ms[names(ms) %in% metrics]
@@ -1191,12 +1198,13 @@ mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
                           function(score,data,conf.mx){
                             list(precision = clsfy.precision(conf.mx),
                                  recall = clsfy.recall(conf.mx))
-                          },
-                          function(precision, recall, path){
-                            png(file.path(path, 'precision_recall.png'))
-                            plot(precision, recall, type='l')
-                            dev.off()
-                          })
+                          }##,
+                          ## function(precision, recall, path){
+                          ##   png(file.path(path, 'precision_recall.png'))
+                          ##   plot(precision, recall, type='l')
+                          ##   dev.off()
+                          ## }
+                          )
           )
 
   if(!is.null(metrics))
