@@ -455,7 +455,16 @@ dataframe.to.html.table <- function(x,
                                     th.attrs='style=font-size:24px',
                                     add.tr.attr=function(x,i){''},
                                     add.td.attr=function(x,i,j){''},
+                                    prepend.row.names = ' ',
                                     .parallel=FALSE){
+  if(is.matrix(x))
+    x <- as.data.frame(x)
+
+  if(!is.null(prepend.row.names) && !is.null(row.names(x)))
+    x <- named(cbind(row.names(x), x), c(prepend.row.names, names(x)))
+
+
+
   if(nrow(x) == 0){
     rows <- ''
   }else{
