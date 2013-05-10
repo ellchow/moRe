@@ -257,7 +257,6 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
 
 
   list(scores = lapply(z, function(x) x[[1]]),
-       ## metrics = named(flatten(lapply(z, function(x) x[[2]][[1]])), names(z)))
        metrics = lapply(z, function(x) x[[2]]))
 }
 
@@ -1142,16 +1141,18 @@ mdls.metric.group.def <- function(name, metric.defs, preprocess = NULL){
         name)
 }
 
-mdls.raw.metrics <- function(target, group.name = 'raw'){
-  list(mdls.metric.group.def(group.name,
-                        c(mdls.metric.def('absolute.error',
-                                     function(score,data) list(abs(score - data[[target]]))),
-                          mdls.metric.def('absolute.relative.error',
-                                     function(score,data) list(abs(score - data[[target]]) / data[[target]])),
-                          mdls.metric.def('squared.error',
-                                     function(score,data) list((score - data[[target]])^2))
-                          )
-                        ))
+mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
+  ms <- c(mdls.metric.def('absolute.error',
+                          function(score,data) list(abs(score - data[[target]]))),
+          mdls.metric.def('absolute.relative.error',
+                          function(score,data) list(abs(score - data[[target]]) / data[[target]])),
+          mdls.metric.def('squared.error',
+                          function(score,data) list((score - data[[target]])^2))
+          )
+  if(!is.null(metrics))
+    ms <- ms[names(ms) %in% metrics]
+
+  list(mdls.metric.group.def(group.name, ms))
 }
 
 
