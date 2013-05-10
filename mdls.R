@@ -194,9 +194,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                                      write.msg(logger,sprintf('predicting with "%s"', id))
                                      pr <- predict(m, subset(data,select=features))
 
-                                     z <- list(pr)
-                                     names(z) <- id
-                                     z
+                                     named(list(pr), id)
                                    }, .parallel=.parallel))
 
                 metric.defs.filter <- if(length(metric.defs) > 0) str_detect(ds.id, names(metric.defs)) else NULL
@@ -215,8 +213,10 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                                                               metrics <- metric.group[[2]]$metrics
 
                                                               write.msg(logger, sprintf('computing metric group %s on dataset %s', metric.group.name, ds.id), level = SimpleLog.DEBUG)
-                                                              named(lapply(z,
-                                                                           function(score){
+                                                              named(lapply(lzip(names(z), z),
+                                                                           function(zz){
+                                                                             model.id <- zz[[1]]
+                                                                             score <- zz[[2]]
                                                                              if(is.null(preprocess))
                                                                                preprocessed.args <- NULL
                                                                              else
@@ -233,9 +233,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"),
                                                                                             metric.values <- csplat(metric$f, metric.args)
 
                                                                                             if(!is.null(output.path)){
-                                                                                              metric.report.dir <- file.path(output.path,
-                                                                                                                             ds.id,
-                                                                                                                             metric.group.name)
+                                                                                              metric.report.dir <- file.path(output.path, ds.id, metric.group.name, model.id)
                                                                                               write.msg(logger, sprintf('writing metric report for %s to %s', metric.name, metric.report.dir), level = SimpleLog.DEBUG)
 
                                                                                               dir.create(metric.report.dir, recursive=T)
@@ -1180,8 +1178,9 @@ mdls.raw.metrics <- function(target, group.name = 'raw', metrics = NULL){
 }
 
 mdls.clsfy.metrics <- function(target, group.name = 'classify', metrics = NULL){
-  preprocess <- function(score, data)
-    list(conf.mx = clsfy.confusion.scan(score, data[[target]]))
+  preprocess <- function(score, data){
+    list(conf.mx = clsfy.confusion.scan(na.rm(score), data[[target]]))
+  }
 
   ms <- c(mdls.metric.def('precision.recall',
                           function(score,data,conf.mx){
