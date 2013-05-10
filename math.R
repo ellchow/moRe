@@ -65,14 +65,17 @@ skewness <- function(x, ...)
 kurtosis <- function(x, ...)
   -3 + mean((x - mean(x, ...)) ^ 4, ...) / (mean((x - mean(x, ...)) ^ 2, ...) ^ 2)
 
-bucketize <- function(x,buckets=quantile(x,seq(0,1,0.1)),label=!is.null(names(buckets))){
-  ub <- max(buckets)
-  buckets[which.max(buckets)] <- ub + 1
-  ub <- ub + 1
-  lb <- min(buckets)
-  f <- approxfun(cbind(sort(buckets),1:length(buckets)))
-  x <- cap(x, lb, ub)
+bucketize <- function(x, buckets=head(quantile(x,seq(0,1,0.1)),-1), label=!is.null(names(buckets)),
+                      uniq.boundaries = TRUE){
+  if(uniq.boundaries)
+    stop.if(length(unique(buckets)) != length(buckets),
+            "bucket boundaries must be unique")
+  else{
+    z <- tapply(if(!is.null(names(buckets))) names(buckets) else indices(buckets), buckets, function(x) csplat(paste,x,sep=', '))
+    buckets <- named(as.numeric(names(z)), z)
+  }
 
+  f <- approxfun(sort(buckets),indices(buckets), yleft = 1, yright = length(buckets))
   b <- floor(f(x))
   if(label)
     factor(names(buckets)[b],levels=names(buckets), ordered=T)
