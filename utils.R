@@ -119,23 +119,23 @@ rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
   }
 }
 
-cache.data <- function(path, cachePath='.cache', forceDownload=FALSE){
+cache.data <- function(path, cache.path='.cache', force=FALSE){
   if(str_detect(path,'http[s]?://')){
-    pathHash <- digest(path, 'md5')
-    cachedFile <- file.path(cachePath, pathHash)
-    if(!file.exists(cachedFile) || forceDownload){
-      system(sprintf('mkdir -p %s && curl -o %s \'%s\'', cachePath, cachedFile, path))
+    path.hash <- digest(path, 'md5')
+    cached.file <- file.path(cache.path, path.hash)
+    if(!file.exists(cached.file) || force){
+      system(sprintf('mkdir -p %s && curl -o %s \'%s\'', cache.path, cached.file, path))
     }
-    conn <- cachedFile
+    conn <- cached.file
   }else{
     conn <- path
   }
   conn
 }
 
-load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cachePath='.cache', forceDownload=FALSE){
+load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.path='.cache', force=FALSE){
   options(warn=-1)
-  conn <- cache.data(path, cachePath, forceDownload)
+  conn <- cache.data(path, cache.path, force)
   x <- tryCatch(get(load(conn)),
                 error=function(e){
                   read.table(conn,sep=sep,header=header,comment.char=comment.char,quote=quote,...)
