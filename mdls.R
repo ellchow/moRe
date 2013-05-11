@@ -191,6 +191,10 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
                                         names(z) <- id
                                         z
                                       }, .parallel=.parallel))
+
+
+
+
                    z <- named(list(z), ds.id)
                    stop.timer(timer)
                    z

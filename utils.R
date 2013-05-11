@@ -129,7 +129,7 @@ curl.cmd <- function(url, output.path, params = NULL, method = 'get', custom.opt
     ps <- csplat(paste,
                  lapply(lzip(names(params), params),
                         function(kv) paste(kv[[1]], kv[[2]], sep='=')),
-                 sep=',')
+                 sep='&')
   else
     ps <- ''
 
