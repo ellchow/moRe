@@ -94,12 +94,15 @@ setMethodS3('stop.timer', 'Timer',
             })
 options(warn=0)
 
-stop.if <- function(x,msg)
-  if(x) stop(msg)
-
-
-stop.if.not <- function(x,msg)
-  stop.if(!x,msg)
+stop.if <- function(x,msg,cleanup = function(){}){
+  if(x){
+    print("@@@@@")
+    cleanup()
+    stop(msg)
+  }
+}
+stop.if.not <- function(x,msg,cleanup = function(){})
+  stop.if(!x,msg,cleanup)
 
 
 ####################
@@ -119,13 +122,45 @@ rrmdir <- function(path,rm.contents.only=FALSE){
   }
 }
 
-cache.data <- function(path, cache.path='.cache', force=FALSE){
+curl.cmd <- function(url, output.path, params = NULL, method = 'get', custom.opts = ''){
+  stop.if.not(method %in% c('get','post'))
+
+  if(!is.null(params))
+    ps <- csplat(paste,
+                 lapply(lzip(names(params), params),
+                        function(kv) paste(kv[[1]], kv[[2]], sep='=')),
+                 sep=',')
+  else
+    ps <- ''
+
+  method.opt <- if(method == 'get') '-G ' else ''
+
+  str.fmt('curl %(method)s-o %(out)s --data-urlencode "%(data)s" %(url)s %(custom)s',
+          url = url, data = ps,
+          out = output.path,
+          method = method.opt,
+          custom = custom.opts)
+}
+
+cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = SimpleLog.INFO){
+  logger <- SimpleLog('cache.data', log.level)
+
   if(str_detect(path,'http[s]?://')){
-    path.hash <- digest(path, 'md5')
+    path.hash <- digest(csplat(paste, list(...), path), 'md5')
     cached.file <- file.path(cache.path, path.hash)
-    if(!file.exists(cached.file) || force){
-      system(sprintf('mkdir -p %s && curl -o %s \'%s\'', cache.path, cached.file, path))
-    }
+    cmd <- curl.cmd(path, cached.file, ...)
+
+    write.msg(logger, 'curl command:  %s', cmd)
+    write.msg(logger, 'cached file at %s', cached.file)
+
+    dir.create(cache.path, showWarnings = FALSE)
+    exit.code <- 0
+    if(!file.exists(cached.file) || force)
+      exit.code <- system(cmd)
+    else
+      write.msg(logger, 'reading from cache', cmd)
+
+    stop.if.not(exit.code == 0, 'failed to download file', function() {print("!!!!!!!!!!!!!"); file.remove(cached.file)})
     conn <- cached.file
   }else{
     conn <- path
@@ -133,9 +168,16 @@ cache.data <- function(path, cache.path='.cache', force=FALSE){
   conn
 }
 
-load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.path='.cache', force=FALSE){
+load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.path='.cache', force=FALSE, log.level = SimpleLog.INFO){
   options(warn=-1)
-  conn <- cache.data(path, cache.path, force)
+
+  if(is.list(path)){
+    path <- c(path, cache.path = cache.path, force = force, log.level = log.level)
+    conn <- csplat(cache.data, path)
+  }else{
+    conn <- cache.data(path, cache.path = cache.path, force = force)
+  }
+
   x <- tryCatch(get(load(conn)),
                 error=function(e){
                   read.table(conn,sep=sep,header=header,comment.char=comment.char,quote=quote,...)
