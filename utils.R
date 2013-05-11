@@ -96,7 +96,6 @@ options(warn=0)
 
 stop.if <- function(x,msg,cleanup = function(){}){
   if(x){
-    print("@@@@@")
     cleanup()
     stop(msg)
   }
