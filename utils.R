@@ -160,7 +160,7 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
     else
       write.msg(logger, 'reading from cache', cmd)
 
-    stop.if.not(exit.code == 0, 'failed to download file', function() {print("!!!!!!!!!!!!!"); file.remove(cached.file)})
+    stop.if.not(exit.code == 0, 'failed to download file', function() file.remove(cached.file) )
     conn <- cached.file
   }else{
     conn <- path
