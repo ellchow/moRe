@@ -106,15 +106,15 @@ stop.if.not <- function(x,msg)
 #### Files
 ####################
 
-rrmdir <- function(path,rmContentsOnly=FALSE,displayLevel=0){
+rrmdir <- function(path,rm.contents.only=FALSE){
   path <- gsub('/( )*$','',path)
   isDir <- file.info(path)$isdir
   if(!is.na(isDir) && isDir){
     for(i in dir(path)){
-      rrmdir(file.path(path,i),FALSE,displayLevel=displayLevel)
+      rrmdir(file.path(path,i),FALSE)
     }
   }
-  if(!rmContentsOnly){
+  if(!rm.contents.only){
     file.remove(path)
   }
 }
