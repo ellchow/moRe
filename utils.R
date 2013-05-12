@@ -122,11 +122,12 @@ rrmdir <- function(path,rm.contents.only=FALSE){
 }
 
 py.urlencode <- function(p){
-  system(paste('python -c "import urllib; print urllib.urlencode({',
+  csplat(paste,system(paste('python -c "import urllib; print urllib.urlencode({',
                csplat(paste,lapply(lzip(names(p),p),
                                    function(kv)  sprintf("'%s':'%s'", kv[[1]], kv[[2]]) ),
                       sep=','),' })"'),
-         intern = T)
+         intern = T),
+         sep='')
 }
 
 curl.cmd <- function(url, output.path, params = NULL, method = 'get', custom.opts = ''){
@@ -137,17 +138,15 @@ curl.cmd <- function(url, output.path, params = NULL, method = 'get', custom.opt
   else
     ps <- ''
 
-  url <- paste(url,
-               if(str_detect(url,'[?]')) '' else '?',
-               ps, sep='')
-
   method.opt <- if(method == 'get') '-X GET' else '-X POST'
 
-  str.fmt('curl %(method)s %(custom)s -o %(out)s "%(url)s"',
-          url = url,
-          out = output.path,
-          method = method.opt,
-          custom = custom.opts)
+  sprintf('curl %s %s --data "%s" -o %s "%s"',
+          method.opt,
+          custom.opts,
+          ps,
+          output.path,
+          url)
+
 }
 
 cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = SimpleLog.INFO){
