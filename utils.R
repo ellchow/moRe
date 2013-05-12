@@ -149,7 +149,7 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
     cached.file <- file.path(cache.path, path.hash)
     cmd <- curl.cmd(path, cached.file, ...)
 
-    write.msg(logger, 'curl command:  %s', cmd)
+    write.msg(logger, 'curl command:  %s', cmd, level = SimpleLog.DEBUG)
     write.msg(logger, 'cached file at %s', cached.file)
 
     dir.create(cache.path, showWarnings = FALSE)
