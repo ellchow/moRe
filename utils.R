@@ -171,7 +171,7 @@ load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.
   options(warn=-1)
 
   if(is.list(path)){
-    path <- c(path, cache.path = cache.path, force = force, log.level = log.level)
+    path <- c(path, cache.path = cache.path, force = force, list(log.level = log.level))
     conn <- csplat(cache.data, path)
   }else{
     conn <- cache.data(path, cache.path = cache.path, force = force)
