@@ -121,21 +121,30 @@ rrmdir <- function(path,rm.contents.only=FALSE){
   }
 }
 
+py.urlencode <- function(p){
+  system(paste('python -c "import urllib; print urllib.urlencode({',
+               csplat(paste,lapply(lzip(names(p),p),
+                                   function(kv)  sprintf("'%s':'%s'", kv[[1]], kv[[2]]) ),
+                      sep=','),' })"'),
+         intern = T)
+}
+
 curl.cmd <- function(url, output.path, params = NULL, method = 'get', custom.opts = ''){
   stop.if.not(method %in% c('get','post'))
 
   if(!is.null(params))
-    ps <- csplat(paste,
-                 lapply(lzip(names(params), params),
-                        function(kv) paste(kv[[1]], kv[[2]], sep='=')),
-                 sep='&')
+    ps <- py.urlencode(params)
   else
     ps <- ''
 
-  method.opt <- if(method == 'get') '-G ' else ''
+  url <- paste(url,
+               if(str_detect(url,'[?]')) '' else '?',
+               ps, sep='')
 
-  str.fmt('curl %(method)s-o %(out)s --data-urlencode "%(data)s" %(url)s %(custom)s',
-          url = url, data = ps,
+  method.opt <- if(method == 'get') '-X GET' else '-X POST'
+
+  str.fmt('curl %(method)s %(custom)s -o %(out)s "%(url)s"',
+          url = url,
           out = output.path,
           method = method.opt,
           custom = custom.opts)
