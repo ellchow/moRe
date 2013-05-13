@@ -589,16 +589,20 @@ str.fmt <- function(s,...){
   if(named){
     n <- as.vector(sapply(str_extract_all(s,named.pat),
                           function(x) gsub(named.pat,'\\3', x)))
+
     stop.if(is.null(names(dots)) || any(str_length(names(dots))==0),
             'requires named parameters')
+
     stop.if(any(!n %in% names(dots)), sprintf('missing params %s', csplat(paste,setdiff(n,names(dots)),sep=',')))
-                                        # first escape things that percent symbols; then replace named params with unnamed params
+
+    ## first escape things that percent symbols; then replace named params with unnamed params
     ss <- gsub(named.pat,'\\1\\2\\4',
                gsub(unnamed.pat,'\\1%\\2',s))
-                                        # get params in order of appearance
+
+    ## get params in order of appearance
     params <- dots[n]
   }
-  csplat(sprintf,ss,params)
+  csplat(sprintf, ss, params)
 }
 
 
