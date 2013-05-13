@@ -470,7 +470,7 @@ pprint.dataframe <- function(data, sep='  |  ', prepend.row.names = ' ', .parall
         )
 }
 
-dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T, .parallel=FALSE){
+dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T, prepend.row.names = ' ', .parallel=FALSE){
   row.to.tt <- function(row) paste('|', csplat(paste, as.character(row), sep = ' |'), ' |', sep='')
 
   add.attr <- function(e, i, j) {
@@ -478,6 +478,13 @@ dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T,
 
     if(is.na(attr)) paste(' ', e, sep='') else paste(attr, e, sep='. ')
   }
+
+  if(is.matrix(x))
+    x <- as.data.frame(x)
+
+  if(!is.null(prepend.row.names) && !is.null(row.names(x)))
+    x <- named(cbind(row.names(x), x), c(prepend.row.names, names(x)))
+
 
   zz <- if(header) paste('_', names(x), sep='. ') else NULL
   csplat(paste,
@@ -503,8 +510,6 @@ dataframe.to.html.table <- function(x,
 
   if(!is.null(prepend.row.names) && !is.null(row.names(x)))
     x <- named(cbind(row.names(x), x), c(prepend.row.names, names(x)))
-
-
 
   if(nrow(x) == 0){
     rows <- ''
