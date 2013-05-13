@@ -12,7 +12,6 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-source('import.R',chdir=T)
 import('utils')
 
 linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, na.rm=FALSE, displayLevel=0){
@@ -91,7 +90,7 @@ rdiscrete <- function(n, prob, domain=1:length(prob))
 beta.params <- function(a,b)
   c(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
 
-beta.estimate <- function(x,m=mean,v=var){
+beta.estimate <- function(x, m=mean, v=var){
   if(is.null(dim(x)) || ncol(x) != 2){
     sampleMean <- m(x)
     sampleVar <- v(x)
@@ -99,14 +98,16 @@ beta.estimate <- function(x,m=mean,v=var){
     sampleMean <- m(ifelse(x[,2] == 0, 0, x[,1] / x[,2]))
     sampleVar <- v(ifelse(x[,2] == 0, x[,2], x[,1] / x[,2]))
   }
+
   a <- sampleMean * ((sampleMean * (1 - sampleMean)) / sampleVar - 1)
+
   b <- (1 - sampleMean) * ((sampleMean * (1 - sampleMean)) / sampleVar - 1)
+
   beta.params(a,b)
 }
 
-beta.update <- function(params, s, n){
+beta.update <- function(params, s, n)
   beta.params(s + params['a'], n + params['b'])
-}
 
 ffilter <- function(x,w,indexes=1:length(x),sides=2){
   stop.if(length(w) %% 2 == 0 && sides == 2,'filter must have odd length if two-sided')
@@ -121,12 +122,5 @@ ffilter <- function(x,w,indexes=1:length(x),sides=2){
            w <-  w[keep]
            w %*% x[is]
          })
-}
-
-cumdist.df <- function(x,buckets=seq(min(x),max(x),length=1000),values=rep(1,length(x))){
-  lookup<-approxfun(1:length(buckets),sort(buckets))
-  bucketize(x,buckets) -> b
-  dist <- tapply(values,b,sum)/sum(values)
-  data.frame(x=sort(lookup(as.integer(names(dist)))),'F(x)'=cumsum(dist[order(lookup(as.integer(names(dist))))]))
 }
 

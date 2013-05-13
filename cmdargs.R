@@ -12,7 +12,6 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-source('import.R',chdir=T)
 import('utils', 'stringr')
 
 parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
