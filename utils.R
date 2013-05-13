@@ -121,24 +121,32 @@ rrmdir <- function(path,rm.contents.only=FALSE){
   }
 }
 
+py.urlencode <- function(p){
+  csplat(paste,system(paste('python -c "import urllib; print urllib.urlencode({',
+               csplat(paste,lapply(lzip(names(p),p),
+                                   function(kv)  sprintf("'%s':'%s'", kv[[1]], kv[[2]]) ),
+                      sep=','),' })"'),
+         intern = T),
+         sep='')
+}
+
 curl.cmd <- function(url, output.path, params = NULL, method = 'get', custom.opts = ''){
   stop.if.not(method %in% c('get','post'))
 
   if(!is.null(params))
-    ps <- csplat(paste,
-                 lapply(lzip(names(params), params),
-                        function(kv) paste(kv[[1]], kv[[2]], sep='=')),
-                 sep='&')
+    ps <- py.urlencode(params)
   else
     ps <- ''
 
-  method.opt <- if(method == 'get') '-G ' else ''
+  method.opt <- if(method == 'get') '-X GET' else '-X POST'
 
-  str.fmt('curl %(method)s-o %(out)s --data-urlencode "%(data)s" %(url)s %(custom)s',
-          url = url, data = ps,
-          out = output.path,
-          method = method.opt,
-          custom = custom.opts)
+  sprintf('curl %s %s --data "%s" -o %s "%s"',
+          method.opt,
+          custom.opts,
+          ps,
+          output.path,
+          url)
+
 }
 
 cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = SimpleLog.INFO){
@@ -149,7 +157,7 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
     cached.file <- file.path(cache.path, path.hash)
     cmd <- curl.cmd(path, cached.file, ...)
 
-    write.msg(logger, 'curl command:  %s', cmd)
+    write.msg(logger, 'curl command:  %s', cmd, level = SimpleLog.DEBUG)
     write.msg(logger, 'cached file at %s', cached.file)
 
     dir.create(cache.path, showWarnings = FALSE)
@@ -171,7 +179,7 @@ load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.
   options(warn=-1)
 
   if(is.list(path)){
-    path <- c(path, cache.path = cache.path, force = force, log.level = log.level)
+    path <- c(path, cache.path = cache.path, force = force, list(log.level = log.level))
     conn <- csplat(cache.data, path)
   }else{
     conn <- cache.data(path, cache.path = cache.path, force = force)
