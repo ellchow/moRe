@@ -76,20 +76,21 @@ setConstructorS3('Timer',
                           log=log)
                  })
 setMethodS3('start.timer', 'Timer',
-            function(self,msg=NULL,...){
+            function(self, msg=NULL, ...){
               if(!is.null(msg)){
-                write.msg(self$log,msg)
+                write.msg(self$log,msg, ...)
               }
               self$startTime <- proc.time()[3]
             })
 setMethodS3('stop.timer', 'Timer',
-            function(self,...){
+            function(self, ...){
               self$stopTime <- proc.time()[3]
               dt <- self$stopTime - self$startTime
               m <- as.integer(dt / 60)
               s <- round(dt - 60 * m,1)
               write.msg(self$log,
-                        sprintf('elapsed time: %s', paste(m, 'm', s, 's')))
+                        sprintf('elapsed time: %s', paste(m, 'm', s, 's')),
+                        ...)
             })
 options(warn=0)
 
@@ -414,6 +415,20 @@ sample.by <- function(x,...,as.filter=TRUE){
 ####################
 #### Dataframe
 ####################
+
+rbind.fill.par <- function(lst, m = 1000) {
+  n <- length(lst)
+  ldply(1:ceiling(n / m),
+        function(offset){
+          select <- 1 + ((m * (offset - 1)) : (m * offset - 1))
+          select <- select[select <= n]
+
+          ds <- lst[select]
+
+          rbind.fill(ds)
+        },
+        .parallel = TRUE)
+}
 
 max.element.str.length <- function(data,.parallel=FALSE){
   maxLengths <- llply(names(data),
