@@ -19,7 +19,6 @@ import('doMC',
        'hash',
        'R.oo',
        'digest',
-       'gsubfn',
        as.library='utils')
 
 
