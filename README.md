@@ -35,6 +35,8 @@ some wrappers for accessing databases and using SQL
 
 since I am too lazy to make a real R library (and it seems a bit too heavy duty for me), I add source this file (with chdir=T) in my .Rprofile so that i can call my custom import function to load my pseudo-modules as well as normal libraries (auto-installs if missing).
 
+for simple "installation", _run setup.sh_.
+
 *yahoofin*
 
 functions for accessing yahoo finance data
