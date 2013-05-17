@@ -12,13 +12,13 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-import('gdata',
+import('doMC',
+       'gdata',
        'stringr',
        'plyr',
        'hash',
        'R.oo',
        'digest',
-       'gsubfn',
        as.library='utils')
 
 
