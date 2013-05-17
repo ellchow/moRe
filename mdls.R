@@ -21,10 +21,7 @@ import('utils',
        'gbm',
        'infotheo',
        'rjson',
-       'ggplot2',
-       get.parallel.library()$lib)
-
-get.parallel.library()$activate(5)
+       'ggplot2')
 
 ##############################################
 #### Model Building

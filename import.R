@@ -42,14 +42,6 @@ better.library <- function(...,repos='http://cran.cnr.Berkeley.edu/',lib=.Librar
 
 system.os <- function(){.Platform$OS.type}
 
-get.parallel.library <- function(){
-  if(system.os() == 'windows'){
-    list(lib='doSMP',activate=function(cores){eval(parse(text=sprintf('registerDoSMP(%d)',cores)))})
-  }else{
-    list(lib='doMC',activate=function(cores="NULL"){eval(parse(text=sprintf('registerDoMC(%s)',cores)))})
-  }
-}
-
 import <- function(..., as.library=NULL){
   available <- c('utils', 'mdls', 'yahoofin', 'cmdargs', 'math', 'plots', 'sql', 'infor')
   from.source <- c('rstan')

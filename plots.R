@@ -21,8 +21,7 @@ import('utils',
        'doMC',
        'gbm',
        'Hmisc',
-       'ggplot2',
-       get.parallel.library()$lib)
+       'ggplot2')
 
 #### basic plotting
 

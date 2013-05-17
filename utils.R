@@ -18,8 +18,7 @@ import('gdata',
        'hash',
        'R.oo',
        'digest',
-       'gsubfn',
-       get.parallel.library()$lib,
+       'gsubfn'
        as.library='utils')
 
 
