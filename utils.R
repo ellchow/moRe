@@ -129,21 +129,33 @@ py.urlencode <- function(p){
          sep='')
 }
 
-curl.cmd <- function(url, output.path, params = NULL, method = 'get', custom.opts = ''){
-  stop.if.not(method %in% c('get','post'))
+curl.cmd <- function(url, output.path, params = NULL, method = 'get', show.progress = NULL, custom.opts = ''){
+  stop.if.not(method %in% c('get','post'), 'method must be get or post')
+  stop.if.not(is.null(show.progress) || show.progress %in% c('bar','text'), 'progress must be bar or text')
 
   if(!is.null(params))
     ps <- py.urlencode(params)
   else
     ps <- ''
 
+
+  if(is.null(show.progress))
+    progress.opt <- '-s'
+  else if (show.progress == 'bar')
+    progress.opt <- '-#'
+  else if(show.progress == 'text')
+    progress.opt <- ''
+
+
+
   method.opt <- if(method == 'get') '-X GET' else '-X POST'
 
-  sprintf('curl %s %s --data "%s" -o %s "%s"',
+  sprintf('curl %s %s --data "%s" -o %s %s "%s"',
           method.opt,
           custom.opts,
           ps,
           output.path,
+          progress.opt,
           url)
 
 }
@@ -174,11 +186,11 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
   conn
 }
 
-load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.path='.cache', force=FALSE, log.level = SimpleLog.INFO){
+load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
   options(warn=-1)
 
   if(is.list(path)){
-    path <- c(path, cache.path = cache.path, force = force, list(log.level = log.level))
+    path <- c(path, cache.path = cache.path, show.progress = show.progress, force = force, list(log.level = log.level))
     conn <- csplat(cache.data, path)
   }else{
     conn <- cache.data(path, cache.path = cache.path, force = force)
