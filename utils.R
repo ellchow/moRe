@@ -18,7 +18,7 @@ import('gdata',
        'hash',
        'R.oo',
        'digest',
-       'gsubfn'
+       'gsubfn',
        as.library='utils')
 
 
