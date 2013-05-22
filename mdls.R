@@ -770,7 +770,6 @@ gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log
   x <- summary(object, plotit=F)
   names(x) <- c('feature', 'importance')
   x$feature <- ordered(x$feature, x$feature)
-  x <- cbind(" "=1:nrow(x), x)
   row.names(x) <- NULL
   cat(format.fun(x), file=file.path(root, sprintf('feature-importance.%s', text.as)))
 
