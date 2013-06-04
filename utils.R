@@ -123,7 +123,9 @@ rrmdir <- function(path,rm.contents.only=FALSE){
 py.urlencode <- function(p){
   csplat(paste,system(paste('python -c "import urllib; print urllib.urlencode({',
                csplat(paste,lapply(lzip(names(p),p),
-                                   function(kv)  sprintf("'%s':'%s'", kv[[1]], kv[[2]]) ),
+                                   function(kv)  sprintf("'%s':'%s'",
+                                                         str_replace_all(kv[[1]],"'","\\\\'"),
+                                                         str_replace_all(kv[[2]],"'","\\\\'")) ),
                       sep=','),' })"'),
          intern = T),
          sep='')
