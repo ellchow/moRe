@@ -42,6 +42,13 @@ mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
   as.data.frame(as.list(z))
 }
 
+is.between <- function(x, bounds, inclusive=T){
+  if(inclusive)
+    (x >= bounds[1]) & (x <= bounds[2])
+  else
+    (x > bounds[1]) & (x < bounds[2])
+}
+
 cap <- function(x, lb, ub)
   pmin(ub,pmax(lb,x))
 
