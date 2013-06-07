@@ -992,14 +992,14 @@ cor.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=SimpleL
 }
 
 gbm.feature.selection.filter <- function(..., train.fraction=0.8, verbose=F){
-  ## forward.filter.feature.selection(iris$Sepal.Length,iris[,2:4], gbm.feature.selection.filter(distribution='gaussian',verbose=F,n.trees=100,interaction.depth=6,keep.data=F))
+  ## import('mdls'); forward.filter.feature.selection(iris$Sepal.Length,iris[,2:4], gbm.feature.selection.filter(distribution='gaussian',verbose=F,n.trees=200,interaction.depth=6,keep.data=F))
   function(t,s,r,.parallel=FALSE,log.level=SimpleLog.ERROR){
     nTrain <- train.fraction * length(t)
     logger <- SimpleLog('gbm.feature.selection.filter',log.level)
     remaining <- names(r)
     scores <- laply(remaining,
                     function(f) {
-                      m0 <- if(ncol(s) == 0) NULL else gbm.fit(s, t, ..., nTrain=nTrain, verbose=verbose)
+                      m0 <- if(ncol(s) == 0) NULL else gbm.fit(s, r[[f]], ..., nTrain=nTrain, verbose=verbose)
                       m1 <- gbm.fit(cbind(s,subset(r,select=f)), t, ..., nTrain=nTrain, verbose=verbose)
 
                       (if(is.null(m0)) 0 else min(m0$valid.error)) - min(m1$valid.error)
@@ -1011,13 +1011,13 @@ gbm.feature.selection.filter <- function(..., train.fraction=0.8, verbose=F){
 }
 
 glm.feature.selection.filter <- function(..., f=function(x) x^2){
-  ## forward.filter.feature.selection(iris$Sepal.Length,iris[,2:4], glm.feature.selection.filter(family='gaussian')
+  ## import('mdls'); forward.filter.feature.selection(iris$Sepal.Length,iris[,2:4], glm.feature.selection.filter(family='gaussian'))
   function(t,s,r,.parallel=FALSE,log.level=SimpleLog.ERROR){
     logger <- SimpleLog('glm.feature.selection.filter',log.level)
     remaining <- names(r)
     scores <- laply(remaining,
                     function(f) {
-                      m0 <- if(ncol(s) == 0) NULL else glm.fit.plus(s, t, ...)
+                      m0 <- if(ncol(s) == 0) NULL else glm.fit.plus(s, r[[f]], ...)
                       m1 <- glm.fit.plus(cbind(s,subset(r,select=f)), t, ...)
 
                       (if(is.null(m0)) 0 else mean(f(residuals(m0)))) - mean(f(residuals(m1)))
