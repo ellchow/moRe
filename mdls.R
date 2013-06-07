@@ -974,10 +974,7 @@ interinfo.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=S
   logger$level <- log.level
   remaining <- names(r)
   scores <- laply(remaining,
-                  function(f){
-                    z <- interinformation(cbind(s, t, r[[f]]))
-                    z
-                  },
+                  function(f) interinformation(cbind(s, t, r[[f]])),
                   .parallel=.parallel)
   names(scores) <- remaining
   scores
@@ -987,16 +984,51 @@ cor.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=SimpleL
   logger <- SimpleLog('cor.feature.selection.filter',log.level)
   remaining <- names(r)
   scores <- laply(remaining,
-                  function(f){
-                    z <- abs(cor(t, r[[f]])) - (if(ncol(s)==0){0}else{max(abs(cor(s, r[[f]])))})^2
-                    z
-                  },
+                  function(f) abs(cor(t,
+                                      r[[f]])) - (if(ncol(s)==0) 0 else max(abs(cor(s, r[[f]]))))^2,
                   .parallel=.parallel)
   names(scores) <- remaining
   scores
 }
 
-forward.filter.feature.selection <- function(target, features, evaluate=interinfo.feature.selection.filter, choose.best=max, n=ncol(features), .parallel=FALSE, log.level=SimpleLog.ERROR){
+gbm.feature.selection.filter <- function(..., train.fraction=0.8, verbose=F){
+  ## forward.filter.feature.selection(iris$Sepal.Length,iris[,2:4], gbm.feature.selection.filter(distribution='gaussian',verbose=F,n.trees=100,interaction.depth=6,keep.data=F))
+  function(t,s,r,.parallel=FALSE,log.level=SimpleLog.ERROR){
+    nTrain <- train.fraction * length(t)
+    logger <- SimpleLog('gbm.feature.selection.filter',log.level)
+    remaining <- names(r)
+    scores <- laply(remaining,
+                    function(f) {
+                      m0 <- if(ncol(s) == 0) NULL else gbm.fit(s, t, ..., nTrain=nTrain, verbose=verbose)
+                      m1 <- gbm.fit(cbind(s,subset(r,select=f)), t, ..., nTrain=nTrain, verbose=verbose)
+
+                      (if(is.null(m0)) 0 else min(m0$valid.error)) - min(m1$valid.error)
+                    },
+                    .parallel=.parallel)
+    names(scores) <- remaining
+    scores
+  }
+}
+
+glm.feature.selection.filter <- function(..., f=function(x) x^2){
+  ## forward.filter.feature.selection(iris$Sepal.Length,iris[,2:4], glm.feature.selection.filter(family='gaussian')
+  function(t,s,r,.parallel=FALSE,log.level=SimpleLog.ERROR){
+    logger <- SimpleLog('glm.feature.selection.filter',log.level)
+    remaining <- names(r)
+    scores <- laply(remaining,
+                    function(f) {
+                      m0 <- if(ncol(s) == 0) NULL else glm.fit.plus(s, t, ...)
+                      m1 <- glm.fit.plus(cbind(s,subset(r,select=f)), t, ...)
+
+                      (if(is.null(m0)) 0 else mean(f(residuals(m0)))) - mean(f(residuals(m1)))
+                    },
+                    .parallel=.parallel)
+    names(scores) <- remaining
+    scores
+  }
+}
+
+forward.filter.feature.selection <- function(target, features, evaluate=cor.feature.selection.filter, choose.best=max, n=ncol(features), .parallel=FALSE, log.level=SimpleLog.ERROR){
   logger <- SimpleLog('forward.filter.feature.selection',log.level)
   feature.selection.by.filter(target, features, NULL, function(...) evaluate(...,.parallel=.parallel),
                               function(z, scores){
