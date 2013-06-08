@@ -94,8 +94,17 @@ bucketize <- function(x, buckets=head(quantile(x,seq(0,1,0.1)),-1), label='names
 rdiscrete <- function(n, prob, domain=1:length(prob))
   bucketize(runif(n), c(0,cumsum(prob / sum(prob))))
 
-beta.params <- function(a,b)
-  c(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
+beta.params <- function(a,b,method='ab'){
+  stop.if.not(method %in% c('ab','md'), sprintf('unknown method: %s', method))
+  if(method == 'md'){
+    alpha <- a * b
+    beta <-  b - alpha
+    beta.params(alpha, beta, 'ab')
+  }else{
+    c(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
+  }
+}
+
 
 beta.estimate <- function(x, m=mean, v=var){
   if(is.null(dim(x)) || ncol(x) != 2){
