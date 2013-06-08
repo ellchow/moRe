@@ -19,6 +19,7 @@ import('utils',
        'plyr',
        'doMC',
        'gbm',
+       'betareg',
        'infotheo',
        'rjson',
        'ggplot2')
@@ -47,8 +48,11 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
   ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
   ##                        distribution='gaussian',train.fraction=0.8,weights=function(data) runif(nrow(data))),
   ##          lm.model.def('lmmodel', function(x) x$Sepal.Length,
-  ##                       c('Sepal.Width','Petal.Length','Petal.Width')) ) -> ms
-  ## mdls.predict(ms,iris[,1:4]) -> s
+  ##                       c('Sepal.Width','Petal.Length','Petal.Width')),
+  ##          betareg.model.def("betaregmodel", function(x) x$Sepal.Width / x$Sepal.Length,
+  ##                            c('Sepal.Width','Petal.Length','Petal.Width'),
+  ##                            phi.features='Sepal.Width')
+  ##          ) -> ms
 
   logger <- SimpleLog('mdls.fit',log.level)
 
@@ -61,7 +65,6 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                  function(x){
                    ds.id <- x[[1]]
                    data <- x[[2]]
-
                    if(is.character(data)){
                      t0 <- start.timer(timer,'loading dataset "%s"', ds.id)
                      data <- load.data(data)
@@ -71,6 +74,8 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                    }else{
                      data <- as.data.frame(data)
                    }
+
+
 
                    model.defs.filtered <- Filter(function(md){
                      any(sapply(lzip(names(mapping), mapping),
@@ -112,9 +117,12 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                       })
                                              }else{
                                                write.msg(logger, sprintf('training "%s"', id))
+
                                                m <- tryCatch(do.call(md$fit,
-                                                                     c(list(subset(data,select=md$features),
-                                                                            t,weights=w),
+                                                                     c(list(subset(data,
+                                                                                   select=grep("^\\|$",md$features,invert=T,value=T)),
+                                                                            t,
+                                                                            weights=w),
                                                                        md$params)),
                                                              error=function(e){
                                                                write.msg(logger,str_trim(as.character(e)),
@@ -812,7 +820,7 @@ lm.model.def <- function(id, target.gen, features, ..., weights=function(data) N
 lm.fit.plus <- function(x, y, ..., y.label="y"){
   features <- names(x)
   x[[y.label]] <- y
-  f <- sprintf("%s ~ %s", y.label, do.call(paste,c(as.list(features),sep=" + ")))
+  f <- sprintf("%s ~ %s", y.label, csplat(paste,features,sep=" + "))
   m <- lm(formula(f), x, ...)
   m$var.names <- features
   m
@@ -869,7 +877,7 @@ glm.model.def <- function(id, target.gen, features, ..., weights=function(data) 
 glm.fit.plus <- function(x, y, family=NA,..., y.label="y"){
   features <- names(x)
   x[[y.label]] <- y
-  f <- sprintf("%s ~ %s", y.label, do.call(paste,c(as.list(features),sep=" + ")))
+  f <- sprintf("%s ~ %s", y.label, csplat(paste,features,sep=" + "))
   glm(formula(f), family=family, x, ...)
 }
 
@@ -927,6 +935,79 @@ glm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLo
       file=file.path(root, 'summary.txt'))
 }
 
+#####################################
+#### betareg modifications and helpers
+#####################################
+
+betareg.model.def <- function(id, target.gen, features, ..., phi.features=NULL, weights=function(data) NULL){
+  all.features <- unique(c(features, phi.features))
+
+  list(id=id, target.gen=target.gen, fit=betareg.fit.plus, features=all.features, predict=betareg.predict, params=c(list(...), list(features=features, phi.features = phi.features)), check=check.betareg.model.def, weights=weights, report=betareg.model.report)
+}
+
+betareg.fit.plus <- function(x, y, ..., features, phi.features = NULL, y.label="y"){
+  ## import('mdls'); mdls.fit(FoodExpenditure,betareg.model.def("br", function(x) x$food / x$income,c('income','persons'),phi.features='persons')) -> ms
+
+  x[[y.label]] <- y
+  f <- sprintf("%s ~ %s %s", y.label,
+               csplat(paste, features, sep=" + "),
+               if(is.null(phi.features)) "" else paste(" |", csplat(paste,phi.features,sep=' + ')))
+
+  m <- betareg(formula(f), x, ...)
+  m$var.names <- features
+  m
+}
+
+check.betareg.model.def <- function(model.def, target, data, weights){
+  problems <- list()
+
+  missing <- setdiff(model.def$features, names(data))
+  available <- setdiff(model.def$features, missing)
+  if(length(missing) != 0)
+    problems$missing.features <- missing
+
+  na.target <- any(is.na(target))
+  if(na.target)
+    problems$na.target <- NA
+
+  nan.target <- any(is.nan(target))
+  if(nan.target)
+    problems$nan.target <- NA
+
+  infinite.target <- any(is.infinite(target))
+  if(infinite.target)
+    problems$infinite.target <- NA
+
+  invalid.target <- !any(is.between(target, c(0,1), F))
+  if(invalid.target)
+    problems$invalid.target <- NA
+
+  invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
+  if(invalid.weights)
+    problems$invalid.weights <- NA
+  else{
+    negative.weights <- any(weights < 0)
+    if(negative.weights)
+      problems$negative.weights <- NA
+  }
+
+  problems
+}
+
+betareg.predict <- function(object,newdata,type=c('response','variance'), ...)
+  named(csplat(cbind, lapply(type, function(t) predict(object, newdata, type=t,...))),
+        type, 'col')
+
+
+betareg.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
+  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+
+  logger <- SimpleLog('betareg.model.report', log.level)
+
+  dir.create(root, recursive = TRUE)
+  cat(str_replace_all(csplat(paste,capture.output(summary(object)),sep='\n'), '[’‘]', '"'),
+      file=file.path(root, 'summary.txt'))
+}
 
 #######################################
 #### Feature Helpers ##################
