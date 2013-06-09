@@ -14,14 +14,10 @@
 
 import('utils')
 
-linear.norm <- function(x, lb, ub, clipMin=FALSE, clipMax=FALSE, na.rm=FALSE, displayLevel=0){
-  if(clipMin)
-    x <- pmax(x,lb,na.rm=na.rm)
+linear.norm <- function(x, lb, ub, clip = c(FALSE,FALSE), na.rm = FALSE){
+  y <- cap(x, if(clip[1]) lb else -Inf, if(clip[2]) ub else Inf)
 
-  if(clipMax)
-    x <- pmin(x,ub,na.rm=na.rm)
-
-  (x - lb) / (ub - lb)
+  (y - lb) / (ub - lb)
 }
 
 mean.cl.boot.w <- function(x,w=rep(1,length(x)),rounds=1000,ci=0.95,na.rm=T){
@@ -49,8 +45,8 @@ is.between <- function(x, bounds, inclusive=T){
     (x > bounds[1]) & (x < bounds[2])
 }
 
-cap <- function(x, lb, ub)
-  pmin(ub,pmax(lb,x))
+cap <- function(x, lb, ub, na.rm = FALSE)
+  pmin(ub,pmax(lb, x, na.rm=na.rm), na.rm=na.rm)
 
 winsor.mean <- function(x, trim=0.02){
   stop.if.not(trim >= 0 && trim <= 1, "trim must be between 0 and 1")
