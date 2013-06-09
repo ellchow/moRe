@@ -63,7 +63,6 @@ winsor.var <- function(x, trim=0.02){
 skewness <- function(x, ...)
   mean((x - mean(x, ...)) ^ 3, ...) / (mean((x - mean(x, ...)) ^ 2) ^ 1.5)
 
-
 kurtosis <- function(x, ...)
   -3 + mean((x - mean(x, ...)) ^ 4, ...) / (mean((x - mean(x, ...)) ^ 2, ...) ^ 2)
 
@@ -73,7 +72,9 @@ bucketize <- function(x, buckets=head(quantile(x,seq(0,1,0.1)),-1), label='names
     stop.if(length(unique(buckets)) != length(buckets),
             "bucket boundaries must be unique")
   else{
-    z <- tapply(if(!is.null(names(buckets))) names(buckets) else indices(buckets), buckets, function(x) csplat(paste,x,sep=', '))
+    z <- tapply(if(!is.null(names(buckets))) names(buckets) else indices(buckets),
+                buckets,
+                function(x) csplat(paste,x,sep=', '))
     buckets <- named(as.numeric(names(z)), z)
   }
 
@@ -104,16 +105,16 @@ beta.params <- function(a,b,method='ab'){
 
 beta.estimate <- function(x, m=mean, v=var){
   if(is.null(dim(x)) || ncol(x) != 2){
-    sampleMean <- m(x)
-    sampleVar <- v(x)
+    sample.mean <- m(x)
+    sample.var <- v(x)
   }else{
-    sampleMean <- m(ifelse(x[,2] == 0, 0, x[,1] / x[,2]))
-    sampleVar <- v(ifelse(x[,2] == 0, x[,2], x[,1] / x[,2]))
+    sample.mean <- m(ifelse(x[,2] == 0, 0, x[,1] / x[,2]))
+    sample.var <- v(ifelse(x[,2] == 0, x[,2], x[,1] / x[,2]))
   }
 
-  a <- sampleMean * ((sampleMean * (1 - sampleMean)) / sampleVar - 1)
+  a <- sample.mean * ((sample.mean * (1 - sample.mean)) / sample.var - 1)
 
-  b <- (1 - sampleMean) * ((sampleMean * (1 - sampleMean)) / sampleVar - 1)
+  b <- (1 - sample.mean) * ((sample.mean * (1 - sample.mean)) / sample.var - 1)
 
   beta.params(a,b)
 }
