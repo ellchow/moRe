@@ -231,9 +231,8 @@ mdls.report <- function(mdls, root, text.as = 'html', log.level = SimpleLog.INFO
 #####################################
 
 
-gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
   list(id=id, target.gen=target.gen, fit=function(...,weights=NULL) gbm.fit.plus(...,w=weights), features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def, weights=weights, report=gbm.model.report)
-}
 
 gbm.fit.plus <- function(x, y, ..., train.fraction = NULL){
   args <- list(x=x, y=y, ...)
@@ -810,12 +809,11 @@ gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log
 
 
 #####################################
-#### (g)lm modifications and helpers
+#### lm modifications and helpers
 #####################################
 
-lm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+lm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
   list(id=id, target.gen=target.gen, fit=lm.fit.plus, features=features, predict=predict.lm, params=list(...), check=check.lm.model.def, weights=weights, report=lm.model.report)
-}
 
 lm.fit.plus <- function(x, y, ..., y.label="y"){
   features <- names(x)
@@ -868,11 +866,12 @@ lm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog
       file=file.path(root, 'summary.txt'))
 }
 
+#####################################
+#### glm modifications and helpers
+#####################################
 
-glm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+glm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
   list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def, weights=weights, report=glm.model.report)
-}
-
 
 glm.fit.plus <- function(x, y, family=NA,..., y.label="y"){
   features <- names(x)
@@ -929,6 +928,75 @@ glm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLo
   stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
 
   logger <- SimpleLog('glm.model.report', log.level)
+
+  dir.create(root, recursive = TRUE)
+  cat(str_replace_all(csplat(paste,capture.output(summary(object)),sep='\n'), '[’‘]', '"'),
+      file=file.path(root, 'summary.txt'))
+}
+
+#####################################
+#### glmnet modifications and helpers
+#####################################
+
+glmnet.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
+  list(id=id, target.gen=target.gen, fit=glmnet.fit, features=features, predict=glmnet.predict, params=list(...), check=check.glmnet.model.def, weights=weights, report=glmnet.model.report)
+
+glmnet.fit <- function(x, y, ..., cv = F, weights = NULL){
+  fit <- if(cv) cv.glmnet else glmnet
+  if(is.null(weights))
+    fit(as.matrix(x), y, ...)
+  else
+    fit(as.matrix(x), y, ..., weights = weights)
+}
+
+check.glmnet.model.def <- function(model.def, target, data, weights){
+  problems <- list()
+
+  missing <- setdiff(model.def$features, names(data))
+  available <- setdiff(model.def$features, missing)
+  if(length(missing) != 0)
+    problems$missing.features <- missing
+
+  na.target <- any(is.na(target))
+  if(na.target)
+    problems$na.target <- NA
+
+  nan.target <- any(is.nan(target))
+  if(nan.target)
+    problems$nan.target <- NA
+
+  infinite.target <- any(is.infinite(target))
+  if(infinite.target)
+    problems$infinite.target <- NA
+
+  no.family <- !('family' %in% names(model.def$params))
+  if(no.family)
+    problems$no.family <- NA
+  else{
+    invalid.binomial.target <- (model.def$params$family == 'binomial') && (!all(target %in% (0:1)))
+    if(invalid.binomial.target)
+      problems$invalid.binomial.target <- NA
+  }
+
+  invalid.weights <- any(is.na(weights) | is.nan(weights) | is.infinite(weights))
+  if(invalid.weights)
+    problems$invalid.weights <- NA
+  else{
+    negative.weights <- any(weights < 0)
+    if(negative.weights)
+      problems$negative.weights <- NA
+  }
+
+  problems
+}
+
+glmnet.predict <- function(object,newx,type='response',...)
+  predict(object,newx,type=type,...)
+
+glmnet.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
+  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+
+  logger <- SimpleLog('glmnet.model.report', log.level)
 
   dir.create(root, recursive = TRUE)
   cat(str_replace_all(csplat(paste,capture.output(summary(object)),sep='\n'), '[’‘]', '"'),
