@@ -939,7 +939,7 @@ glm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLo
 glmnet.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
   list(id=id, target.gen=target.gen, fit=glmnet.fit, features=features, predict=glmnet.predict, params=list(...), check=check.glmnet.model.def, weights=weights, report=glmnet.model.report)
 
-glmnet.fit <- function(x, y, ..., cv = F, weights = NULL){
+glmnet.fit <- function(x, y, ..., cv = T, weights = NULL){
   fit <- if(cv) cv.glmnet else glmnet
   if(is.null(weights))
     fit(as.matrix(x), y, ...)
