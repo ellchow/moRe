@@ -20,6 +20,7 @@ import('utils',
        'doMC',
        'gbm',
        'betareg',
+       'glmnet',
        'infotheo',
        'rjson',
        'ggplot2')
@@ -234,15 +235,12 @@ mdls.report <- function(mdls, root, text.as = 'html', log.level = SimpleLog.INFO
 gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
   list(id=id, target.gen=target.gen, fit=function(...,weights=NULL) gbm.fit.plus(...,w=weights), features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def, weights=weights, report=gbm.model.report)
 
-gbm.fit.plus <- function(x, y, ..., train.fraction = NULL){
-  args <- list(x=x, y=y, ...)
-
-  if(!is.null(train.fraction))
-    args$nTrain <- as.integer(train.fraction * length(y))
-
-  csplat(gbm.fit, args)
+gbm.fit.plus <- function(x, y, ..., y.label="y"){
+  features <- names(x)
+  x[[y.label]] <- y
+  f <- sprintf("%s ~ %s", y.label, csplat(paste,features,sep=" + "))
+  gbm(formula(f), x, ...)
 }
-
 
 gbm.predict <- function(object,newdata,n.trees=NULL,type='response',...){
   trees <- if(is.null(n.trees)) gbm.perf(object,method='test',plot.it=FALSE) else n.trees
