@@ -65,7 +65,7 @@ plot.points.with.smoother <- function(x,y,
 
 #### ggplot
 
-stat.sum.df <- function(fun = 'mean_cl_boot', geom='crossbar', colour='steelblue', width=0.4,...) {
+stat.sum.df <- function(fun = 'mean_cl_boot', geom='crossbar', colour='steelblue', width=0.4, ...) {
   stat_summary(fun.data=fun, colour=colour, geom=geom, width=width, ...)
 }
 

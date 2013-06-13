@@ -992,12 +992,13 @@ glmnet.predict <- function(object,newx,type='response',...)
   predict(object,newx,type=type,...)
 
 glmnet.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
+  ## FIXME
   stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
 
   logger <- SimpleLog('glmnet.model.report', log.level)
 
   dir.create(root, recursive = TRUE)
-  cat(str_replace_all(csplat(paste,capture.output(summary(object)),sep='\n'), '[’‘]', '"'),
+  cat(str_replace_all(csplat(paste,capture.output(info),sep='\n'), '[’‘]', '"'),
       file=file.path(root, 'summary.txt'))
 }
 
