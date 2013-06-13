@@ -65,15 +65,6 @@ plot.points.with.smoother <- function(x,y,
 
 #### ggplot
 
-save.ggplots <-function(plots,outputPath,ext='png',...,.parallel=FALSE){
-  llply(plots,function(x){
-    tryCatch(ggsave(filename=paste(outputPath,'/',x$name,'.',ext,sep=''),plot=x$plot,...),
-             error=function(e){
-               NA
-             })
-  }, .parallel=.parallel)
-}
-
 stat.sum.df <- function(fun = 'mean_cl_boot', geom='crossbar', colour='steelblue', width=0.4,...) {
   stat_summary(fun.data=fun, colour=colour, geom=geom, width=width, ...)
 }
