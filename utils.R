@@ -18,6 +18,7 @@ import('doMC',
        'plyr',
        'hash',
        'R.oo',
+       'Hmisc',
        'digest',
        as.library='utils')
 
