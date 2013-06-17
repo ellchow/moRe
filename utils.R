@@ -20,6 +20,7 @@ import('doMC',
        'R.oo',
        'Hmisc',
        'digest',
+       'sfsmisc',
        as.library='utils')
 
 ## options(width=110,scipen=6)
@@ -103,6 +104,88 @@ stop.if <- function(x,msg,cleanup = function(){}){
 stop.if.not <- function(x,msg,cleanup = function(){})
   stop.if(!x,msg,cleanup)
 
+####################
+#### URL encoding
+####################
+## http://svn.python.org/view/*checkout*/python/tags/r265/Lib/urllib.py?revision=79064&content-type=text%2Fplain
+
+url.always.safe.chars <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","0","1","2","3","4","5","6","7","8","9","_",".","-")
+url.reserved.chars <- c(";", "/", "?", ":", "@", "&", "=", "+", "$", ",")
+
+url.quote <- function(s, reserved = url.reserved.chars,  plus.spaces = T){
+  chars <- int.to.char(1:255)
+  safe <- named(ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%%%X', 1:255)),
+                chars)
+
+  if(plus.spaces)
+    safe[[' ']] <- '+'
+
+  unlist(lapply(strcodes(s), function(chars) csplat(paste,safe[chars],sep='')))
+}
+
+url.unquote <- function(s, reserved = url.reserved.chars, plus.spaces = T){
+  chars <- int.to.char(1:255)
+  safe <- named(chars,
+                ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%X', 1:255)))
+
+  z <- lapply(strsplit(s, '%'),
+         function(xs){
+           y <- paste(safe[str_sub(xs[-1], end = 2)],
+                 str_sub(xs[-1], start = 3),
+                 sep = '')
+
+           z <- csplat(paste, c(xs[1], y), sep = '')
+
+           if(plus.spaces)
+             gsub('\\+',' ',z)
+           else
+             z
+         })
+
+  unlist(z)
+}
+
+url.encode.params <- function(params){
+  params <- unlist(params)
+  csplat(paste,
+         paste(url.quote(names(params), reserved = NULL, plus.spaces=T),
+               url.quote(params, reserved = NULL, plus.spaces=T),
+               sep='='),
+         sep='&')
+}
+
+## py.urlencode <- function(p){
+##   csplat(paste,system(paste('python -c "import urllib; print urllib.urlencode({',
+##                csplat(paste,lapply(lzip(names(p), p),
+##                                    function(kv)  sprintf("'%s':'%s'",
+##                                                          str_replace_all(kv[[1]], "'", "\\\\'"),
+##                                                          str_replace_all(kv[[2]], "'", "\\\\'")) ),
+##                       sep=','),' })"'),
+##          intern = T),
+##          sep='')
+## }
+
+## py.unquote <- function(s, plus.spaces = T){
+##   if(plus.spaces)
+##     f <- 'unquote_plus'
+##   else
+##     f <- 'unquote'
+
+##   s <- str_replace_all(s, "'", "\\\\'")
+##   sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
+##               f, s))
+## }
+
+## py.quote <- function(s, plus.spaces = T){
+##   if(plus.spaces)
+##     f <- 'quote_plus'
+##   else
+##     f <- 'quote'
+
+##   s <- str_replace_all(s, "'", "\\\\'")
+##   sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
+##               f, s))
+## }
 
 ####################
 #### Files
@@ -121,45 +204,12 @@ rrmdir <- function(path,rm.contents.only=FALSE){
   }
 }
 
-py.urlencode <- function(p){
-  csplat(paste,system(paste('python -c "import urllib; print urllib.urlencode({',
-               csplat(paste,lapply(lzip(names(p), p),
-                                   function(kv)  sprintf("'%s':'%s'",
-                                                         str_replace_all(kv[[1]], "'", "\\\\'"),
-                                                         str_replace_all(kv[[2]], "'", "\\\\'")) ),
-                      sep=','),' })"'),
-         intern = T),
-         sep='')
-}
-
-py.unquote <- function(s, plus.spaces = T){
-  if(plus.spaces)
-    f <- 'unquote_plus'
-  else
-    f <- 'unquote'
-
-  s <- str_replace_all(s, "'", "\\\\'")
-  sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
-              f, s))
-}
-
-py.quote <- function(s, plus.spaces = T){
-  if(plus.spaces)
-    f <- 'quote_plus'
-  else
-    f <- 'quote'
-
-  s <- str_replace_all(s, "'", "\\\\'")
-  sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
-              f, s))
-}
-
 curl.cmd <- function(url, output.path, params = NULL, method = 'get', show.progress = NULL, custom.opts = ''){
   stop.if.not(method %in% c('get','post'), 'method must be get or post')
   stop.if.not(is.null(show.progress) || show.progress %in% c('bar','text'), 'progress must be bar or text')
 
   if(!is.null(params))
-    ps <- py.urlencode(params)
+    ps <- url.encode.params(params)
   else
     ps <- ''
 
@@ -209,13 +259,14 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
 }
 
 load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  ## load.data('http://ichart.yahoo.com/table.csv?s=GOOG',sep=',') -> x
   options(warn=-1)
 
   if(is.list(path)){
     path <- c(path, cache.path = cache.path, show.progress = show.progress, force = force, list(log.level = log.level))
     conn <- csplat(cache.data, path)
   }else{
-    conn <- cache.data(path, cache.path = cache.path, force = force)
+    conn <- cache.data(path, cache.path = cache.path, force = force, log.level=log.level)
   }
 
   x <- tryCatch(get(load(conn)),
@@ -424,10 +475,11 @@ make.combinations <- function(...){
         function(z) as.list(z))
 }
 
-parameter.scan <- function(params.list, f){
-  named(lapply(params.list,
-               function(params) do.call(f, as.list(params)) ),
-        names(params.list))
+parameter.scan <- function(params.list, f, .parallel=FALSE){
+  named(llply(params.list,
+               function(params) do.call(f, as.list(params)),
+              .parallel=.parallel),
+        names(params.list),)
 }
 
 sample.by <- function(x,...,as.filter=TRUE){
@@ -650,24 +702,15 @@ str.fmt <- function(s,...){
   csplat(sprintf, ss, params)
 }
 
-int.to.char.map <- hash(keys=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),values=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))
+int.to.char <- chars8bit
 
-int.to.char <- function(i){
-  int.to.char.map[[as.character(i)]]
-}
-
-char.to.int.map <- hash(values=c("0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126"),keys=c("NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","TAB","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"," ","!","\"","#","$","%","&","\'","(",")","*","+",",","-",".","/","0","1","2","3","4","5","6","7","8","9",":",";","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","[","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","|","}","~"))
-
-char.to.int <- function(c){
-  as.integer(char.to.int.map[[as.character(c)]])
-}
+char.to.int <- AsciiToInt
 
 int.to.char.seq <- function(x, offset=0){
   n <- as.integer((x-1) / 26) + 1
   m <- as.integer((x-1) %% 26)
   do.call(paste,c(as.list(rep(int.to.char(m + 97),n)),sep=''))
 }
-
 
 file.size.gb <- function(path)
   file.info(path)$size / (1024^3)
