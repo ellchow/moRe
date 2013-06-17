@@ -154,38 +154,38 @@ url.encode.params <- function(params){
          sep='&')
 }
 
-py.urlencode <- function(p){
-  csplat(paste,system(paste('python -c "import urllib; print urllib.urlencode({',
-               csplat(paste,lapply(lzip(names(p), p),
-                                   function(kv)  sprintf("'%s':'%s'",
-                                                         str_replace_all(kv[[1]], "'", "\\\\'"),
-                                                         str_replace_all(kv[[2]], "'", "\\\\'")) ),
-                      sep=','),' })"'),
-         intern = T),
-         sep='')
-}
+## py.urlencode <- function(p){
+##   csplat(paste,system(paste('python -c "import urllib; print urllib.urlencode({',
+##                csplat(paste,lapply(lzip(names(p), p),
+##                                    function(kv)  sprintf("'%s':'%s'",
+##                                                          str_replace_all(kv[[1]], "'", "\\\\'"),
+##                                                          str_replace_all(kv[[2]], "'", "\\\\'")) ),
+##                       sep=','),' })"'),
+##          intern = T),
+##          sep='')
+## }
 
-py.unquote <- function(s, plus.spaces = T){
-  if(plus.spaces)
-    f <- 'unquote_plus'
-  else
-    f <- 'unquote'
+## py.unquote <- function(s, plus.spaces = T){
+##   if(plus.spaces)
+##     f <- 'unquote_plus'
+##   else
+##     f <- 'unquote'
 
-  s <- str_replace_all(s, "'", "\\\\'")
-  sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
-              f, s))
-}
+##   s <- str_replace_all(s, "'", "\\\\'")
+##   sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
+##               f, s))
+## }
 
-py.quote <- function(s, plus.spaces = T){
-  if(plus.spaces)
-    f <- 'quote_plus'
-  else
-    f <- 'quote'
+## py.quote <- function(s, plus.spaces = T){
+##   if(plus.spaces)
+##     f <- 'quote_plus'
+##   else
+##     f <- 'quote'
 
-  s <- str_replace_all(s, "'", "\\\\'")
-  sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
-              f, s))
-}
+##   s <- str_replace_all(s, "'", "\\\\'")
+##   sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
+##               f, s))
+## }
 
 ####################
 #### Files
