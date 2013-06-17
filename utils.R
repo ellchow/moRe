@@ -104,22 +104,52 @@ stop.if <- function(x,msg,cleanup = function(){}){
 stop.if.not <- function(x,msg,cleanup = function(){})
   stop.if(!x,msg,cleanup)
 
-
 ####################
-#### Files
+#### URL encoding
 ####################
+## http://svn.python.org/view/*checkout*/python/tags/r265/Lib/urllib.py?revision=79064&content-type=text%2Fplain
 
-rrmdir <- function(path,rm.contents.only=FALSE){
-  path <- gsub('/( )*$','',path)
-  isDir <- file.info(path)$isdir
-  if(!is.na(isDir) && isDir){
-    for(i in dir(path)){
-      rrmdir(file.path(path,i),FALSE)
-    }
-  }
-  if(!rm.contents.only){
-    file.remove(path)
-  }
+url.always.safe.chars <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","0","1","2","3","4","5","6","7","8","9","_",".","-")
+url.reserved.chars <- c(";", "/", "?", ":", "@", "&", "=", "+", "$", ",")
+
+url.quote <- function(s, reserved = url.reserved.chars,  plus.spaces = T){
+  chars <- int.to.char(1:255)
+  safe <- named(ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%%%X', 1:255)),
+                chars)
+
+  if(plus.spaces)
+    safe[[' ']] <- '+'
+
+  lapply(strcodes(s), function(chars) csplat(paste,safe[chars],sep=''))
+}
+
+url.unquote <- function(s, reserved = url.reserved.chars, plus.spaces = T){
+  chars <- int.to.char(1:255)
+  safe <- named(chars,
+                ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%X', 1:255)))
+
+  lapply(strsplit(s, '%'),
+         function(xs){
+           y <- paste(safe[str_sub(xs[-1], end = 2)],
+                 str_sub(xs[-1], start = 3),
+                 sep = '')
+
+           z <- csplat(paste, c(xs[1], y), sep = '')
+
+           if(plus.spaces)
+             gsub('\\+',' ',z)
+           else
+             z
+         })
+}
+
+url.encode.params <- function(params){
+  params <- unlist(params)
+  csplat(paste,
+         paste(url.quote(names(params), reserved = NULL, plus.spaces=T),
+               url.quote(params, reserved = NULL, plus.spaces=T),
+               sep='='),
+         sep='&')
 }
 
 py.urlencode <- function(p){
@@ -155,12 +185,29 @@ py.quote <- function(s, plus.spaces = T){
               f, s))
 }
 
+####################
+#### Files
+####################
+
+rrmdir <- function(path,rm.contents.only=FALSE){
+  path <- gsub('/( )*$','',path)
+  isDir <- file.info(path)$isdir
+  if(!is.na(isDir) && isDir){
+    for(i in dir(path)){
+      rrmdir(file.path(path,i),FALSE)
+    }
+  }
+  if(!rm.contents.only){
+    file.remove(path)
+  }
+}
+
 curl.cmd <- function(url, output.path, params = NULL, method = 'get', show.progress = NULL, custom.opts = ''){
   stop.if.not(method %in% c('get','post'), 'method must be get or post')
   stop.if.not(is.null(show.progress) || show.progress %in% c('bar','text'), 'progress must be bar or text')
 
   if(!is.null(params))
-    ps <- py.urlencode(params)
+    ps <- url.encode.params(params)
   else
     ps <- ''
 
@@ -210,13 +257,14 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
 }
 
 load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  ## load.data('http://ichart.yahoo.com/table.csv?s=GOOG',sep=',') -> x
   options(warn=-1)
 
   if(is.list(path)){
     path <- c(path, cache.path = cache.path, show.progress = show.progress, force = force, list(log.level = log.level))
     conn <- csplat(cache.data, path)
   }else{
-    conn <- cache.data(path, cache.path = cache.path, force = force)
+    conn <- cache.data(path, cache.path = cache.path, force = force, log.level=log.level)
   }
 
   x <- tryCatch(get(load(conn)),
