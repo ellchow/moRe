@@ -120,7 +120,7 @@ url.quote <- function(s, reserved = url.reserved.chars,  plus.spaces = T){
   if(plus.spaces)
     safe[[' ']] <- '+'
 
-  lapply(strcodes(s), function(chars) csplat(paste,safe[chars],sep=''))
+  unlist(lapply(strcodes(s), function(chars) csplat(paste,safe[chars],sep='')))
 }
 
 url.unquote <- function(s, reserved = url.reserved.chars, plus.spaces = T){
@@ -128,7 +128,7 @@ url.unquote <- function(s, reserved = url.reserved.chars, plus.spaces = T){
   safe <- named(chars,
                 ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%X', 1:255)))
 
-  lapply(strsplit(s, '%'),
+  z <- lapply(strsplit(s, '%'),
          function(xs){
            y <- paste(safe[str_sub(xs[-1], end = 2)],
                  str_sub(xs[-1], start = 3),
@@ -141,6 +141,8 @@ url.unquote <- function(s, reserved = url.reserved.chars, plus.spaces = T){
            else
              z
          })
+
+  unlist(z)
 }
 
 url.encode.params <- function(params){
