@@ -401,10 +401,11 @@ make.combinations <- function(...){
         function(z) as.list(z))
 }
 
-parameter.scan <- function(params.list, f){
-  named(lapply(params.list,
-               function(params) do.call(f, as.list(params)) ),
-        names(params.list))
+parameter.scan <- function(params.list, f, .parallel=FALSE){
+  named(llply(params.list,
+               function(params) do.call(f, as.list(params)),
+              .parallel=.parallel),
+        names(params.list),)
 }
 
 sample.by <- function(x,...,as.filter=TRUE){
