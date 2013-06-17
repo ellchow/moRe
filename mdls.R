@@ -1156,10 +1156,10 @@ gbm.feature.selection.filter <- function(..., train.fraction=0.8, verbose=F){
     remaining <- names(r)
     scores <- laply(remaining,
                     function(f) {
-                      m0 <- if(ncol(s) == 0) NULL else gbm.fit(s, r[[f]], ..., nTrain=nTrain, verbose=verbose)
-                      m1 <- gbm.fit(cbind(s,subset(r,select=f)), t, ..., nTrain=nTrain, verbose=verbose)
+                      s.f <- cbind(s, subset(r,select=f))
+                      m <- gbm.fit(s.f, t, ..., nTrain=nTrain, verbose=verbose)
 
-                      (if(is.null(m0)) 0 else min(m0$valid.error)) - min(m1$valid.error)
+                      -min(m$valid.error)
                     },
                     .parallel=.parallel)
     names(scores) <- remaining
@@ -1174,10 +1174,10 @@ glm.feature.selection.filter <- function(..., f=function(x) x^2){
     remaining <- names(r)
     scores <- laply(remaining,
                     function(f) {
-                      m0 <- if(ncol(s) == 0) NULL else glm.fit.plus(s, r[[f]], ...)
-                      m1 <- glm.fit.plus(cbind(s,subset(r,select=f)), t, ...)
+                      s.f <- cbind(s, subset(r,select=f))
+                      m <- glm.fit.plus(s.f, t, ...)
 
-                      (if(is.null(m0)) 0 else mean(f(residuals(m0)))) - mean(f(residuals(m1)))
+                      -mean(f(residuals(m)))
                     },
                     .parallel=.parallel)
     names(scores) <- remaining
