@@ -123,7 +123,7 @@ url.quote <- function(s, reserved = url.reserved.chars,  plus.spaces = T){
   unlist(lapply(strcodes(s), function(chars) csplat(paste,safe[chars],sep='')))
 }
 
-url.unquote <- function(s, reserved = url.reserved.chars, plus.spaces = T){
+url.unquote <- function(s, reserved = NULL, plus.spaces = T){
   chars <- int.to.char(1:255)
   safe <- named(chars,
                 ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%X', 1:255)))
