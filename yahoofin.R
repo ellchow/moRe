@@ -74,7 +74,7 @@ yfin.download <- function(symbol, ..., start.date = '1900-01-01',
     NA
   }else{
     x$date <- as.Date(x$date, yfin.date.fmt)
-    x$symbol <- symbol
+    x$symbol <- factor(symbol)
     x
   }
 }
@@ -124,6 +124,7 @@ yfin.archive <- function(symbols, path, ...,
 
     y <- rbind.fill(z,y)
   }
+  y <- y[order(y$symbol, y$date),]
 
   write.msg(logger, 'saving to %s', path)
   save(y, file = path)
@@ -165,4 +166,32 @@ compute.values <- function(z, init=1){
 }
 
 
+function(){
+  ## get data
+  root.dir <- '~/Documents/investments/data/'
+  dir.create(root.dir)
+  x <- yfin.archive(yfin.standard.symbols, file.path(root.dir, 'historical-data-standard.rda'), .parallel=T)
 
+  ## calculate returns
+  x$ret <- tapply(x$adj.close, x$symbol, function(y)  c(NA, diff(y)) / tail(y,-1), ret.type = 'par')
+
+  ## create output dir
+  today <- as.Date(format(Sys.time(),'%Y-%m-%d'))
+  output.dir <- file.path(root.dir,format(Sys.time(),'plots-%Y-%m-%d'))
+  dir.create(output.dir)
+
+  ## market and sector plots
+  symbols.list <- list(market=c('VTI','VB','VEU','BND','EDV','IAU'),
+                       sector=c('VDC','VCR','VDE','VNQ','VGT'))
+  for(s in names(symbols.list)){
+    cat(sprintf('group: %s\n\n',s))
+    symbols <- symbols.list[[s]]
+
+    ggsave(ggplot(subset(x, date > (today - 365) & symbol %in% symbols), aes(x = date, y = adj.close, color = symbol)) + geom_line() + geom_smooth() + facet_grid(symbol ~ ., scale = 'free_x'), file = file.path(output.dir,sprintf('%s-value-past-01-year.png',s)))
+    ggsave(ggplot(subset(x, date > (today - 90) & symbol %in% symbols), aes(x = date, y = adj.close, color = symbol)) + geom_line() + geom_smooth() + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-value-past-03-months.png',s)))
+
+    ggsave(ggplot(subset(x, date > (today - 365) & symbol %in% symbols), aes(x = date, y = ret)) + geom_line(aes(color = symbol)) + geom_smooth() + geom_hline(size=0.2,aes(yintercept=0)) + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-return-past-01-year.png',s)))
+    ggsave(ggplot(subset(x, date > (today - 90) & symbol %in% symbols), aes(x = date, y = ret)) + geom_line(aes(color = symbol)) + geom_smooth() + geom_hline(size=0.2,aes(yintercept=0)) + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-return-past-03-months.png',s)))
+  }
+
+}
