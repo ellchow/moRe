@@ -18,7 +18,7 @@ import('utils',
        'stringr',
        'plyr',
        'doMC',
-       'RSQLite'
+       'ggplot2'
        )
 
 yfin.tags <- named(c('t8','m4','m3','k','j','w','c8','g3','a','b2','a5','a2','b','b3','b6','b4','c1','m5','m7','k4','j5','p2','c','k2','c6','c3','h','g','m','m2','w1','w4','r1','d','e','j4','e7','e9','e8','e1','q','f6','l2','g4','g1','g5','g6','v1','v7','d1','l1','k1','k3','t1','l','l3','j1','j3','i','n','n4','o','i5','r5','r','r2','k5','m6','m8','j6','p','p6','r6','r7','p1','p5','s1','s7','x','s','t7','d2','t6','v'),
@@ -115,21 +115,20 @@ yfin.archive <- function(symbols, path, ...,
   y <- csplat(rbind.fill, y[!is.na(y)])
   write.msg(logger, 'adding %d rows', nrow(y))
 
-  if(any(is.na(z))){
-    y
+  if(any(is.na(z)) || nrow(y) == 0){
+    write.msg(logger, 'no data added')
+    y <- z
   }else{
     backup.path <- paste(path, 'bak', current.timestamp, sep='.')
     write.msg(logger, 'backup previous data to %s', backup.path)
     file.rename(path, backup.path)
-
     y <- rbind.fill(z,y)
+
+    y <- y[order(y$symbol, y$date),]
+    write.msg(logger, 'saving to %s', path)
+    save(y, file = path)
   }
-  y <- y[order(y$symbol, y$date),]
-
-  write.msg(logger, 'saving to %s', path)
-  save(y, file = path)
   rrmdir(cache.path)
-
   y
 }
 
@@ -166,32 +165,57 @@ compute.values <- function(z, init=1){
 }
 
 
-function(){
+yfin.report <- function(){
+  ## sys(sprintf('open %s', yfin.report()))
+  log.level <- SimpleLog.INFO
+  registerDoMC(2)
+
+  logger <- SimpleLog('yfin.download', log.level)
+
   ## get data
-  root.dir <- '~/Documents/investments/data/'
+  root.dir <- '~/Documents/investments/data'
   dir.create(root.dir)
-  x <- yfin.archive(yfin.standard.symbols, file.path(root.dir, 'historical-data-standard.rda'), .parallel=T)
+  archive.path <- file.path(root.dir, 'historical-data-standard.rda')
+  write.msg(logger, 'archive to %s', archive.path)
+  x <- yfin.archive(yfin.standard.symbols, archive.path, .parallel=T)
 
   ## calculate returns
+  write.msg(logger, 'calculating returns')
   x$ret <- tapply(x$adj.close, x$symbol, function(y)  c(NA, diff(y)) / tail(y,-1), ret.type = 'par')
 
   ## create output dir
-  today <- as.Date(format(Sys.time(),'%Y-%m-%d'))
-  output.dir <- file.path(root.dir,format(Sys.time(),'plots-%Y-%m-%d'))
-  dir.create(output.dir)
+  today <- max(x$date)
+  write.msg(logger, 'most recent data from %s', today)
+  output.dir <- file.path(root.dir,today,'plots')
 
-  ## market and sector plots
-  symbols.list <- list(market=c('VTI','VB','VEU','BND','EDV','IAU'),
-                       sector=c('VDC','VCR','VDE','VNQ','VGT'))
-  for(s in names(symbols.list)){
-    cat(sprintf('group: %s\n\n',s))
-    symbols <- symbols.list[[s]]
+  if(!file.exists(file.path(root.dir,today,'_SUCCESS'))){
+    write.msg(logger,'saving plots to %s', output.dir)
+    dir.create(output.dir,recursive = TRUE)
 
-    ggsave(ggplot(subset(x, date > (today - 365) & symbol %in% symbols), aes(x = date, y = adj.close, color = symbol)) + geom_line() + geom_smooth() + facet_grid(symbol ~ ., scale = 'free_x'), file = file.path(output.dir,sprintf('%s-value-past-01-year.png',s)))
-    ggsave(ggplot(subset(x, date > (today - 90) & symbol %in% symbols), aes(x = date, y = adj.close, color = symbol)) + geom_line() + geom_smooth() + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-value-past-03-months.png',s)))
+    ## market and sector plots
+    symbols.list <- list(market=c('VTI','VB','VEU','BND','EDV','IAU'),
+                         sector=c('VDC','VCR','VDE','VNQ','VGT'))
+    ## time intervals
+    time.intervals <- list('03-months' = 90, '01-year' = 260)
 
-    ggsave(ggplot(subset(x, date > (today - 365) & symbol %in% symbols), aes(x = date, y = ret)) + geom_line(aes(color = symbol)) + geom_smooth() + geom_hline(size=0.2,aes(yintercept=0)) + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-return-past-01-year.png',s)))
-    ggsave(ggplot(subset(x, date > (today - 90) & symbol %in% symbols), aes(x = date, y = ret)) + geom_line(aes(color = symbol)) + geom_smooth() + geom_hline(size=0.2,aes(yintercept=0)) + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-return-past-03-months.png',s)))
+    for(s in names(symbols.list)){
+      for(t in names(time.intervals)){
+        symbols <- symbols.list[[s]]
+        time.interval <- time.intervals[[t]]
+        ## value
+        ggsave(ggplot(subset(x, date > (today - time.interval) & symbol %in% symbols), aes(x = date, y = adj.close, color = symbol)) + geom_line() + geom_smooth() + facet_grid(symbol ~ ., scale = 'free_x'), file = file.path(output.dir,sprintf('%s-value-past-%s.png',s,t)))
+        ## returns
+        ggsave(ggplot(subset(x, date > (today - time.interval) & symbol %in% symbols), aes(x = date, y = ret)) + geom_line(aes(color = symbol)) + geom_smooth() + geom_hline(size=0.2,aes(yintercept=0)) + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-return-past-%s.png',s,t)))
+      }
+    }
+  }else{
+    write.msg(logger,'%s already exists', output.dir)
   }
 
+
+  file.create(file.path(root.dir,today,'_SUCCESS'))
+
+  file.path(root.dir, today)
 }
+
+
