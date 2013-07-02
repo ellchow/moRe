@@ -202,7 +202,7 @@ yfin.report <- function(){
         symbols <- symbols.list[[s]]
         time.interval <- time.intervals[[t]]
         ## value
-        ggsave(ggplot(subset(x, date > (today - time.interval) & symbol %in% symbols), aes(x = date, y = adj.close, color = symbol)) + geom_line() + geom_smooth() + facet_grid(symbol ~ ., scale = 'free_x'), file = file.path(output.dir,sprintf('%s-value-past-%s.png',s,t)))
+        ggsave(ggplot(subset(x, date > (today - time.interval) & symbol %in% symbols), aes(x = date, y = adj.close, color = symbol)) + geom_line() + geom_smooth() + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-value-past-%s.png',s,t)))
         ## returns
         ggsave(ggplot(subset(x, date > (today - time.interval) & symbol %in% symbols), aes(x = date, y = ret)) + geom_line(aes(color = symbol)) + geom_smooth() + geom_hline(size=0.2,aes(yintercept=0)) + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-return-past-%s.png',s,t)))
       }
