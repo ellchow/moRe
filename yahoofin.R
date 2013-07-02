@@ -164,7 +164,6 @@ compute.values <- function(z, init=1){
   zz
 }
 
-
 yfin.report <- function(){
   ## sys(sprintf('open %s', yfin.report()))
   log.level <- SimpleLog.INFO
@@ -181,7 +180,7 @@ yfin.report <- function(){
 
   ## calculate returns
   write.msg(logger, 'calculating returns')
-  x$ret <- tapply(x$adj.close, x$symbol, function(y)  c(NA, diff(y)) / tail(y,-1), ret.type = 'par')
+  x$ret <- tapply(x$adj.close, x$symbol, function(y)  c(NA, diff(y)) / tail(y, -1), ret.type = 'par')
 
   ## create output dir
   today <- max(x$date)
@@ -211,7 +210,6 @@ yfin.report <- function(){
   }else{
     write.msg(logger,'%s already exists', output.dir)
   }
-
 
   file.create(file.path(root.dir,today,'_SUCCESS'))
 

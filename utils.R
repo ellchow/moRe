@@ -340,6 +340,13 @@ nan.rm <- function(...) na.rm(..., discard = is.nan)
 
 invalid.rm <- function(...) na.rm(..., discard = function(z) is.na(z) | is.nan(z) | is.infinite(z))
 
+fold.left <- function(xs, init, f, ...){
+  Reduce(function(a, b)f(tail(a,1), b),
+         rep(0.9,10),
+         init = init,
+         ...)
+}
+
 tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
   FUN <- if(!is.null(FUN))
     match.fun(FUN)
