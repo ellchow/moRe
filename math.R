@@ -73,7 +73,7 @@ bucketize <- function(x, buckets=head(quantile(x,seq(0,1,0.1)),-1), label='names
 }
 
 rdiscrete <- function(n, prob, domain=1:length(prob))
-  bucketize(runif(n), c(0,head(cumsum(prob / sum(prob)), -1)))
+  bucketize(runif(n), named(c(0,head(cumsum(prob / sum(prob)), -1)), domain))
 
 beta.params <- function(a,b,method='ab'){
   stop.if.not(method %in% c('ab','md'), sprintf('unknown method: %s', method))
