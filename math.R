@@ -59,6 +59,8 @@ bucketize <- function(x, buckets=head(quantile(x,seq(0,1,0.1)),-1), label='names
                 function(x) csplat(paste,x,sep=', '))
     buckets <- named(as.numeric(names(z)), z)
   }
+  if(is.null(names(buckets)))
+    names(buckets) <- buckets
 
   f <- approxfun(sort(buckets),indices(buckets), yleft = 1, yright = length(buckets))
   b <- floor(f(x))
@@ -71,7 +73,7 @@ bucketize <- function(x, buckets=head(quantile(x,seq(0,1,0.1)),-1), label='names
 }
 
 rdiscrete <- function(n, prob, domain=1:length(prob))
-  bucketize(runif(n), c(0,cumsum(prob / sum(prob))))
+  bucketize(runif(n), c(0,head(cumsum(prob / sum(prob)), -1)))
 
 beta.params <- function(a,b,method='ab'){
   stop.if.not(method %in% c('ab','md'), sprintf('unknown method: %s', method))
