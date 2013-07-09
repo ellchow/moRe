@@ -52,8 +52,8 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
   ##                       c('Sepal.Width','Petal.Length','Petal.Width')),
   ##          betareg.model.def("betaregmodel", function(x) x$Sepal.Width / x$Sepal.Length,
   ##                            c('Sepal.Width','Petal.Length','Petal.Width'),
-  ##                            phi.features='Sepal.Width')
-  ##          ) -> ms
+  ##                            phi.features='Sepal.Width'),
+  ##          .parallel=T) -> ms
 
   logger <- SimpleLog('mdls.fit',log.level)
 
@@ -207,9 +207,12 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
           )
 }
 
-mdls.report <- function(mdls, root, text.as = 'html', log.level = SimpleLog.INFO, .parallel=FALSE){
+mdls.report <- function(mdls, root, text.as = 'html', overwrite = FALSE, log.level = SimpleLog.INFO, .parallel=FALSE){
   ## import('mdls'); mdls.fit(iris, gbm.model.def("gbmmodel",function(x) x$Sepal.Length + as.integer(x$Species), c('Sepal.Width','Petal.Length','Petal.Width','Species'),distribution='gaussian',weights=function(data) runif(nrow(data)), train.fraction=0.8),glm.model.def('glmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'), family='gaussian'),lm.model.def('lmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'))) -> ms; system('rm -r ~/tmp/test/'); mdls.report(ms,'~/tmp/test')
-  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+  if(overwrite){
+    rrmdir(root)
+  }
+  stop.if(file.exists(root) && !overwrite, sprintf('output directory "%s" already exists ', root))
 
   logger <- SimpleLog('mdls.report',log.level)
 
@@ -232,11 +235,14 @@ mdls.report <- function(mdls, root, text.as = 'html', log.level = SimpleLog.INFO
 #####################################
 
 
-gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
-  list(id=id, target.gen=target.gen, fit=function(...,weights=NULL) gbm.fit.plus(...,w=weights), features=features, predict=gbm.predict, params=list(...), check=check.gbm.model.def, weights=weights, report=gbm.model.report)
-
-gbm.fit.plus <- function(x, y, ..., y.label="y"){
-  features <- names(x)
+gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+  params <- list(...)
+  g <- tryCatch(params$distribution$group, error=function(e) NULL)
+  features <- c(features,g)
+  list(id=id, target.gen=target.gen, fit=function(...,weights=NULL) gbm.fit.plus(...,group = g, w=weights), features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
+}
+gbm.fit.plus <- function(x, y, ..., group = NULL, y.label="y"){
+  features <- setdiff(names(x), group)
   x[[y.label]] <- y
   f <- sprintf("%s ~ %s", y.label, csplat(paste,features,sep=" + "))
   gbm(formula(f), x, ...)
