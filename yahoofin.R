@@ -18,6 +18,7 @@ import('utils',
        'stringr',
        'plyr',
        'doMC',
+       'Hmisc',
        'ggplot2'
        )
 
