@@ -116,9 +116,10 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                           csplat(paste,paste('-',names(parsed)[invalidTypes],sep=''),sep=', '))
     }
   }
-  stop.if.not(length(failures) == 0, sprintf('failed to parse args - problems:\n    %s\n\n%s\n',
-                                            csplat(paste, failures, sep='\n    '),
-                                            make.usage.string(filename, arglist, prologue, epilogue)))
+
+  stop.if.not(length(failures) == 0,
+              sprintf('failed to parse args (run with --help for usage)\n    PROBLEMS:\n        %s',
+                      csplat(paste, failures, sep='\n        ')))
 
   if(parsed[['-help']]){
     cat(make.usage.string(filename, arglist, prologue, epilogue))
