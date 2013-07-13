@@ -18,6 +18,7 @@ import('utils',
        'stringr',
        'plyr',
        'doMC',
+       'foreach',
        'Hmisc',
        'ggplot2'
        )
@@ -114,12 +115,12 @@ yfin.archive <- function(symbols, path, ...,
              .parallel = .parallel)
 
   y <- csplat(rbind.fill, y[!is.na(y)])
-  write.msg(logger, 'adding %d rows', nrow(y))
 
-  if(any(is.na(z)) || nrow(y) == 0){
+  if(any(is.na(z)) || is.null(y) || nrow(y) == 0){
     write.msg(logger, 'no data added')
     y <- z
   }else{
+    write.msg(logger, 'adding %d rows', nrow(y))
     backup.path <- paste(path, 'bak', current.timestamp, sep='.')
     write.msg(logger, 'backup previous data to %s', backup.path)
     file.rename(path, backup.path)
@@ -165,19 +166,20 @@ compute.values <- function(z, init=1){
   zz
 }
 
-yfin.report <- function(){
-  ## sys(sprintf('open %s', yfin.report()))
-  log.level <- SimpleLog.INFO
-  registerDoMC(2)
-
+yfin.report <- function(root.dir = '~/Documents/investments/data',
+                        symbols.list = list(market=c('VTI','VB','VEU','BND','EDV','IAU'),
+                                             sector=c('VDC','VCR','VDE','VNQ','VGT')),
+                        time.intervals = list('03-months' = 90, '01-year' = 260),
+                        log.level = SimpleLog.INFO,
+                        .parallel = FALSE){
+  ## import('yahoofin'); registerDoMC(2); sys(sprintf('open %s', yfin.report()))
   logger <- SimpleLog('yfin.download', log.level)
 
   ## get data
-  root.dir <- '~/Documents/investments/data'
   dir.create(root.dir)
   archive.path <- file.path(root.dir, 'historical-data-standard.rda')
   write.msg(logger, 'archive to %s', archive.path)
-  x <- yfin.archive(yfin.standard.symbols, archive.path, .parallel=T)
+  x <- yfin.archive(yfin.standard.symbols, archive.path, .parallel=.parallel)
 
   ## calculate returns
   write.msg(logger, 'calculating returns')
@@ -193,13 +195,8 @@ yfin.report <- function(){
     dir.create(output.dir,recursive = TRUE)
 
     ## market and sector plots
-    symbols.list <- list(market=c('VTI','VB','VEU','BND','EDV','IAU'),
-                         sector=c('VDC','VCR','VDE','VNQ','VGT'))
-    ## time intervals
-    time.intervals <- list('03-months' = 90, '01-year' = 260)
-
-    for(s in names(symbols.list)){
-      for(t in names(time.intervals)){
+    foreach(s = names(symbols.list)) %dopar% {
+      foreach(t = names(time.intervals)) %dopar% {
         symbols <- symbols.list[[s]]
         time.interval <- time.intervals[[t]]
         ## value
