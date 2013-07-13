@@ -209,9 +209,9 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
 
 mdls.report <- function(mdls, root, text.as = 'html', overwrite = FALSE, log.level = SimpleLog.INFO, .parallel=FALSE){
   ## import('mdls'); mdls.fit(iris, gbm.model.def("gbmmodel",function(x) x$Sepal.Length + as.integer(x$Species), c('Sepal.Width','Petal.Length','Petal.Width','Species'),distribution='gaussian',weights=function(data) runif(nrow(data)), train.fraction=0.8),glm.model.def('glmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'), family='gaussian'),lm.model.def('lmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'))) -> ms; system('rm -r ~/tmp/test/'); mdls.report(ms,'~/tmp/test')
-  if(overwrite){
+  if(overwrite)
     rrmdir(root)
-  }
+
   stop.if(file.exists(root) && !overwrite, sprintf('output directory "%s" already exists ', root))
 
   logger <- SimpleLog('mdls.report',log.level)

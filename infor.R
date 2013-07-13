@@ -42,9 +42,9 @@ pos.rank <- function(select=mean, f=function(x) 1 / x){
   }
 }
 
-rel.to <- function(ref, f=cor){
-  function(r, ...)
-    f(ref, r, ...)
+rel.to <- function(f=cor){
+  function(r, x)
+    f(r, x)
 }
 
 compute.ranks <- function(s, g, ties.method='random'){
