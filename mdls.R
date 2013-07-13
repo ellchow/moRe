@@ -91,6 +91,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                              id <- sprintf('%s%s', md$id,
                                                            if(length(datasets) > 1) sprintf("__%s", ds.id) else "")
                                              write.msg(logger, sprintf('building target for "%s"', id))
+
                                              t <- tryCatch(md$target.gen(data),
                                                            error=function(e){
                                                              write.msg(logger,str_trim(as.character(e)),
@@ -132,11 +133,11 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                              })
                                                if(!any(is.na(m))){
                                                  z <- named(list(list(target=t,
-                                                                model=m,
-                                                                id=id,
-                                                                predict=md$predict,
-                                                                features=md$features,
-                                                                report=md$report)),
+                                                                      model=m,
+                                                                      id=id,
+                                                                      predict=md$predict,
+                                                                      features=md$features,
+                                                                      report=md$report)),
                                                             id)
 
                                                  return(z)
@@ -238,9 +239,14 @@ mdls.report <- function(mdls, root, text.as = 'html', overwrite = FALSE, log.lev
 gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
   params <- list(...)
   g <- tryCatch(params$distribution$group, error=function(e) NULL)
-  features <- c(features,g)
-  list(id=id, target.gen=target.gen, fit=function(...,weights=NULL) gbm.fit.plus(...,group = g, w=weights), features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
+  features <- unique(c(features,g))
+
+  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+
+
+  list(id=id, target.gen=tg, fit=function(...,weights=NULL) gbm.fit.plus(...,group = g, w=weights), features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
 }
+
 gbm.fit.plus <- function(x, y, ..., group = NULL, y.label="y"){
   features <- setdiff(names(x), group)
   x[[y.label]] <- y
@@ -347,7 +353,7 @@ gbm.tree.as.df <- function(object, i.tree = 1){
   df$prediction <- ifelse(df$is.leaf, tree$Prediction + (i.tree == 1) * object$initF, NA)
 
   df
- }
+}
 
 gbm.tree.row.as.list <- function(tree, node){
   row <- tree[tree$node == node,]
@@ -405,7 +411,7 @@ gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
 }
 
 gbm.feature.importance <- function(object, k=min(10,length(object$var.names)),
-                                  n.trees=gbm.opt.n.trees(object), ...){
+                                   n.trees=gbm.opt.n.trees(object), ...){
   stop.if(k < 1, "k must be >= 1")
 
   x <- as.data.frame(as.list(summary(object, n.trees=n.trees, plotit=FALSE)[k:1,]))
@@ -796,18 +802,18 @@ gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log
   ## dependency plots
   nonzero.features <- as.character(x$feature[x$importance > 0])
   invisible(llply(nonzero.features,
-        function(f){
-          write.msg(logger, sprintf('saving dependency plot for %s', f))
-          dp <- gbm.plot(object, f, return.grid=T)
-          cat(format.fun(dp), file=file.path(dep.plots.dir, sprintf('%s.%s', f, text.as)))
+                  function(f){
+                    write.msg(logger, sprintf('saving dependency plot for %s', f))
+                    dp <- gbm.plot(object, f, return.grid=T)
+                    cat(format.fun(dp), file=file.path(dep.plots.dir, sprintf('%s.%s', f, text.as)))
 
-          if(plot.it){
-            png(file.path(dep.plots.dir, sprintf('%s.png', f)))
-            gbm.plot(object, f, return.grid=F)
-            dev.off()
-          }
-        },
-        .parallel=.parallel))
+                    if(plot.it){
+                      png(file.path(dep.plots.dir, sprintf('%s.png', f)))
+                      gbm.plot(object, f, return.grid=F)
+                      dev.off()
+                    }
+                  },
+                  .parallel=.parallel))
 }
 
 
@@ -816,8 +822,11 @@ gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log
 #### lm modifications and helpers
 #####################################
 
-lm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
-  list(id=id, target.gen=target.gen, fit=lm.fit.plus, features=features, predict=predict.lm, params=list(...), check=check.lm.model.def, weights=weights, report=lm.model.report)
+lm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+
+  list(id=id, target.gen=tg, fit=lm.fit.plus, features=features, predict=predict.lm, params=list(...), check=check.lm.model.def, weights=weights, report=lm.model.report)
+}
 
 lm.fit.plus <- function(x, y, ..., y.label="y"){
   features <- names(x)
@@ -874,8 +883,11 @@ lm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog
 #### glm modifications and helpers
 #####################################
 
-glm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
-  list(id=id, target.gen=target.gen, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def, weights=weights, report=glm.model.report)
+glm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+
+  list(id=id, target.gen=tg, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def, weights=weights, report=glm.model.report)
+}
 
 glm.fit.plus <- function(x, y, family=NA,..., y.label="y"){
   features <- names(x)
@@ -942,8 +954,11 @@ glm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLo
 #### glmnet modifications and helpers
 #####################################
 
-glmnet.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL)
-  list(id=id, target.gen=target.gen, fit=glmnet.fit, features=features, predict=glmnet.predict, params=list(...), check=check.glmnet.model.def, weights=weights, report=glmnet.model.report)
+glmnet.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+
+  list(id=id, target.gen=tg, fit=glmnet.fit, features=features, predict=glmnet.predict, params=list(...), check=check.glmnet.model.def, weights=weights, report=glmnet.model.report)
+}
 
 glmnet.fit <- function(x, y, ..., cv = T, weights = NULL){
   fit <- if(cv) cv.glmnet else glmnet
@@ -1015,7 +1030,9 @@ glmnet.model.report <- function(object, root, text.as = 'txt', log.level = Simpl
 betareg.model.def <- function(id, target.gen, features, ..., phi.features=NULL, weights=function(data) NULL){
   all.features <- unique(c(features, phi.features))
 
-  list(id=id, target.gen=target.gen, fit=betareg.fit.plus, features=all.features, predict=betareg.predict, params=c(list(...), list(features=features, phi.features = phi.features)), check=check.betareg.model.def, weights=weights, report=betareg.model.report)
+  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+
+  list(id=id, target.gen=tg, fit=betareg.fit.plus, features=all.features, predict=betareg.predict, params=c(list(...), list(features=features, phi.features = phi.features)), check=check.betareg.model.def, weights=weights, report=betareg.model.report)
 }
 
 betareg.fit.plus <- function(x, y, ..., features, phi.features = NULL, y.label="y"){
@@ -1104,10 +1121,10 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=Sim
   scores <- srcScore
   while(length(features) > 0){
     s <- laply(features,
-                function(ft){
-                  src[[ft]] <- snk[[ft]]
-                  mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]]
-                }, .parallel=.parallel)
+               function(ft){
+                 src[[ft]] <- snk[[ft]]
+                 mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]]
+               }, .parallel=.parallel)
     selected <- select(snkScore - s)
     ft <- features[selected]
     write.msg(logger,'feature %d selected: %s',length(selected.features)-1,ft)
@@ -1242,9 +1259,9 @@ clsfy.confusion <- function(prediction, label){
 clsfy.confusion.scan <- function(score, label, to.prediction = function(t){ function(s) s > t }, params.list=as.list(quantile(score,seq(0,1,0.01))), .parallel=FALSE){
   csplat(rbind,
          llply(named(parameter.scan(params.list, to.prediction), names(params.list)),
-                function(f)
-                  clsfy.confusion(f(score),label),
-                .parallel=.parallel)
+               function(f)
+               clsfy.confusion(f(score),label),
+               .parallel=.parallel)
          )
 }
 
