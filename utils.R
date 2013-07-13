@@ -555,6 +555,9 @@ str.align <- function(data, maxLengths, .parallel=FALSE){
   result
 }
 
+dataframe.to.tsv <- function(x, file, sep='\t'){
+  write.table(x, file=file , sep=sep, row.names=F, quote=FALSE)
+}
 
 pprint.dataframe <- function(data, sep='  |  ', prepend.row.names = ' ', .parallel=FALSE){
   if(is.matrix(data))
