@@ -76,7 +76,7 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                              }else{
                                y<-str_split(x,' ')[[1]]
 
-                               z <- list(str_trim(paste(y[2:length(y)]), collapse = ' '))
+                               z <- list(str_trim(paste(y[2:length(y)], collapse = ' ')))
                                if(!(y[1] %in% argnames)){
                                  return(NA)
                                }
