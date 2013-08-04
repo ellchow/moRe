@@ -81,19 +81,19 @@ feature.contributions.infor.metric <- function(mdl, d, iss, values, g, metric, l
   logger <- SimpleLog('feature.contributions.infor.metric',log.level)
   named(llply(iss,
         function(is){
-          write.msg(logger,sprintf('randomizing features: %s',csplat(paste,is,sep=',')))
+          write.msg(logger,sprintf('randomizing features: %s', paste(is, collapse=',')))
           d.r <- d
           for(i in is)
             d.r[[i]] <- sample(d.r[[i]])
 
-          write.msg(logger,sprintf('scoring model with randomized %s',csplat(paste,is,sep=',')))
+          write.msg(logger,sprintf('scoring model with randomized %s', paste(is, collapse=',')))
           s.r <- mdl$predict(mdl$model, d.r[,mdl$features])
           r.r <- compute.ranks(s.r, d.r$QueryID)
 
           compute.infor.metric(r.r, values, g, metric)
         },
         .parallel=.parallel),
-        sapply(iss, function(is) csplat(paste,is,sep=',')))
+        sapply(iss, function(is) paste(is, collapse=',')))
 }
 
 

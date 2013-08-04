@@ -250,7 +250,7 @@ gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) 
 gbm.fit.plus <- function(x, y, ..., group = NULL, y.label="y"){
   features <- setdiff(names(x), group)
   x[[y.label]] <- y
-  f <- sprintf("%s ~ %s", y.label, csplat(paste,features,sep=" + "))
+  f <- sprintf("%s ~ %s", y.label, paste(features, collapse=" + "))
   gbm(formula(f), x, ...)
 }
 
@@ -343,7 +343,8 @@ gbm.tree.as.df <- function(object, i.tree = 1){
                                        function(x){
                                          var.id <- x[[2]]
                                          level.names <- object$var.levels[[var.id]][x[[1]] < 0] ## get level names to split left
-                                         paste('{',csplat(paste,level.names,sep=','),'}',sep='')
+
+                                         paste('{', paste(level.names, collapse=',') ,'}',sep='')
                                        }),
                                 tree$SplitCodePred)
                          )
@@ -831,7 +832,7 @@ lm.model.def <- function(id, target.gen, features, ..., weights=function(data) N
 lm.fit.plus <- function(x, y, ..., y.label="y"){
   features <- names(x)
   x[[y.label]] <- y
-  f <- sprintf("%s ~ %s", y.label, csplat(paste,features,sep=" + "))
+  f <- sprintf("%s ~ %s", y.label, paste(features, collapse = " + "))
   m <- lm(formula(f), x, ...)
   m$var.names <- features
   m
@@ -875,7 +876,7 @@ lm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog
   logger <- SimpleLog('lm.model.report', log.level)
 
   dir.create(root, recursive = TRUE)
-  cat(str_replace_all(csplat(paste,capture.output(summary(object)),sep='\n'), '[’‘]', '"'),
+  cat(str_replace_all(paste(capture.output(summary(object)),collapse='\n'), '[’‘]', '"'),
       file=file.path(root, 'summary.txt'))
 }
 
@@ -892,7 +893,7 @@ glm.model.def <- function(id, target.gen, features, ..., weights=function(data) 
 glm.fit.plus <- function(x, y, family=NA,..., y.label="y"){
   features <- names(x)
   x[[y.label]] <- y
-  f <- sprintf("%s ~ %s", y.label, csplat(paste,features,sep=" + "))
+  f <- sprintf("%s ~ %s", y.label, paste(features, collapse =" + "))
   glm(formula(f), family=family, x, ...)
 }
 
@@ -946,7 +947,7 @@ glm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLo
   logger <- SimpleLog('glm.model.report', log.level)
 
   dir.create(root, recursive = TRUE)
-  cat(str_replace_all(csplat(paste,capture.output(summary(object)),sep='\n'), '[’‘]', '"'),
+  cat(str_replace_all(paste(capture.output(summary(object)), collapse = '\n'), '[’‘]', '"'),
       file=file.path(root, 'summary.txt'))
 }
 
@@ -1019,7 +1020,7 @@ glmnet.model.report <- function(object, root, text.as = 'txt', log.level = Simpl
   logger <- SimpleLog('glmnet.model.report', log.level)
 
   dir.create(root, recursive = TRUE)
-  cat(str_replace_all(csplat(paste,capture.output(info),sep='\n'), '[’‘]', '"'),
+  cat(str_replace_all(paste(capture.output(info), collapse = '\n'), '[’‘]', '"'),
       file=file.path(root, 'summary.txt'))
 }
 
@@ -1040,8 +1041,8 @@ betareg.fit.plus <- function(x, y, ..., features, phi.features = NULL, y.label="
 
   x[[y.label]] <- y
   f <- sprintf("%s ~ %s %s", y.label,
-               csplat(paste, features, sep=" + "),
-               if(is.null(phi.features)) "" else paste(" |", csplat(paste,phi.features,sep=' + ')))
+               paste( features, collapse=" + "),
+               if(is.null(phi.features)) "" else paste(" |", paste(phi.features, collapse = ' + ')))
 
   m <- betareg(formula(f), x, ...)
   m$var.names <- features
@@ -1095,7 +1096,7 @@ betareg.model.report <- function(object, root, text.as = 'txt', log.level = Simp
   logger <- SimpleLog('betareg.model.report', log.level)
 
   dir.create(root, recursive = TRUE)
-  cat(str_replace_all(csplat(paste,capture.output(summary(object)),sep='\n'), '[’‘]', '"'),
+  cat(str_replace_all(paste(capture.output(summary(object)), collapse = '\n'), '[’‘]', '"'),
       file=file.path(root, 'summary.txt'))
 }
 
@@ -1213,7 +1214,7 @@ forward.filter.feature.selection <- function(target, features, evaluate=cor.feat
   feature.selection.by.filter(target, features, NULL, function(...) evaluate(...,.parallel=.parallel),
                               function(z, scores){
                                 are.na <- names(scores)[is.na(scores)]
-                                write.msg(logger,'score for features "%s" is na - dropping',csplat(paste,are.na,sep=','),level='warn')
+                                write.msg(logger,'score for features "%s" is na - dropping',paste(are.na, collapse = ','), level='warn')
                                 bestScore <- choose.best(na.rm(scores))
                                 best <- match(TRUE,scores == bestScore)
                                 z$selected <- c(z$selected, names(scores[best]))

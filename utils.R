@@ -61,7 +61,7 @@ setMethodS3('write.msg','SimpleLog',
                                     function(o){
                                       sapply(intersect(tail(level,1),log$level),
                                              function(lvl){
-                                               msg <- csplat(paste, list(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)), sep=sep)
+                                               msg <- paste(list(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)), collapse = sep)
                                                tryCatch(is.null(cat(msg,'\n', file=o, append=TRUE)), error=function(e){FALSE})
                                              })
                                     }))
@@ -120,7 +120,7 @@ url.quote <- function(s, reserved = url.reserved.chars,  plus.spaces = T){
   if(plus.spaces)
     safe[[' ']] <- '+'
 
-  unlist(lapply(strcodes(s), function(chars) csplat(paste,safe[chars],sep='')))
+  unlist(lapply(strcodes(s), function(chars) paste(safe[chars], collapse = '')))
 }
 
 url.unquote <- function(s, reserved = NULL, plus.spaces = T){
@@ -134,7 +134,7 @@ url.unquote <- function(s, reserved = NULL, plus.spaces = T){
                  str_sub(xs[-1], start = 3),
                  sep = '')
 
-           z <- csplat(paste, c(xs[1], y), sep = '')
+           z <- paste(c(xs[1], y), collapse = '')
 
            if(plus.spaces)
              gsub('\\+',' ',z)
@@ -147,45 +147,11 @@ url.unquote <- function(s, reserved = NULL, plus.spaces = T){
 
 url.encode.params <- function(params){
   params <- unlist(params)
-  csplat(paste,
-         paste(url.quote(names(params), reserved = NULL, plus.spaces=T),
-               url.quote(params, reserved = NULL, plus.spaces=T),
-               sep='='),
-         sep='&')
+  paste(paste(url.quote(names(params), reserved = NULL, plus.spaces=T),
+              url.quote(params, reserved = NULL, plus.spaces=T),
+              sep = '='),
+         collapse = '&')
 }
-
-## py.urlencode <- function(p){
-##   csplat(paste,system(paste('python -c "import urllib; print urllib.urlencode({',
-##                csplat(paste,lapply(lzip(names(p), p),
-##                                    function(kv)  sprintf("'%s':'%s'",
-##                                                          str_replace_all(kv[[1]], "'", "\\\\'"),
-##                                                          str_replace_all(kv[[2]], "'", "\\\\'")) ),
-##                       sep=','),' })"'),
-##          intern = T),
-##          sep='')
-## }
-
-## py.unquote <- function(s, plus.spaces = T){
-##   if(plus.spaces)
-##     f <- 'unquote_plus'
-##   else
-##     f <- 'unquote'
-
-##   s <- str_replace_all(s, "'", "\\\\'")
-##   sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
-##               f, s))
-## }
-
-## py.quote <- function(s, plus.spaces = T){
-##   if(plus.spaces)
-##     f <- 'quote_plus'
-##   else
-##     f <- 'quote'
-
-##   s <- str_replace_all(s, "'", "\\\\'")
-##   sys(sprintf('python -c "import urllib;  print urllib.%s(\\"%s\\")"',
-##               f, s))
-## }
 
 ####################
 #### Files
@@ -279,7 +245,7 @@ load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.
 
 load.data.many <- function(paths,...,.parallel=FALSE){
   as.data.frame(llply(csplat(rbind,
-                             llply(system(sprintf('ls %s', csplat(paste,paths)),intern=T),
+                             llply(system(sprintf('ls %s', paste(paths, collapse = ' ')),intern=T),
                                    function(z) load.data(z,stringsAsFactors=F,...),.parallel=.parallel)),
                       function(col){if(is.character(col)) factor(col) else col},
                       .parallel=.parallel))
@@ -426,7 +392,7 @@ lzip <- function(...){
 }
 
 zip.to.named <- function(x,nameCol=1,valCol=2){
-  do.call(c,lapply(x,
+  flatten(lapply(x,
                    function(y){
                      z <- list(y[[valCol]])
                      names(z) <- y[[nameCol]]
@@ -546,7 +512,7 @@ str.align <- function(data, maxLengths, .parallel=FALSE){
                              }
                              fmtd <- x
                              if(n > 0){
-                               fmtd <- sprintf('%s%s',x,do.call(paste,c(as.list(rep(' ',n)),sep='')))
+                               fmtd <- sprintf('%s%s', x, paste(rep(' ',n), collapse = ''))
                              }
                              fmtd
                            })},
@@ -573,21 +539,20 @@ pprint.dataframe <- function(data, sep='  |  ', prepend.row.names = ' ', .parall
   names(header) <- header
   result <- str.align(data,maxLengths,.parallel=.parallel)
   result <- as.data.frame(result)
-  header <- do.call(paste,as.list(c(str.align(header,maxLengths),sep=sep)))
+  header <- paste(str.align(header, maxLengths), collapse = sep)
+
   paste(header,
-        do.call(paste,as.list(c(rep('-',str_length(header)),sep=''))),
-        do.call(paste, as.list(c(apply(result,1,
-                                       function(x){
-                                         do.call(paste,as.list(c(x,sep=sep)))
-                                       }),
-                                 sep='\n'))),
+        paste(rep('-',str_length(header)), collapse = ''),
+        paste(apply(result, 1,
+                    function(x) paste(x, collapse = sep)
+                  ),
+              collapse = '\n'),
         '',
-        sep='\n'
-        )
+        sep = '\n')
 }
 
 dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T, prepend.row.names = ' ', .parallel=FALSE){
-  row.to.tt <- function(row) paste('|', csplat(paste, as.character(row), sep = ' |'), ' |', sep='')
+  row.to.tt <- function(row) paste('|', paste(as.character(row), collapse = ' |'), ' |', sep='')
 
   add.attr <- function(e, i, j) {
     attr <- attr.for(e, i, j)
@@ -603,22 +568,22 @@ dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T,
 
 
   zz <- if(header) paste('_', names(x), sep='. ') else NULL
-  csplat(paste,
-         list(if(header) row.to.tt(paste('_', names(x), sep='. ')) else NULL),
-         llply(indices(x, 'row'),
-               function(i){
-                 row.to.tt(sapply(indices(x, 'col'),
-                                  function(j) add.attr(x[i,j], i, j)))
-               },
-               .parallel=.parallel),
-         sep = '\n')
+  paste(
+        list(if(header) row.to.tt(paste('_', names(x), sep='. ')) else NULL),
+        llply(indices(x, 'row'),
+              function(i){
+                row.to.tt(sapply(indices(x, 'col'),
+                                 function(j) add.attr(x[i,j], i, j)))
+              },
+              .parallel=.parallel),
+        collapse = '\n')
 }
 
 dataframe.to.html.table <- function(x,
                                     table.attrs='class="sortable" border="1"',
                                     th.attrs='style=font-size:24px',
-                                    add.tr.attr=function(x,i){''},
-                                    add.td.attr=function(x,i,j){''},
+                                    add.tr.attr=function(i){''},
+                                    add.td.attr=function(i,j){''},
                                     prepend.row.names = ' ',
                                     .parallel=FALSE){
   if(is.matrix(x))
@@ -630,30 +595,28 @@ dataframe.to.html.table <- function(x,
   if(nrow(x) == 0){
     rows <- ''
   }else{
-    rows <- do.call(paste,
-                    llply(1:nrow(x),
-                          function(i){
-                            z <- sprintf('<tr %s>%s</tr>',
-                                         add.tr.attr(x,i),
-                                         do.call(paste,
-                                                 lapply(1:ncol(x),
-                                                        function(j){
-                                                          sprintf('<td %s>%s</td>',
-                                                                  add.td.attr(x,i,j),
-                                                                  x[i,j])
-                                                        })
-                                                 ))
-                            z
-                          },.parallel=.parallel))
+    rows <- paste(llply(1:nrow(x),
+                        function(i){
+                          z <- sprintf('<tr %s>%s</tr>',
+                                       add.tr.attr(i),
+                                       paste(lapply(1:ncol(x),
+                                                    function(j){
+                                                      sprintf('<td %s>%s</td>',
+                                                              add.td.attr(i,j),
+                                                              x[i,j])
+                                                    }),
+                                             collapse = ''))
+                          z
+                        },.parallel=.parallel),
+                  collapse = '\n')
   }
   headers <- sprintf('<tr>%s</tr>',
-                     do.call(paste,lapply(colnames(x), function(c){sprintf('<th %s>%s</th>', th.attrs, c)})))
-  z <- sprintf('<table %s>\n%s\n%s\n</table>',
-               table.attrs,
-               headers,
-               rows
-               )
-  z
+                     paste(lapply(colnames(x), function(c){sprintf('<th %s>%s</th>', th.attrs, c)}),
+                           collapse = ''))
+  sprintf('<table %s>\n%s\n%s\n</table>',
+          table.attrs,
+          headers,
+          rows)
 }
 
 sorttable.import <- function(loc='http://www.kryogenix.org/code/browser/sorttable/sorttable.js'){
@@ -700,7 +663,7 @@ str.fmt <- function(s,...){
     stop.if(is.null(names(dots)) || any(str_length(names(dots))==0),
             'requires named parameters')
 
-    stop.if(any(!n %in% names(dots)), sprintf('missing params %s', csplat(paste,setdiff(n,names(dots)),sep=',')))
+    stop.if(any(!n %in% names(dots)), sprintf('missing params %s', paste(setdiff(n,names(dots)), collapse = ',')))
 
     ## first escape things that percent symbols; then replace named params with unnamed params
     ss <- gsub(named.pat,'\\1\\2\\4',
@@ -719,7 +682,7 @@ char.to.int <- AsciiToInt
 int.to.char.seq <- function(x, offset=0){
   n <- as.integer((x-1) / 26) + 1
   m <- as.integer((x-1) %% 26)
-  do.call(paste,c(as.list(rep(int.to.char(m + 97),n)),sep=''))
+  paste(rep(int.to.char(m + 97), n), collapse = '')
 }
 
 file.size.gb <- function(path)

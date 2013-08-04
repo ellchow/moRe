@@ -18,7 +18,7 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
   ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
 
 
-  args <- do.call(paste,as.list(c(args,'')))
+  args <- paste(args, collapse = ' ')
   failures <- list()
   ## add help option
   arglist <- c(arglist,list(list(name='-help',desc='show this help message',flag=TRUE)))
@@ -28,7 +28,7 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                        x$name
                      })
   ## process required
-  required <- do.call(c,lapply(arglist,
+  required <- flatten(lapply(arglist,
                                function(x){
                                  if(('required' %in% names(x))){
                                    if(x$required){
@@ -37,7 +37,7 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                                  }else{NULL}
                                }))
   ## process flags
-  flag <- do.call(c,lapply(arglist,
+  flag <- flatten(lapply(arglist,
                            function(x){
                              if(('flag' %in% names(x))){
                                if(x$flag){
@@ -49,45 +49,46 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                            }))
 
   ## process defaults
-  defaults <- c(do.call(c,lapply(arglist,
-                                 function(x){
-                                   if(('default' %in% names(x))){
-                                     z <- list(x$default)
-                                     names(z) <- x$name
-                                     z
-                                   }else{NULL}
-                                 })),flag)
+  defaults <- c(flatten(lapply(arglist,
+                               function(x){
+                                 if(('default' %in% names(x))){
+                                   z <- list(x$default)
+                                   names(z) <- x$name
+                                   z
+                                 }else{NULL}
+                               })),
+                flag)
   ## process arg parsers
-  parsers <- do.call(c,lapply(arglist,
-                              function(x){
-                                if(('parser' %in% names(x))){
-                                  y <- list(x$parser)
-                                  names(y) <- x$name
-                                  y
-                                }else{NULL}
-                              }))
+  parsers <- flatten(lapply(arglist,
+                            function(x){
+                              if(('parser' %in% names(x))){
+                                y <- list(x$parser)
+                                names(y) <- x$name
+                                y
+                              }else{NULL}
+                            }))
   options(warn=-1)
   ## parse args
-  parsed <- do.call(c,lapply(str_split(args,'(\\s+|^\\s*)\\-')[[1]],
-                             function(x){
-                               if(str_length(gsub('\\s','',x)) == 0){
-                                 NULL
-                               }else{
-                                 y<-str_split(x,' ')[[1]]
+  parsed <- flatten(lapply(str_split(args,'(\\s+|^\\s*)\\-')[[1]],
+                           function(x){
+                             if(str_length(gsub('\\s','',x)) == 0){
+                               NULL
+                             }else{
+                               y<-str_split(x,' ')[[1]]
 
-                                 z <- list(str_trim(do.call(paste,as.list(y[2:length(y)]))))
-                                 if(!(y[1] %in% argnames)){
-                                   return(NA)
-                                 }
-                                 if(y[1] %in% names(flag)){
-                                   z <- list(!flag[[y[1]]])
-                                 }else if(y[1] %in% names(parsers)){
-                                   z <- list(parsers[[y[1]]](y[2]))
-                                 }
-                                 names(z)<-y[1]
-                                 z
+                               z <- list(str_trim(paste(y[2:length(y)]), collapse = ' '))
+                               if(!(y[1] %in% argnames)){
+                                 return(NA)
                                }
-                             }))
+                               if(y[1] %in% names(flag)){
+                                 z <- list(!flag[[y[1]]])
+                               }else if(y[1] %in% names(parsers)){
+                                 z <- list(parsers[[y[1]]](y[2]))
+                               }
+                               names(z)<-y[1]
+                               z
+                             }
+                           }))
   allNames <- unique(c(names(defaults),names(parsed)))
   parsed <- lapply(allNames,
                    function(i){
@@ -106,20 +107,20 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
     missing <- setdiff(required, names(parsed))
     if(length(missing) > 0){
       failures <- c(failures, sprintf("missing args %s",
-                                      csplat(paste,paste('-',missing,sep=''),sep=', ')))
+                                      paste('-',missing, sep='', collapse = ', ')))
     }
 
     ## check types
     invalidTypes <- is.na(parsed)
     if(any(invalidTypes)){
       failures <- sprintf('invalid values for %s\n',
-                          csplat(paste,paste('-',names(parsed)[invalidTypes],sep=''),sep=', '))
+                          paste('-',names(parsed)[invalidTypes], sep='', collapse = ', '))
     }
   }
 
   stop.if.not(length(failures) == 0,
               sprintf('failed to parse args (run with --help for usage)\n    PROBLEMS:\n        %s',
-                      csplat(paste, failures, sep='\n        ')))
+                      paste(failures, collapse = '\n        ')))
 
   if(parsed[['-help']]){
     cat(make.usage.string(filename, arglist, prologue, epilogue))
@@ -133,24 +134,24 @@ make.usage.string <- function(filename, arglist, prologue, epilogue){
   sprintf('%s\nUSAGE: %s %s\n  ARGS  %s\n%s\n',
           prologue,
           filename,
-          do.call(paste, c(lapply(arglist,
+          paste(lapply(arglist,
                                   function(x){
                                     v <- x$name
                                     if(('required' %in% names(x)) && x$required){
                                       sprintf('-%s',v)
                                     }else{
                                       sprintf('[-%s]',v)
-                                    }}))),
-          do.call(paste, c(lapply(arglist,
+                                    }}),
+                collapse = ' '),
+          paste(lapply(arglist,
                                   function(x){
                                     ret.line <- NULL
                                     if(str_length(x$name) >= 6)
                                       ret.line <- paste(std.indent,'       ',sep='')
 
-                                    csplat(paste,
-                                           c('-',x$name,ret.line,c('\t',x$desc)),
-                                           sep='')
-                                  }),sep=std.indent)),
+                                    paste(c('-', x$name, ret.line, '\t', x$desc), collapse = '')
+                                  }),
+                collapse = std.indent),
           epilogue)
 }
 
@@ -160,24 +161,24 @@ parse.list <- function(v,sep=',',def='=', useDefaultNames=TRUE){
   if(!is.null(v)){
     vv <- str_split(v,sep)[[1]]
 
-    z <- do.call(c,sapply(lzip(1:length(vv), vv),
-                          function(e){
-                            i <- e[[1]]
-                            x <- e[[2]]
-                            y <- str_split(x,def)[[1]]
+    z <- flatten(sapply(lzip(1:length(vv), vv),
+                        function(e){
+                          i <- e[[1]]
+                          x <- e[[2]]
+                          y <- str_split(x,def)[[1]]
 
-                            if(length(y) == 1){
-                              key <- if(useDefaultNames){i}else{''}
-                              val <- y[1]
-                            }else{
-                              key <- y[1]
-                              val <- y[2]
-                            }
-                            z <- list(val)
-                            names(z) <- key
-                            z
+                          if(length(y) == 1){
+                            key <- if(useDefaultNames){i}else{''}
+                            val <- y[1]
+                          }else{
+                            key <- y[1]
+                            val <- y[2]
                           }
-                          ))
+                          z <- list(val)
+                          names(z) <- key
+                          z
+                        }
+                        ))
   }else{
     z <- NULL
   }

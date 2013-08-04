@@ -149,7 +149,7 @@ sql.mk.tmp.table <- function(...,db.type='teradata'){
 }
 
 sql.contains <- function(e,set){
-  sprintf('%s in (%s)',e,csplat(paste,set,sep=','))
+  sprintf('%s in (%s)',e, paste(set, collapse = ','))
 }
 
 sql.sample <- function(s,n,db.type='teradata'){

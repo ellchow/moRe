@@ -172,7 +172,7 @@ yfin.report <- function(root.dir = '~/Documents/investments/data',
                         time.intervals = list('03-months' = 90, '01-year' = 260),
                         log.level = SimpleLog.INFO,
                         .parallel = FALSE){
-  ## import('yahoofin'); registerDoMC(2); sys(sprintf('open %s', yfin.report()))
+  ## import('yahoofin'); registerDoMC(2); system(sprintf('open %s', yfin.report()))
   logger <- SimpleLog('yfin.download', log.level)
 
   ## get data

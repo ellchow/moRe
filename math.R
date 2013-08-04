@@ -56,7 +56,7 @@ bucketize <- function(x, buckets=head(quantile(x,seq(0,1,0.1)),-1), label='names
   else{
     z <- tapply(if(!is.null(names(buckets))) names(buckets) else indices(buckets),
                 buckets,
-                function(x) csplat(paste,x,sep=', '))
+                function(x) paste(x, collapse=', '))
     buckets <- named(as.numeric(names(z)), z)
   }
   if(is.null(names(buckets)))
