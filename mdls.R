@@ -47,7 +47,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
   ## mdls.fit(iris[,1:4],
   ##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
   ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
-  ##                        distribution='gaussian',train.fraction=0.8,weights=function(data) runif(nrow(data))),
+  ##                        distribution='gaussian',train.fraction=0.8,interaction.depth=6,weights=function(data) runif(nrow(data))),
   ##          lm.model.def('lmmodel', function(x) x$Sepal.Length,
   ##                       c('Sepal.Width','Petal.Length','Petal.Width')),
   ##          betareg.model.def("betaregmodel", function(x) x$Sepal.Width / x$Sepal.Length,
@@ -366,9 +366,9 @@ gbm.tree.row.as.list <- function(tree, node){
            op = row$op,
            val = row$condition
            ),
-         if_true = gbm.tree.row.as.json(tree, row$left.id),
-         if_false = gbm.tree.row.as.json(tree, row$right.id),
-         if_missing = gbm.tree.row.as.json(tree, row$missing.id)
+         if_true = gbm.tree.row.as.list(tree, row$left.id),
+         if_false = gbm.tree.row.as.list(tree, row$right.id),
+         if_missing = gbm.tree.row.as.list(tree, row$missing.id)
          )
   }
 }
@@ -376,16 +376,16 @@ gbm.tree.row.as.list <- function(tree, node){
 gbm.tree.as.list <- function(object, i.tree)
   gbm.tree.row.as.list(gbm.tree.as.df(object, i.tree), 1)
 
-gbm.model.as.list <- function(object, trees=object$n.trees, name="", .parallel=FALSE){
+gbm.model.as.list <- function(object, n.trees=object$n.trees, name="", .parallel=FALSE){
   usedVariables <- gbm.model.used.variables(object)
-  trees <- llply(1:trees, function(tree) gbm.tree.as.list(object, i.tree=tree), .parallel=.parallel)
+  trees <- llply(1:n.trees, function(tree) gbm.tree.as.list(object, i.tree=tree), .parallel=.parallel)
 
   list(name=name,
        bag.fraction=object$bag.fraction,
        distribution= object$distribution$name,
        interaction.depth=object$interaction.depth,
        n.minobsinnode=object$n.minobsinnode,
-       n.trees=trees,
+       n.trees=as.integer(n.trees),
        shrinkage=object$shrinkage,
        features = usedVariables,
        trees=trees)
