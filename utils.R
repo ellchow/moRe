@@ -154,6 +154,14 @@ url.encode.params <- function(params){
 }
 
 ####################
+#### Functions
+####################
+
+"%within%" <- function(expr, envir) eval(substitute(expr), envir=envir)
+
+
+
+####################
 #### Files
 ####################
 
@@ -276,7 +284,10 @@ get.or.else <- function(x, field, default){
 }
 
 csplat <- function(f,a,...)
-  do.call(f,c(as.list(a),...))
+  do.call(f, c(as.list(a),...))
+
+"%wargs%" <- function(f, a)
+  do.call(f, as.list(a))
 
 indices <- function(xs, type){
   if(missing(type))
@@ -305,13 +316,6 @@ inf.rm <- function(...) na.rm(..., discard = is.infinite)
 nan.rm <- function(...) na.rm(..., discard = is.nan)
 
 invalid.rm <- function(...) na.rm(..., discard = function(z) is.na(z) | is.nan(z) | is.infinite(z))
-
-fold.left <- function(xs, init, f, ...){
-  Reduce(function(a, b)f(tail(a,1), b),
-         rep(0.9,10),
-         init = init,
-         ...)
-}
 
 tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
   FUN <- if(!is.null(FUN))
@@ -373,7 +377,8 @@ tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
 }
 
 lzip <- function(...){
-  args <- lapply(list(...), as.list)
+  delayedAssign('args', lapply(list(...), as.list))
+
   n <- min(sapply(args,length))
   if(n <= 0)
     return(NULL)
@@ -383,21 +388,21 @@ lzip <- function(...){
            zip.to.named(lapply(indices(args),
                   function(j){
                     y <- args[[j]]
-                    if(typeof(y) == 'list')
-                      list(names(y)[i], y[[i]])
-                    else
-                      list(names(y)[i], y[[i]])
+
+                    list(names(y)[i], y[[i]])
                   }))
          })
 }
 
+"%zip%" <- function(a,b) lzip(a, b)
+
 zip.to.named <- function(x,nameCol=1,valCol=2){
   flatten(lapply(x,
-                   function(y){
-                     z <- list(y[[valCol]])
-                     names(z) <- y[[nameCol]]
-                     z
-                   }))
+                 function(y){
+                   z <- list(y[[valCol]])
+                   names(z) <- y[[nameCol]]
+                   z
+                 }))
 }
 
 named <- function(x, n, type=''){
@@ -410,9 +415,14 @@ named <- function(x, n, type=''){
   x
 }
 
-remove.names <- function(x, type=''){
+"%named%" <- function(x, n) named(x, n)
+
+"%rnamed%" <- function(x, n) named(x, n, 'row')
+
+"%cnamed%" <- function(x, n) named(x, n, 'col')
+
+remove.names <- function(x, type='')
   named(x, NULL, type)
-}
 
 keep.if <- function(x,f){
   mask <- sapply(x,f)
@@ -444,13 +454,13 @@ setdiff2 <- function(x,y){
 
 make.combinations <- function(...){
   dots <- list(...)
-  apply(do.call(expand.grid, dots), 1,
+  apply(expand.grid %wargs% dots, 1,
         function(z) as.list(z))
 }
 
 parameter.scan <- function(params.list, f, .parallel=FALSE){
   named(llply(params.list,
-               function(params) do.call(f, as.list(params)),
+               function(params) f %wargs% params,
               .parallel=.parallel),
         names(params.list),)
 }
