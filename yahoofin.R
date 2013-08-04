@@ -67,7 +67,7 @@ yfin.download <- function(symbol, ..., start.date = '1900-01-01',
 
   write.msg(logger, 'yahoo finance url: %s', u)
 
-  x <- tryCatch(named(load.data(u, ..., sep=',', cache.path = cache.path, log.level = log.level), yfin.header),
+  x <- tryCatch(load.data(u, ..., sep=',', cache.path = cache.path, log.level = log.level) %named% yfin.header,
                 error = function(e){
                   write.msg(logger, 'failed to download data for %s', symbol)
                   NA
@@ -83,7 +83,7 @@ yfin.download <- function(symbol, ..., start.date = '1900-01-01',
 
 yfin.archive <- function(symbols, path, ...,
                          frequency = yfin.daily,
-                         log.level = SimpleLog.ERROR,
+                         log.level = SimpleLog.DEBUG,
                          .parallel = FALSE){
   logger <- SimpleLog('yfin.archive', log.level)
 
@@ -179,7 +179,7 @@ yfin.report <- function(root.dir = '~/Documents/investments/data',
   dir.create(root.dir)
   archive.path <- file.path(root.dir, 'historical-data-standard.rda')
   write.msg(logger, 'archive to %s', archive.path)
-  x <- yfin.archive(yfin.standard.symbols, archive.path, .parallel=.parallel)
+  x <- yfin.archive(yfin.standard.symbols, archive.path, log.level = log.level, .parallel=.parallel)
 
   ## calculate returns
   write.msg(logger, 'calculating returns')

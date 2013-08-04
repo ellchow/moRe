@@ -21,6 +21,7 @@ import('doMC',
        'Hmisc',
        'digest',
        'sfsmisc',
+       'testthat',
        as.library='utils')
 
 ## options(width=110,scipen=6)
@@ -31,8 +32,11 @@ options(scipen=6)
 ####################
 options(warn=-1)
 setConstructorS3('SimpleLog',
-                 function(id='log', level=c('info','warning','error'), availableLevels=NULL, outputs=stderr(), overwrite=TRUE){
-                   availableLevels <- union(level,availableLevels)
+                 function(id='log',
+                          level=c('info','warning','error'),
+                          colors = c('info'='light gray','warning'='yellow','error'='red','debug'='dark gray'),
+                          outputs=stderr(),
+                          overwrite=TRUE){
                    if(overwrite){
                      sapply(outputs[is.character(outputs) & outputs != ""],
                             function(x){
@@ -44,7 +48,7 @@ setConstructorS3('SimpleLog',
                    extend(Object(), 'SimpleLog',
                           id=id,
                           level=level,
-                          availableLevels=availableLevels,
+                          colors=colors,
                           outputs=outputs)
                  })
 
@@ -56,15 +60,22 @@ SimpleLog.DEBUG <- c(SimpleLog.ERROR, 'debug')
 setMethodS3('write.msg','SimpleLog',
             function(log,...,level=SimpleLog.INFO,sep=' - '){
               check <- TRUE
-              if(tail(level,1) %in% log$level){
-                check <- all(sapply(log$outputs,
-                                    function(o){
-                                      sapply(intersect(tail(level,1),log$level),
-                                             function(lvl){
-                                               msg <- paste(list(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)), collapse = sep)
-                                               tryCatch(is.null(cat(msg,'\n', file=o, append=TRUE)), error=function(e){FALSE})
-                                             })
-                                    }))
+
+              lvl <- intersect(tail(level,1), log$level)
+              if(length(lvl) > 0){
+                msg <- paste(list(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)), collapse = sep)
+
+                all(sapply(log$outputs,
+                           function(o) {
+                             if(o %in% c(stderr(), stdout())){
+                               color <- log$colors[lvl]
+                               if(!is.na(color))
+                                 msg <- colourise(msg, color)
+                             }
+
+                             tryCatch(is.null(cat(msg, '\n', file=o, append=TRUE)),
+                                      error = function(e) FALSE)
+                           }))
               }
             })
 
