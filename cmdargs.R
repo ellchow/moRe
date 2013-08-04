@@ -29,24 +29,24 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                      })
   ## process required
   required <- flatten(lapply(arglist,
-                               function(x){
-                                 if(('required' %in% names(x))){
-                                   if(x$required){
-                                     x$name
-                                   }
-                                 }else{NULL}
-                               }))
+                             function(x){
+                               if(('required' %in% names(x))){
+                                 if(x$required){
+                                   x$name
+                                 }
+                               }else{NULL}
+                             }))
   ## process flags
   flag <- flatten(lapply(arglist,
-                           function(x){
-                             if(('flag' %in% names(x))){
-                               if(x$flag){
-                                 z<-list(!is.null(x$negate) && x$negate)
-                                 names(z)<- x$name
-                                 z
-                               }
-                             }else{NULL}
-                           }))
+                         function(x){
+                           if(('flag' %in% names(x))){
+                             if(x$flag){
+                               z<-list(!is.null(x$negate) && x$negate)
+                               names(z)<- x$name
+                               z
+                             }
+                           }else{NULL}
+                         }))
 
   ## process defaults
   defaults <- c(flatten(lapply(arglist,
@@ -74,29 +74,29 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                              if(str_length(gsub('\\s','',x)) == 0){
                                NULL
                              }else{
-                               y<-str_split(x,' ')[[1]]
+                               y <- str_split(x, ' ')[[1]]
 
                                z <- list(str_trim(paste(y[2:length(y)], collapse = ' ')))
-                               if(!(y[1] %in% argnames)){
+
+                               if(!(y[1] %in% argnames))
                                  return(NA)
-                               }
-                               if(y[1] %in% names(flag)){
+
+                               if(y[1] %in% names(flag))
                                  z <- list(!flag[[y[1]]])
-                               }else if(y[1] %in% names(parsers)){
+                               else if(y[1] %in% names(parsers))
                                  z <- list(parsers[[y[1]]](y[2]))
-                               }
-                               names(z)<-y[1]
-                               z
+
+                               y[1] %named% z
                              }
                            }))
   allNames <- unique(c(names(defaults),names(parsed)))
   parsed <- lapply(allNames,
                    function(i){
-                     if(i %in% names(parsed)){
+                     if(i %in% names(parsed))
                        z <- parsed[[i]]
-                     }else{
+                     else
                        z <- defaults[[i]]
-                     }
+
                      z
                    })
   names(parsed) <- allNames
@@ -135,29 +135,29 @@ make.usage.string <- function(filename, arglist, prologue, epilogue){
           prologue,
           filename,
           paste(lapply(arglist,
-                                  function(x){
-                                    v <- x$name
-                                    if(('required' %in% names(x)) && x$required){
-                                      sprintf('-%s',v)
-                                    }else{
-                                      sprintf('[-%s]',v)
-                                    }}),
+                       function(x){
+                         v <- x$name
+                         if(('required' %in% names(x)) && x$required){
+                           sprintf('-%s',v)
+                         }else{
+                           sprintf('[-%s]',v)
+                         }}),
                 collapse = ' '),
           paste(lapply(arglist,
-                                  function(x){
-                                    ret.line <- NULL
-                                    if(str_length(x$name) >= 6)
-                                      ret.line <- paste(std.indent,'       ',sep='')
+                       function(x){
+                         ret.line <- NULL
+                         if(str_length(x$name) >= 6)
+                           ret.line <- paste(std.indent,'       ',sep='')
 
-                                    paste(c('-', x$name, ret.line, '\t', x$desc), collapse = '')
-                                  }),
+                         paste(c('-', x$name, ret.line, '\t', x$desc), collapse = '')
+                       }),
                 collapse = std.indent),
           epilogue)
 }
 
 
 
-parse.list <- function(v,sep=',',def='=', useDefaultNames=TRUE){
+parse.list <- function(v, sep=',', def='=', useDefaultNames=TRUE){
   if(!is.null(v)){
     vv <- str_split(v,sep)[[1]]
 
