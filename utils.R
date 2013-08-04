@@ -234,13 +234,13 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
   conn
 }
 
-load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='', cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
   ## load.data('http://ichart.yahoo.com/table.csv?s=GOOG',sep=',') -> x
   options(warn=-1)
 
   if(is.list(path)){
     path <- c(path, cache.path = cache.path, show.progress = show.progress, force = force, list(log.level = log.level))
-    conn <- csplat(cache.data, path)
+    conn <- cache.data %wargs% path
   }else{
     conn <- cache.data(path, cache.path = cache.path, force = force, log.level=log.level)
   }
@@ -249,16 +249,9 @@ load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='',cache.
                 error=function(e){
                   read.table(conn,sep=sep,header=header,comment.char=comment.char,quote=quote,...)
                 })
+
   options(warn=0)
   x
-}
-
-load.data.many <- function(paths,...,.parallel=FALSE){
-  as.data.frame(llply(csplat(rbind,
-                             llply(system(sprintf('ls %s', paste(paths, collapse = ' ')),intern=T),
-                                   function(z) load.data(z,stringsAsFactors=F,...),.parallel=.parallel)),
-                      function(col){if(is.character(col)) factor(col) else col},
-                      .parallel=.parallel))
 }
 
 file.to.string <- function(file)

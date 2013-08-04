@@ -114,7 +114,7 @@ yfin.archive <- function(symbols, path, ...,
              },
              .parallel = .parallel)
 
-  y <- csplat(rbind.fill, y[!is.na(y)])
+  y <- rbind.fill %wargs% y[!is.na(y)]
 
   if(any(is.na(z)) || is.null(y) || nrow(y) == 0){
     write.msg(logger, 'no data added')

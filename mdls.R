@@ -1086,7 +1086,7 @@ check.betareg.model.def <- function(model.def, target, data, weights){
 }
 
 betareg.predict <- function(object,newdata,type=c('response','variance'), ...)
-  named(csplat(cbind, lapply(type, function(t) predict(object, newdata, type=t,...))),
+  named(cbind %wargs% lapply(type, function(t) predict(object, newdata, type=t,...)),
         type, 'col')
 
 
@@ -1258,12 +1258,10 @@ clsfy.confusion <- function(prediction, label){
 }
 
 clsfy.confusion.scan <- function(score, label, to.prediction = function(t){ function(s) s > t }, params.list=as.list(quantile(score,seq(0,1,0.01))), .parallel=FALSE){
-  csplat(rbind,
-         llply(named(parameter.scan(params.list, to.prediction), names(params.list)),
-               function(f)
-               clsfy.confusion(f(score),label),
-               .parallel=.parallel)
-         )
+  rbind %wargs% llply(named(parameter.scan(params.list, to.prediction), names(params.list)),
+                      function(f)
+                      clsfy.confusion(f(score),label),
+                      .parallel=.parallel)
 }
 
 ## see http://en.wikipedia.org/wiki/Receiver_operating_characteristic for definitions

@@ -169,7 +169,7 @@ sql.seq.stmts <- function(stmts,table.gen=function(...) sql.mk.tmp.table(...), a
   ## stmts of form list(list( args for table.gen  ))
   tmp.tables <- lapply(stmts,
          function(x){
-           csplat(table.gen, x)
+           table.gen %wargs% x
          })
   function(db=NULL,...,delay=5,pretty=TRUE){
     no.action <- is.null(db)
