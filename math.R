@@ -48,8 +48,11 @@ skewness <- function(x, ...)
 kurtosis <- function(x, ...)
   -3 + mean((x - mean(x, ...)) ^ 4, ...) / (mean((x - mean(x, ...)) ^ 2, ...) ^ 2)
 
-bucketize <- function(x, buckets=head(quantile(x,seq(0,1,0.1)),-1), label='names',
-                      uniq.boundaries = TRUE){
+bucketize <- function(x, buckets = quantile(x,seq(0,1,0.1)), label='names',
+                      uniq.boundaries = TRUE, drop.ub = TRUE){
+  if(drop.ub)
+    buckets <- head(buckets, -1)
+
   if(uniq.boundaries)
     stop.if(length(unique(buckets)) != length(buckets),
             "bucket boundaries must be unique")
@@ -72,8 +75,8 @@ bucketize <- function(x, buckets=head(quantile(x,seq(0,1,0.1)),-1), label='names
     b
 }
 
-rdiscrete <- function(n, prob, domain=1:length(prob))
-  bucketize(runif(n), named(c(0,head(cumsum(prob / sum(prob)), -1)), domain))
+rdiscrete <- function(n, prob, domain = indices(prob))
+  bucketize(runif(n), named(c(0,cumsum(prob / sum(prob))), domain))
 
 beta.params <- function(a,b,method='ab'){
   stop.if.not(method %in% c('ab','md'), sprintf('unknown method: %s', method))

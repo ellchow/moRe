@@ -159,7 +159,9 @@ url.encode.params <- function(params){
 
 "%within%" <- function(expr, envir) eval(substitute(expr), envir=envir)
 
+var.name <- function(x) deparse(substitute(x))
 
+is.global.env <- function(env) environmentName(env) == 'R_GlobalEnv'
 
 ####################
 #### Files
@@ -661,7 +663,7 @@ unix.timestamp.to.fmt <- function(ts,fmt=STANDARD.TIMESTAMP.FORMAT)
 
 str.fmt <- function(s,...){
   dots <- list(...)
-  named.pat <- '(^|[^%])(%)\\(([A-Za-z0-9_.]+?)\\)(([0-9.]+)?[sdf])'
+  named.pat <- '(^|[^%])(%)\\(([A-Za-z0-9_.]+?)\\)(([0-9.]+)?[sdf])' ## name params can contain alphanumeric chars, underscores, and periods
   unnamed.pat <- '(^|[^%])(%[sdf])'
   named <- str_detect(s,named.pat)
   ss <- s
