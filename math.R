@@ -79,7 +79,7 @@ rdiscrete <- function(n, prob, domain = indices(prob))
   bucketize(runif(n), named(c(0,cumsum(prob / sum(prob))), domain))
 
 beta.params <- function(a,b,method='ab'){
-  stop.if.not(method %in% c('ab','md'), sprintf('unknown method: %s', method))
+  stop.if.not(method %in% c('ab','md'), 'unknown method: %s', method)
   if(method == 'md'){
     alpha <- a * b
     beta <-  b - alpha

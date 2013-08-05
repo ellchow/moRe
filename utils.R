@@ -107,10 +107,13 @@ setMethodS3('stop.timer', 'Timer',
             })
 options(warn=0)
 
-stop.if <- function(x, msg, tag = NULL){
+stop.if <- function(x, msg, ..., tag = NULL, cleanup = function(){}){
   if(x){
-    err <- simpleError(msg)
+    err <- simpleError(sprintf(msg, ...))
     attr(err, 'tag') <- tag
+
+    cleanup()
+
     stop(err)
   }
 }
@@ -247,7 +250,7 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
     else
       write.msg(logger, 'reading from cache', cmd)
 
-    stop.if.not(exit.code == 0, 'failed to download file', function() file.remove(cached.file) )
+    stop.if.not(exit.code == 0, 'failed to download file', cleanup = function() file.remove(cached.file) )
     conn <- cached.file
   }else{
     conn <- path
@@ -397,7 +400,7 @@ tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
     split(z, group) <- ansmat
     ansmat <- unlist(z)
   }else{
-    stop.if(ret.type != 'list', sprintf('unknown ret.type "%s"', ret.type))
+    stop.if(ret.type != 'list', 'unknown ret.type "%s"', ret.type, tag = 'unknown.type')
   }
 
   ansmat
@@ -700,7 +703,7 @@ str.fmt <- function(s,...){
     stop.if(is.null(names(dots)) || any(str_length(names(dots))==0),
             'requires named parameters')
 
-    stop.if(any(!n %in% names(dots)), sprintf('missing params %s', paste(setdiff(n,names(dots)), collapse = ',')))
+    stop.if(any(!n %in% names(dots)), 'missing params %s', paste(setdiff(n,names(dots)), collapse = ','))
 
     ## first escape things that percent symbols; then replace named params with unnamed params
     ss <- gsub(named.pat,'\\1\\2\\4',

@@ -213,7 +213,7 @@ mdls.report <- function(mdls, root, text.as = 'html', overwrite = FALSE, log.lev
   if(overwrite)
     rrmdir(root)
 
-  stop.if(file.exists(root) && !overwrite, sprintf('output directory "%s" already exists ', root))
+  stop.if(file.exists(root) && !overwrite, 'output directory "%s" already exists ', root)
 
   logger <- SimpleLog('mdls.report',log.level)
 
@@ -324,7 +324,7 @@ gbm.opt.n.trees <- function(object, method='test')
 
 gbm.tree.as.df <- function(object, i.tree = 1){
   stop.if((i.tree < 1) || (i.tree > object$n.trees),
-          sprintf("i.tree %d is out of range (%d)", i.tree, object$n.trees))
+          "i.tree %d is out of range (%d)", i.tree, object$n.trees)
   tree <- named(data.frame(object$trees[[i.tree]]),
                 c("SplitVar", "SplitCodePred", "LeftNode",
                   "RightNode", "MissingNode", "ErrorReduction", "Weight",
@@ -765,8 +765,8 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
 gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log.level = SimpleLog.INFO, .parallel = TRUE){
 
   stop.if.not(text.as %in% c('txt','html','textile'),
-              sprintf('unknown text format: %s', text.as))
-  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+              'unknown text format: %s', text.as)
+  stop.if(file.exists(root), 'output directory "%s" already exists ', root)
 
   logger <- SimpleLog('gbm.model.report', log.level)
 
@@ -871,7 +871,7 @@ check.lm.model.def <- function(model.def, target, data, weights){
 }
 
 lm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
-  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+  stop.if(file.exists(root), 'output directory "%s" already exists ', root)
 
   logger <- SimpleLog('lm.model.report', log.level)
 
@@ -942,7 +942,7 @@ glm.predict <- function(object,newdata,type='response',...)
   predict.glm(object,newdata,type=type,...)
 
 glm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
-  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+  stop.if(file.exists(root), 'output directory "%s" already exists ', root)
 
   logger <- SimpleLog('glm.model.report', log.level)
 
@@ -1015,7 +1015,7 @@ glmnet.predict <- function(object,newx,type='response',...)
 
 glmnet.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
   ## FIXME
-  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+  stop.if(file.exists(root), 'output directory "%s" already exists ', root)
 
   logger <- SimpleLog('glmnet.model.report', log.level)
 
@@ -1091,7 +1091,7 @@ betareg.predict <- function(object,newdata,type=c('response','variance'), ...)
 
 
 betareg.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
-  stop.if(file.exists(root), sprintf('output directory "%s" already exists ', root))
+  stop.if(file.exists(root), 'output directory "%s" already exists ', root)
 
   logger <- SimpleLog('betareg.model.report', log.level)
 
