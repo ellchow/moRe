@@ -44,6 +44,7 @@ is.model.def <- function(x){
 }
 
 mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=FALSE){
+  ## import('mdls')
   ## mdls.fit(iris[,1:4],
   ##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
   ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
@@ -75,8 +76,6 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                    }else{
                      data <- as.data.frame(data)
                    }
-
-
 
                    model.defs.filtered <- Filter(function(md){
                      any(sapply(lzip(names(mapping), mapping),

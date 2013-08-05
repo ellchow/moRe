@@ -35,22 +35,25 @@ options(warn=-1)
 setConstructorS3('SimpleLog',
                  function(id='log',
                           level=c('info','warning','error'),
-                          colors = c('info'='light gray','warning'='yellow','error'='red','debug'='dark gray'),
-                          outputs=stderr(),
-                          overwrite=TRUE){
-                   if(overwrite){
-                     sapply(outputs[is.character(outputs) & outputs != ""],
-                            function(x){
-                              if(is.character(x)){
-                                file.remove(x)
-                              }
-                            })
-                   }
+                          colors = c('info'='light gray','warning'='yellow','error'='red','debug'='dark gray')
+                          ## outputs=stderr(),
+                          ##overwrite=TRUE
+                          ){
+                   ## if(overwrite){
+                   ##   sapply(outputs[is.character(outputs) & outputs != ""],
+                   ##          function(x){
+                   ##            if(is.character(x)){
+                   ##              file.remove(x)
+                   ##            }
+                   ##          })
+                   ## }
                    extend(Object(), 'SimpleLog',
                           id=id,
                           level=level,
                           colors=colors,
-                          outputs=outputs)
+                          ## outputs=outputs
+                          outputs=stderr()
+                          )
                  })
 
 SimpleLog.INFO <- 'info'
