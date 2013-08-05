@@ -129,6 +129,16 @@ stop.if.not <- function(x, ...){
   stop.if(!x, ..., failed.cond = failed.cond)
 }
 
+dump.frames.on.failure <- function(on = TRUE){
+  if(on)
+    options(error = quote({ dump.frames('dump-frames', to.file = TRUE)
+                            system('echo "frames dumped to dump-frames.rda"')
+                            q()
+                          }
+              ))
+  else
+    options(error = NULL)
+}
 ####################
 #### URL encoding
 ####################
