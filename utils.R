@@ -60,7 +60,10 @@ SimpleLog.INFO <- 'info'
 SimpleLog.WARNING <- c(SimpleLog.INFO, 'warning')
 SimpleLog.ERROR <- c(SimpleLog.WARNING, 'error')
 SimpleLog.DEBUG <- c(SimpleLog.ERROR, 'debug')
-SimpleLog.COLORIZE <- FALSE
+
+if(!exists('SimpleLog.CONFIG', envir = globalenv())){
+  assign('SimpleLog.CONFIG', new.env(), envir=globalenv())
+}
 
 setMethodS3('write.msg','SimpleLog',
             function(log,...,level=SimpleLog.INFO,sep=' - '){
@@ -72,7 +75,7 @@ setMethodS3('write.msg','SimpleLog',
 
                 all(sapply(log$outputs,
                            function(o) {
-                             if(SimpleLog.COLORIZE && (o %in% c(stderr(), stdout()))){
+                             if((!is.null(globalenv()$SimpleLog.CONFIG$colorize) && globalenv()$SimpleLog.CONFIG$colorize) && (o %in% c(stderr(), stdout()))){
                                color <- log$colors[lvl]
                                if(!is.na(color))
                                  msg <- colourise(msg, color)
