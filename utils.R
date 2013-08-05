@@ -21,6 +21,7 @@ import('doMC',
        'Hmisc',
        'digest',
        'sfsmisc',
+       'rjson',
        'testthat',
        as.library='utils')
 
@@ -106,14 +107,15 @@ setMethodS3('stop.timer', 'Timer',
             })
 options(warn=0)
 
-stop.if <- function(x,msg,cleanup = function(){}){
+stop.if <- function(x, msg, tag = NULL){
   if(x){
-    cleanup()
-    stop(msg)
+    err <- simpleError(msg)
+    attr(err, 'tag') <- tag
+    stop(err)
   }
 }
-stop.if.not <- function(x,msg,cleanup = function(){})
-  stop.if(!x,msg,cleanup)
+stop.if.not <- function(x, ...)
+  stop.if(!x, ...)
 
 ####################
 #### URL encoding
@@ -242,12 +244,15 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
   }else{
     conn <- path
   }
-  conn
 }
 
-load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='', cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
-  ## load.data('http://ichart.yahoo.com/table.csv?s=GOOG',sep=',') -> x
-  options(warn=-1)
+load.data <- function(path, load, ..., cache.path = '.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  logger <- SimpleLog('load.data', log.level)
+
+  if(missing(load)){
+    write.msg(logger, 'missing "load" function - calling load.table', level = SimpleLog.DEBUG)
+    return(load.table(path, ..., cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level))
+  }
 
   if(is.list(path)){
     path <- c(path, cache.path = cache.path, show.progress = show.progress, force = force, list(log.level = log.level))
@@ -256,13 +261,21 @@ load.data <- function(path,...,sep='\t',header=T,comment.char='',quote='', cache
     conn <- cache.data(path, cache.path = cache.path, force = force, log.level=log.level)
   }
 
-  x <- tryCatch(get(load(conn)),
-                error=function(e){
-                  read.table(conn,sep=sep,header=header,comment.char=comment.char,quote=quote,...)
-                })
+  tryCatch(get(load(conn)),
+           error = function(e) load(conn, ...))
+}
 
-  options(warn=0)
-  x
+load.table <- function(path, ..., sep='\t', header=T, comment.char='', quote='', cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  load <- function(conn) read.table(conn, sep=sep, header=header, comment.char=comment.char, quote=quote, ...)
+
+  load.data(path, load, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
+}
+
+load.json <- function(path, cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  load <- function(conn)
+    lapply(readLines(conn, warn = F), fromJSON)
+
+  load.data(path, load, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
 }
 
 file.to.string <- function(file)
