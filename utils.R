@@ -110,9 +110,13 @@ setMethodS3('stop.timer', 'Timer',
             })
 options(warn=0)
 
-stop.if <- function(x, msg, ..., tag = NULL, cleanup = function(){}){
+stop.if <- function(x, msg, ..., tag = NULL, cleanup = function(){}, failed.cond = substitute(x)){
+  call <- sys.call(1)
   if(x){
-    err <- simpleError(sprintf(msg, ...))
+    err <- simpleError(paste(c(sprintf(msg, ...),
+                               '\n  Failed condition: ', failed.cond),
+                             collapse=''),
+                       call)
     attr(err, 'tag') <- tag
 
     cleanup()
@@ -120,8 +124,10 @@ stop.if <- function(x, msg, ..., tag = NULL, cleanup = function(){}){
     stop(err)
   }
 }
-stop.if.not <- function(x, ...)
-  stop.if(!x, ...)
+stop.if.not <- function(x, ...){
+  failed.cond <- substitute(!(x))
+  stop.if(!x, ..., failed.cond = failed.cond)
+}
 
 ####################
 #### URL encoding
