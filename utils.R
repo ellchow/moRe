@@ -172,6 +172,14 @@ url.encode.params <- function(params){
 
 "%within%" <- function(expr, envir) eval(substitute(expr), envir=envir)
 
+tag <- function(x,...) {
+  dots <- list(...)
+  tagged <- x
+  attr(tagged, names(dots)[1]) <- dots[[1]]
+
+  tagged
+}
+
 var.name <- function(x) deparse(substitute(x))
 
 is.global.env <- function(env) environmentName(env) == 'R_GlobalEnv'
