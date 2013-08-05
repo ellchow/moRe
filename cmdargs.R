@@ -86,7 +86,7 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                                else if(y[1] %in% names(parsers))
                                  z <- list(parsers[[y[1]]](y[2]))
 
-                               y[1] %named% z
+                               z %named% y[1]
                              }
                            }))
   allNames <- unique(c(names(defaults),names(parsed)))
