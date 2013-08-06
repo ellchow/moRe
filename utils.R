@@ -297,8 +297,9 @@ load.data <- function(path, load.fun, ..., cache.path = '.cache', show.progress 
 
   tryCatch({
     options(warn=-1)
-    get(load(conn))
+    z <- get(load(conn))
     options(warn=0)
+    z
   },
            error = function(e) load.fun(conn, ...))
 }
