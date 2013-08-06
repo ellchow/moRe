@@ -370,7 +370,15 @@ nan.rm <- function(...) na.rm(..., discard = is.nan)
 
 invalid.rm <- function(...) na.rm(..., discard = function(z) is.na(z) | is.nan(z) | is.infinite(z))
 
-tapply <- function (X, INDEX, FUN = NULL, simplify = TRUE, ret.type='list') {
+tapply <- function (X.expr, INDEX.expr, FUN = NULL, simplify = TRUE, ret.type='list', envir = NULL) {
+  if(is.null(envir)){
+    X <- X.expr
+    INDEX <- INDEX.expr
+  }else{
+    X <- eval(substitute(X.expr), envir = envir)
+    INDEX <- eval(substitute(INDEX.expr), envir = envir)
+  }
+
   FUN <- if(!is.null(FUN))
     match.fun(FUN)
   if(!is.list(INDEX))
