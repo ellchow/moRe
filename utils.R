@@ -280,11 +280,11 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
   }
 }
 
-load.data <- function(path, load, ..., cache.path = '.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+load.data <- function(path, load.fun, ..., cache.path = '.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
   logger <- SimpleLog('load.data', log.level)
 
-  if(missing(load)){
-    write.msg(logger, 'missing "load" function - calling load.table', level = SimpleLog.DEBUG)
+  if(missing(load.fun)){
+    write.msg(logger, 'missing "load.fun" function - calling load.table', level = SimpleLog.DEBUG)
     return(load.table(path, ..., cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level))
   }
 
@@ -296,13 +296,13 @@ load.data <- function(path, load, ..., cache.path = '.cache', show.progress = NU
   }
 
   tryCatch(get(load(conn)),
-           error = function(e) load(conn, ...))
+           error = function(e) load.fun(conn, ...))
 }
 
 load.table <- function(path, ..., sep='\t', header=T, comment.char='', quote='', cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
-  load <- function(conn) read.table(conn, sep=sep, header=header, comment.char=comment.char, quote=quote, ...)
+  load.fun <- function(conn) read.table(conn, sep=sep, header=header, comment.char=comment.char, quote=quote, ...)
 
-  load.data(path, load, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
+  load.data(path, load.fun, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
 }
 
 load.json <- function(path, cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
