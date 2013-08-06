@@ -295,21 +295,43 @@ load.data <- function(path, load.fun, ..., cache.path = '.cache', show.progress 
     conn <- cache.data(path, cache.path = cache.path, force = force, log.level=log.level)
   }
 
-  tryCatch(get(load(conn)),
+  tryCatch({
+    options(warn=-1)
+    get(load(conn))
+    options(warn=0)
+  },
            error = function(e) load.fun(conn, ...))
 }
 
-load.table <- function(path, ..., sep='\t', header=T, comment.char='', quote='', cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
-  load.fun <- function(conn) read.table(conn, sep=sep, header=header, comment.char=comment.char, quote=quote, ...)
+load.lines <- function(path, parser = NULL, cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  load <- function(conn)
+    readLines(conn, warn = F)
 
-  load.data(path, load.fun, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
+  z <- load.data(path, load, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
+
+  if(!is.null(parser))
+    lapply(z, parser)
+  else
+    z
 }
 
-load.json <- function(path, cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+load.string <- function(path, parser = NULL, cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
   load <- function(conn)
-    lapply(readLines(conn, warn = F), fromJSON)
+    file.to.string(conn)
 
-  load.data(path, load, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
+  z <- load.data(path, load, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
+
+  if(!is.null(parser))
+    parser(z)
+  else
+    z
+}
+
+load.table <- function(path, ..., sep='\t', header=T, comment.char='', quote='', cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  load.fun <- function(conn)
+    read.table(conn, sep=sep, header=header, comment.char=comment.char, quote=quote, ...)
+
+  load.data(path, load.fun, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
 }
 
 file.to.string <- function(file)
@@ -508,6 +530,9 @@ merge.lists <- function(all,FUN=function(n,x){x}){
   names(z) <- allNames
   z
 }
+
+## merge.lists <- function(...){
+## }
 
 setdiff2 <- function(x,y){
   list(setdiff(x,y), setdiff(y, x))
