@@ -131,9 +131,10 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', sk
               sprintf('failed to parse args (run with --help for usage)\n    PROBLEMS:\n        %s',
                       paste(failures, collapse = '\n        ')))
 
-  if(exit.on.help && parsed[['-help']]){
+  if(parsed[['-help']]){
     cat(make.usage.string(filename, arglist, prologue, epilogue))
-    q(save='no',runLast=FALSE)
+    if(exit.on.help)
+      q(save='no',runLast=FALSE)
   }
 
   parsed
