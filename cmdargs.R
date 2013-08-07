@@ -14,9 +14,8 @@
 
 import('utils', 'stringr')
 
-parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
+parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', skip.undefined = FALSE){
   ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
-
 
   args <- paste(args, collapse = ' ')
   failures <- list()
@@ -69,6 +68,7 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                             }))
   options(warn=-1)
   ## parse args
+  undefined.args <- NULL
   parsed <- flatten(lapply(str_split(args,'(\\s+|^\\s*)\\-')[[1]],
                            function(x){
                              if(str_length(gsub('\\s','',x)) == 0){
@@ -76,19 +76,28 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = ''){
                              }else{
                                y <- str_split(x, ' ')[[1]]
 
+                               argname <- y[1]
+
                                z <- list(str_trim(paste(y[2:length(y)], collapse = ' ')))
 
-                               if(!(y[1] %in% argnames))
-                                 return(NA)
+                               if(!(argname %in% argnames)){
+                                 undefined.args <<- c(undefined.args, argname)
+                                 NULL
+                               }else{
+                                 if(argname %in% names(flag))
+                                   z <- list(!flag[[argname]])
+                                 else if(argname %in% names(parsers))
+                                   z <- list(parsers[[argname]](y[2]))
 
-                               if(y[1] %in% names(flag))
-                                 z <- list(!flag[[y[1]]])
-                               else if(y[1] %in% names(parsers))
-                                 z <- list(parsers[[y[1]]](y[2]))
-
-                               z %named% y[1]
+                                 z %named% argname
+                               }
                              }
                            }))
+
+  if(!skip.undefined && length(undefined.args) > 0)
+    failures <- c(failures, sprintf('undefined args %s', paste(undefined.args, collapse=',')))
+
+
   allNames <- unique(c(names(defaults),names(parsed)))
   parsed <- lapply(allNames,
                    function(i){
