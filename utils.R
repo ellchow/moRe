@@ -114,14 +114,14 @@ setMethodS3('stop.timer', 'Timer',
             })
 options(warn=0)
 
-stop.if <- function(x, msg, ..., tag = NULL, cleanup = function(){}, failed.cond = substitute(x)){
+stop.if <- function(x, msg, ..., cleanup = function(){}, failed.cond = substitute(x)){
   call <- sys.call(1)
   if(x){
-    err <- simpleError(paste(c(sprintf(msg, ...),
+    err <- tag(simpleError(paste(c(sprintf(msg, ...),
                                '\n  Failed condition: ', failed.cond),
                              collapse=''),
-                       call)
-    attr(err, 'tag') <- tag
+                       call),
+               ...)
 
     cleanup()
 
@@ -199,9 +199,13 @@ url.encode.params <- function(params){
 "%within%" <- function(expr, envir) eval(substitute(expr), envir=envir)
 
 tag <- function(x,...) {
-  dots <- list(...)
   tagged <- x
-  attr(tagged, names(dots)[1]) <- dots[[1]]
+  dots <- list(...)
+
+  if(length(dots) > 0){
+    for(i in indices(dots))
+      attr(tagged, names(dots)[i]) <- dots[[i]]
+  }
 
   tagged
 }
