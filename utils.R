@@ -394,6 +394,7 @@ nan.rm <- function(...) na.rm(..., discard = is.nan)
 invalid.rm <- function(...) na.rm(..., discard = function(z) is.na(z) | is.nan(z) | is.infinite(z))
 
 tapply <- function (X.expr, INDEX.expr, FUN = NULL, simplify = TRUE, ret.type='list', envir = NULL) {
+  ## lookup inputs in envir if supplied
   if(is.null(envir)){
     X <- X.expr
     INDEX <- INDEX.expr
@@ -428,6 +429,7 @@ tapply <- function (X.expr, INDEX.expr, FUN = NULL, simplify = TRUE, ret.type='l
   }
   if(is.null(FUN))
     return(group)
+  ## use mapply/split to allow for multipl inputs
   ans <- do.call(mapply, c(FUN, lapply(X, function(x) split(x, group)), SIMPLIFY=FALSE))
   index <- as.integer(names(ans))
 
@@ -444,12 +446,12 @@ tapply <- function (X.expr, INDEX.expr, FUN = NULL, simplify = TRUE, ret.type='l
     ansmat[index] <- ans
   }
 
+  ## return types
   if(ret.type == 'df'){
+    ## create data.frame by expanding grid
     ansmat <- data.frame(expand.grid(dimnames(ansmat)),y=do.call(rbind,as.list(ansmat)))
-  }else if(ret.type == 'join'){
-    stop.if(length(INDEX) != 1, 'INDEX must have length 1 for ret.type == "par"')
-    ansmat <- ansmat[as.character(INDEX[[1]])]
   }else if(ret.type == 'par'){
+    ## put output values into original spots
     z <- vector('list',length(X[[1]]))
     split(z, group) <- ansmat
     ansmat <- unlist(z)
