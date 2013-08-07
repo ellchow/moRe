@@ -741,8 +741,15 @@ EPOCH <- strptime("1970-01-01 00:00:00", STANDARD.TIMESTAMP.FORMAT, tz="UTC")
 MIN.SEC <- 60
 HOUR.SEC <- 60 * MIN.SEC
 DAY.SEC <-  24 * HOUR.SEC
-unix.timestamp.to.fmt <- function(ts,fmt=STANDARD.TIMESTAMP.FORMAT)
-  as.POSIXct(ts,fmt,origin=EPOCH)
+
+unix.timestamp.to.fmt <- function(ts, fmt=STANDARD.TIMESTAMP.FORMAT, tz='UTC')
+  strptime(as.POSIXct(ts,origin=EPOCH), fmt, tz=tz)
+
+unix.timestamp.now <- function() unclass(Sys.time())
+
+today <- function(sep='-') unix.timestamp.to.fmt(unix.timestamp.now(), paste('%Y','%m','%d', sep='-'))
+
+
 
 ####################
 #### Misc
