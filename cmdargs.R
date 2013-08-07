@@ -77,8 +77,9 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', sk
                                y <- str_split(x, ' ')[[1]]
 
                                argname <- y[1]
+                               argval <- paste(y[2:length(y)], collapse = ' ')
 
-                               z <- list(str_trim(paste(y[2:length(y)], collapse = ' ')))
+                               z <- list(str_trim(argval))
 
                                if(!(argname %in% argnames)){
                                  undefined.args <<- c(undefined.args, argname)
@@ -87,7 +88,7 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', sk
                                  if(argname %in% names(flag))
                                    z <- list(!flag[[argname]])
                                  else if(argname %in% names(parsers))
-                                   z <- list(parsers[[argname]](y[2]))
+                                   z <- list(parsers[[argname]](argval))
 
                                  z %named% argname
                                }
