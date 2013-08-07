@@ -96,7 +96,7 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', sk
                            }))
 
   if(!skip.undefined && length(undefined.args) > 0)
-    failures <- c(failures, sprintf('undefined args %s', paste(undefined.args, collapse=',')))
+    failures <- c(failures, sprintf('undefined args %s', paste('-', undefined.args, sep='', collapse=',')))
 
   allNames <- unique(c(names(defaults),names(parsed)))
   parsed <- lapply(allNames,
