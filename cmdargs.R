@@ -14,7 +14,7 @@
 
 import('utils', 'stringr')
 
-parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', skip.undefined = FALSE){
+parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', skip.undefined = FALSE, exit.on.help=TRUE){
   ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
 
   args <- paste(args, collapse = ' ')
@@ -97,7 +97,6 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', sk
   if(!skip.undefined && length(undefined.args) > 0)
     failures <- c(failures, sprintf('undefined args %s', paste(undefined.args, collapse=',')))
 
-
   allNames <- unique(c(names(defaults),names(parsed)))
   parsed <- lapply(allNames,
                    function(i){
@@ -131,10 +130,11 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', sk
               sprintf('failed to parse args (run with --help for usage)\n    PROBLEMS:\n        %s',
                       paste(failures, collapse = '\n        ')))
 
-  if(parsed[['-help']]){
+  if(exit.on.help && parsed[['-help']]){
     cat(make.usage.string(filename, arglist, prologue, epilogue))
     q(save='no',runLast=FALSE)
   }
+
   parsed
 }
 
