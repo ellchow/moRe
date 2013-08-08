@@ -34,7 +34,7 @@ at.top <- function(n,f=mean){
     f(x[r <= n])
 }
 
-pos.rank <- function(select=mean, f=function(x) 1 / x){
+pos.rank <- function(select=mean, f=I){
   function(r, x){
     stop.if.not(is.logical(x), "x must be logical")
 
@@ -42,34 +42,47 @@ pos.rank <- function(select=mean, f=function(x) 1 / x){
   }
 }
 
+mean.reciprocal.rank <- pos.rank(min, function(x) 1 / x)
+
 rel.to <- function(f=cor){
   function(r, x)
     f(r, x)
 }
 
-compute.ranks <- function(s, g, ties.method='random'){
-  stop.if.not(length(s) == length(g), "length of s must equal length of g")
+compute.ranks <- function(s, g, ties.method='random', envir=NULL){
+  if(!is.null(envir)){
+    s <- eval(substitute(s),envir)
+    g <- eval(substitute(g),envir)
+  }
 
-  x <- vector('integer',length=length(s))
-  split(x,g) <- tapply(s, g,function(x) rank(-x, ties.method=ties.method))
-  x
+  tapply(s, g,function(x) rank(-x, ties.method=ties.method), ret.type='par')
 }
 
-compute.skips <- function(rnk, pos, g){
+compute.skips <- function(rnk, pos, g, envir=NULL){
+  if(!is.null(envir)){
+    rnk <- eval(substitute(rnk),envir)
+    pos <- eval(substitute(pos),envir)
+    g <- eval(substitute(g),envir)
+  }
+
   stop.if.not(is.logical(pos), "pos must be boolean")
   stop.if.not(length(rnk) == length(pos), "length of rnk must equal length of pos")
 
-  x <- vector(length=length(rnk))
-  split(x, g) <- tapply(list(rnk,pos), g,
+  tapply(list(rnk,pos), g,
          function(r,p){
            rp <- if(any(p)) r[p] else -Inf
            lowest.pos <- max(rp)
            !p & (r < lowest.pos)
-         })
-  x
+         }, ret.type = 'par')
 }
 
-compute.infor.metric <- function(rnk, values, g, metric){
+compute.infor.metric <- function(rnk, values, g, metric, envir=NULL){
+  if(!is.null(envir)){
+    rnk <- eval(substitute(rnk),envir)
+    values <- eval(substitute(values),envir)
+    g <- eval(substitute(g),envir)
+  }
+
   tapply(list(rnk, values), g,
          function(r, x){
            metric(r, x)
@@ -77,23 +90,28 @@ compute.infor.metric <- function(rnk, values, g, metric){
 }
 
 
-feature.contributions.infor.metric <- function(mdl, d, iss, values, g, metric, log.level=SimpleLog.INFO, .parallel=TRUE){
-  logger <- SimpleLog('feature.contributions.infor.metric',log.level)
-  named(llply(iss,
-        function(is){
-          write.msg(logger,sprintf('randomizing features: %s', paste(is, collapse=',')))
+feature.contributions.infor.metric <- function(mdl, d, values, g, metric, featureSets = mdl$features, log.level=SimpleLog.INFO, .parallel=TRUE){
+  logger <- SimpleLog('feature.contributions.infor.metric', log.level)
+
+  rnk <- eval(substitute(rnk),envir)
+  values <- eval(substitute(values),d)
+  g <- eval(substitute(g),d)
+
+  named(llply(featureSets,
+        function(featureSet){
+          write.msg(logger,sprintf('randomizing features: %s', paste(featureSet, collapse=',')))
           d.r <- d
-          for(i in is)
+          for(i in featureSet)
             d.r[[i]] <- sample(d.r[[i]])
 
-          write.msg(logger,sprintf('scoring model with randomized %s', paste(is, collapse=',')))
+          write.msg(logger,sprintf('scoring model with randomized %s', paste(featureSet, collapse=',')))
           s.r <- mdl$predict(mdl$model, d.r[,mdl$features])
           r.r <- compute.ranks(s.r, d.r$QueryID)
 
           compute.infor.metric(r.r, values, g, metric)
         },
         .parallel=.parallel),
-        sapply(iss, function(is) paste(is, collapse=',')))
+        sapply(featureSets, function(featureSet) paste(featureSet, collapse=',')))
 }
 
 
