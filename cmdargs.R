@@ -14,7 +14,7 @@
 
 import('utils', 'stringr')
 
-parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', skip.undefined = FALSE, exit.on.help=TRUE){
+parse.args <- function(filename, arglist, args, validators = list(), prologue = '', epilogue = '', skip.undefined = FALSE, exit.on.help=TRUE){
   ## parse_args('foo.R',list(list(name='a',desc='arg a'),list(name='b',desc='arg b', required=T),list(name='c',desc='arg c',required=F,flag=T),list(name='d',desc='arg d',parser=as.integer),list(name='e',desc='arg e',parser=function(x){str_split(x,'\\s*,\\s*')[[1]]})), '-a qux -b zonk -c -d 1.2 -e e,d,x -help')
 
   args <- paste(args, collapse = ' ')
@@ -94,6 +94,9 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', sk
                                }
                              }
                            }))
+  argnames.count <- table(names(parsed))
+  if(max(argnames.count) > 1)
+    failures <-c(failures, sprintf('duplicate args "%s"', paste(names(argnames.count)[argnames.count > 1], collapse=',')))
 
   if(!skip.undefined && length(undefined.args) > 0)
     failures <- c(failures, sprintf('undefined args %s', paste('-', undefined.args, sep='', collapse=',')))
@@ -122,9 +125,16 @@ parse.args <- function(filename, arglist, args, prologue = '', epilogue = '', sk
     ## check types
     invalidTypes <- is.na(parsed)
     if(any(invalidTypes)){
-      failures <- sprintf('invalid values for %s\n',
-                          paste('-',names(parsed)[invalidTypes], sep='', collapse = ', '))
+      failures <- c(failures, sprintf('invalid values for %s\n',
+                                      paste('-',names(parsed)[invalidTypes], sep='', collapse = ', ')))
     }
+
+    ## run/check validators
+    for(v in names(validators)){
+      if(!validators[[v]](parsed[!invalidTypes]))
+        failures <- c(failures, sprintf('validation failed: %s', v))
+    }
+
   }
 
   stop.if.not(length(failures) == 0,
