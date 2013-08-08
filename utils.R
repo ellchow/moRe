@@ -339,16 +339,28 @@ load.table <- function(path, ..., sep='\t', header=T, comment.char='', quote='',
   load.data(path, load.fun, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
 }
 
-load.once <- function(x, f, repo = 'load.once.repo__', lazy = TRUE){
+run.once <- function(expr, store = 'load.once.repo__', algo='md5', lazy = TRUE, log.level=SimpleLog.INFO){
+  logger <- SimpleLog('run.once', log.level)
+
   g <- globalenv()
 
-  if(!exists(repo, g))
-    assign(repo, new.env(), envir=g)
+  expr.q <- substitute(expr)
+  expr.s <- paste0(deparse(expr.q), collapse='\n    ')
 
-  if(!exists(x, g))
-    assign(x, f, envir=g)
+  var.name <- digest(expr.s, algo=algo)
+  write.msg(logger, 'caching \n    %s\n  into %s (envir = %s)', expr.s, var.name, store, level=SimpleLog.DEBUG)
 
-  eval(parse(text=x), g)
+  if(!exists(store, g)){
+    write.msg(logger, 'initializing store %s', store, level=SimpleLog.DEBUG)
+    assign(store, new.env(), envir=g)
+  }
+
+  if(!(var.name %in% ls(g[[store]]))){
+    write.msg(logger, 'computing %s', var.name, level=SimpleLog.DEBUG)
+    assign(var.name, eval(expr.q), g[[store]])
+  }
+
+  g[[store]][[var.name]]
 }
 
 file.to.string <- function(file)
