@@ -114,14 +114,14 @@ setMethodS3('stop.timer', 'Timer',
             })
 options(warn=0)
 
-stop.if <- function(x, msg, ..., cleanup = function(){}, failed.cond = substitute(x)){
+stop.if <- function(x, msg, ..., tags=list(), cleanup = function(){}, failed.cond = substitute(x)){
   call <- sys.call(1)
   if(x){
-    err <- tag(simpleError(paste(c(sprintf(msg, ...),
-                               '\n  Failed condition: ', failed.cond),
-                             collapse=''),
-                       call),
-               ...)
+    err <- csplat(tag, c(list(simpleError(paste(c(sprintf(msg, ...),
+                                             '\n  Failed condition: ', failed.cond),
+                                           collapse=''),
+                                     call)),
+                         tags))
 
     cleanup()
 
