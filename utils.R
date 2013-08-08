@@ -66,14 +66,14 @@ if(!exists('SimpleLog.CONFIG', envir = globalenv())){
 }
 
 setMethodS3('write.msg','SimpleLog',
-            function(log,...,level=SimpleLog.INFO,sep=' - '){
+            function(log,...,level=SimpleLog.INFO,sep=' - ', return.success=FALSE){
               check <- TRUE
 
               lvl <- intersect(tail(level,1), log$level)
               if(length(lvl) > 0){
                 msg <- paste(list(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)), collapse = sep)
 
-                all(sapply(log$outputs,
+                success <- all(sapply(log$outputs,
                            function(o) {
                              if((!is.null(globalenv()$SimpleLog.CONFIG$colorize) && globalenv()$SimpleLog.CONFIG$colorize) && (o %in% c(stderr(), stdout()))){
                                color <- log$colors[lvl]
@@ -84,6 +84,8 @@ setMethodS3('write.msg','SimpleLog',
                              tryCatch(is.null(cat(msg, '\n', file=o, append=TRUE)),
                                       error = function(e) FALSE)
                            }))
+
+                if(return.success) success else invisible(success)
               }
             })
 
