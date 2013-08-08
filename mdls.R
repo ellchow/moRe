@@ -1105,7 +1105,7 @@ betareg.model.report <- function(object, root, text.as = 'txt', log.level = Simp
 #### Feature Helpers ##################
 #######################################
 
-feature.contributions <- function(mdl, src, snk, select=which.max, log.level=SimpleLog.ERROR, .parallel=FALSE){
+feature.contributions <- function(mdl, src, snk, select=which.max, score.idx = 1, log.level=SimpleLog.ERROR, .parallel=FALSE){
   logger <- SimpleLog('feature.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
   ## feature.contributions(list(id="m",model=ms$gbmmodel$model,features=ms$gbmmodel$model$var.names,predict=gbm.predict), iris[6,], iris[5,])
@@ -1115,18 +1115,22 @@ feature.contributions <- function(mdl, src, snk, select=which.max, log.level=Sim
 
   predict.log.level <- if('debug' %in% log.level) SimpleLog.DEBUG else c('warning', 'error')
 
+  extract.score <- function(x) if(is.matrix(x)) x[,score.idx] else x
+
   md <- list(this.model=mdl)
   names(md) <- mdl$id
-  srcScore <- mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]]
-  snkScore <- mdls.predict(md,snk,log.level=predict.log.level)[[1]][[1]]
+  srcScore <- extract.score(mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]])
+  snkScore <- extract.score(mdls.predict(md,snk,log.level=predict.log.level)[[1]][[1]])
+
   selected.features <- NA
   scores <- srcScore
   while(length(features) > 0){
     s <- laply(features,
                function(ft){
                  src[[ft]] <- snk[[ft]]
-                 mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]]
+                 extract.score(mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]])
                }, .parallel=.parallel)
+
     selected <- select(snkScore - s)
     ft <- features[selected]
     write.msg(logger,'feature %d selected: %s',length(selected.features)-1,ft)
