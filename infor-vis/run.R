@@ -29,7 +29,7 @@ args <- parse.args('run.R',
                         ),
                    raw.args)
 
-#### load/process configuration
+#### load config
 source(args[['-config']],chdir=T)
 
 ## check config blocks present
@@ -38,6 +38,11 @@ missing.config.blocks <- required.config.blocks[!required.config.blocks %in% nam
 stop.if.not(length(missing.config.blocks) == 0, sprintf('missing configuration blocks: %s', paste(missing.config.blocks, collapse=',')))
 
 ## load models
+
+## load data
+
+## check required columns, compute new columns, subset
+
 
 #### start server
 runApp('./')
