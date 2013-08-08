@@ -36,11 +36,7 @@ args <- parse.args('infor-vis.R',
                                else if (s == 'error') SimpleLog.ERROR
                                else if (s == 'debug') SimpleLog.DEBUG
                                else NA
-                             }),
-                        list(name='-parallel',
-                             desc='parallelization',
-                             default=3,
-                             parser=as.integer)
+                             })
                         ),
                    raw.args)
 
@@ -51,10 +47,8 @@ timer <- Timer(logger)
 .config <- list()
 source(args[['-config']], chdir=T)
 
-if(args[['-parallel']] > 0){
-  .config$parallel <- args[['-parallel']]
+if(.config$parallel > 0)
   registerDoMC(.config$parallel)
-}
 
 ## check config blocks present
 required.config.blocks <- c('models', 'data', 'query', 'query.id', 'display')

@@ -26,3 +26,4 @@
 
 .config$drop <- TRUE
 
+.config$parallel <- 3
