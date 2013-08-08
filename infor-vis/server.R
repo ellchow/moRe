@@ -32,14 +32,13 @@ shinyServer(function(input, output) {
         m <- select.model(input$sort.by)
         if(!is.na(m)){
           sort.score <- mdls.predict(m, q)[[1]][[1]]
-          q[[input$sort.by]] <- sort.score
         }
       }
 
       if(!is.null(sort.score)){
-        q <- head(q[order(sort.score, decreasing = input$order.decr == '1'), ],
+        q[['[sort.score]']] <- sort.score
+        q <- head(cbind(rank=1:length(sort.score), q[order(sort.score, decreasing = input$order.decr == '1'), ]),
                   .config$display.limit)
-
       }
     }else
       NULL
@@ -51,6 +50,9 @@ shinyServer(function(input, output) {
       dataframe.to.html.table(q, table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
                               prepend.row.names = NULL, .parallel=.config$parallel > 0)
   })
+
+
+
 
 
 })
