@@ -1,23 +1,19 @@
-import('utils')
 
-.config <- list()
 
-.config$models <- c('/path/to/models1.rda',
-                    '/path/to/models2.rda')
+.config$models <- c('../models.rda')
 
-.config$data <- function()
-  load.table('/path/to/dataset.rda')
 
+.config$data <- load.table('../iris.rda')
 
 .config$query <- 'q'
 
 .config$query.id <- .config$query
 
+.config$truth <- 'true.order'
+
 .config$display <- list('a',
                         'b',
-                        'a plus b' = function(data) (a + b) %within% data
+                        'a plus b' = list(c('a','b'), function(a, b) a + b)
                         )
 
-
-
-
+.config$drop <- TRUE
