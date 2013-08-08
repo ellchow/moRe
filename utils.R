@@ -339,7 +339,7 @@ load.table <- function(path, ..., sep='\t', header=T, comment.char='', quote='',
   load.data(path, load.fun, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
 }
 
-run.once <- function(expr, store = 'load.once.repo__', algo='md5', lazy = TRUE, log.level=SimpleLog.INFO){
+run.once <- function(expr, store = 'load.once.store__', algo='md5', lazy = TRUE, log.level=SimpleLog.INFO){
   logger <- SimpleLog('run.once', log.level)
 
   g <- globalenv()
