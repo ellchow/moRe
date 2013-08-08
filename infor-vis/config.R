@@ -5,7 +5,9 @@ import('utils')
 .config$models <- c('/path/to/models1.rda',
                     '/path/to/models2.rda')
 
-.config$data <- '/path/to/dataset.rda'
+.config$data <- function()
+  load.table('/path/to/dataset.rda')
+
 
 .config$query <- 'q'
 
