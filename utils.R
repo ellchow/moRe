@@ -339,9 +339,20 @@ load.table <- function(path, ..., sep='\t', header=T, comment.char='', quote='',
   load.data(path, load.fun, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
 }
 
+load.once <- function(x, f, repo = 'load.once.repo__', lazy = TRUE){
+  g <- globalenv()
+
+  if(!exists(repo, g))
+    assign(repo, new.env(), envir=g)
+
+  if(!exists(x, g))
+    assign(x, f, envir=g)
+
+  eval(parse(text=x), g)
+}
+
 file.to.string <- function(file)
   readChar(file, file.info(file)$size)
-
 
 brew.string <- function(s,...){
   dots <- list(...)
