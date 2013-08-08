@@ -46,15 +46,17 @@ is.model.def <- function(x){
 mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=FALSE){
   ## import('mdls')
   ## mdls.fit(iris[,1:4],
-  ##          gbm.model.def("gbmmodel",function(x) x$Sepal.Length,
+  ##          gbm.model.def("gbmmodel", Sepal.Length,
   ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
   ##                        distribution='gaussian',train.fraction=0.8,interaction.depth=6,weights=function(data) runif(nrow(data))),
-  ##          lm.model.def('lmmodel', function(x) x$Sepal.Length,
+  ##          lm.model.def('lmmodel', Sepal.Length,
   ##                       c('Sepal.Width','Petal.Length','Petal.Width')),
-  ##          betareg.model.def("betaregmodel", function(x) x$Sepal.Width / x$Sepal.Length,
+  ##          glm.model.def('glmmodel', Sepal.Length,
+  ##                       c('Sepal.Width','Petal.Length','Petal.Width'), family = 'gaussian'),
+  ##          betareg.model.def("betaregmodel", Sepal.Width / Sepal.Length,
   ##                            c('Sepal.Width','Petal.Length','Petal.Width'),
   ##                            phi.features='Sepal.Width'),
-  ##          .parallel=T) -> ms
+  ##          .parallel=F) -> ms
 
   logger <- SimpleLog('mdls.fit',log.level)
 
@@ -235,15 +237,14 @@ mdls.report <- function(mdls, root, text.as = 'html', overwrite = FALSE, log.lev
 #####################################
 
 
-gbm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
+gbm.model.def <- function(id, target.expr, features, ..., weights=function(data) NULL){
   params <- list(...)
   g <- tryCatch(params$distribution$group, error=function(e) NULL)
   features <- unique(c(features,g))
 
-  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+  t <- substitute(target.expr)
 
-
-  list(id=id, target.gen=tg, fit=function(...,weights=NULL) gbm.fit.plus(...,group = g, w=weights), features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
+  list(id=id, target.gen=function(data) eval(t, envir=data), fit=function(...,weights=NULL) gbm.fit.plus(...,group = g, w=weights), features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
 }
 
 gbm.fit.plus <- function(x, y, ..., group = NULL, y.label="y"){
@@ -822,10 +823,10 @@ gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log
 #### lm modifications and helpers
 #####################################
 
-lm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
-  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+lm.model.def <- function(id, target.expr, features, ..., weights=function(data) NULL){
+  t <- substitute(target.expr)
 
-  list(id=id, target.gen=tg, fit=lm.fit.plus, features=features, predict=predict.lm, params=list(...), check=check.lm.model.def, weights=weights, report=lm.model.report)
+  list(id=id, target.gen=function(data) eval(t, envir=data), fit=lm.fit.plus, features=features, predict=predict.lm, params=list(...), check=check.lm.model.def, weights=weights, report=lm.model.report)
 }
 
 lm.fit.plus <- function(x, y, ..., y.label="y"){
@@ -883,10 +884,11 @@ lm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog
 #### glm modifications and helpers
 #####################################
 
-glm.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
-  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+glm.model.def <- function(id, target.expr, features, ..., weights=function(data) NULL){
+  params <- list(...)
+  t <- substitute(target.expr)
 
-  list(id=id, target.gen=tg, fit=glm.fit.plus, features=features, predict=glm.predict, params=list(...), check=check.glm.model.def, weights=weights, report=glm.model.report)
+  list(id=id, target.gen=function(data) eval(t, envir=data), fit=glm.fit.plus, features=features, predict=glm.predict, params=params, check=check.glm.model.def, weights=weights, report=glm.model.report)
 }
 
 glm.fit.plus <- function(x, y, family=NA,..., y.label="y"){
@@ -954,10 +956,10 @@ glm.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLo
 #### glmnet modifications and helpers
 #####################################
 
-glmnet.model.def <- function(id, target.gen, features, ..., weights=function(data) NULL){
-  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+glmnet.model.def <- function(id, target.expr, features, ..., weights=function(data) NULL){
+  t <- substitute(target.expr)
 
-  list(id=id, target.gen=tg, fit=glmnet.fit, features=features, predict=glmnet.predict, params=list(...), check=check.glmnet.model.def, weights=weights, report=glmnet.model.report)
+  list(id=id, target.gen=function(data) eval(t, envir=data), fit=glmnet.fit, features=features, predict=glmnet.predict, params=list(...), check=check.glmnet.model.def, weights=weights, report=glmnet.model.report)
 }
 
 glmnet.fit <- function(x, y, ..., cv = T, weights = NULL){
@@ -1027,12 +1029,12 @@ glmnet.model.report <- function(object, root, text.as = 'txt', log.level = Simpl
 #### betareg modifications and helpers
 #####################################
 
-betareg.model.def <- function(id, target.gen, features, ..., phi.features=NULL, weights=function(data) NULL){
+betareg.model.def <- function(id, target.expr, features, ..., phi.features=NULL, weights=function(data) NULL){
   all.features <- unique(c(features, phi.features))
 
-  tg <- if(is.character(target.gen)) function(data) data[[target.gen]] else target.gen
+  t <- substitute(target.expr)
 
-  list(id=id, target.gen=tg, fit=betareg.fit.plus, features=all.features, predict=betareg.predict, params=c(list(...), list(features=features, phi.features = phi.features)), check=check.betareg.model.def, weights=weights, report=betareg.model.report)
+  list(id=id, target.gen=function(data) eval(t, envir=data), fit=betareg.fit.plus, features=all.features, predict=betareg.predict, params=c(list(...), list(features=features, phi.features = phi.features)), check=check.betareg.model.def, weights=weights, report=betareg.model.report)
 }
 
 betareg.fit.plus <- function(x, y, ..., features, phi.features = NULL, y.label="y"){
