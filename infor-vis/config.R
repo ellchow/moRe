@@ -1,19 +1,28 @@
 
+.config$models <- {
+  mdls.fit(iris,
+           lm.model.def('lmmodel', Sepal.Length,
+                        c('Sepal.Width','Petal.Length','Petal.Width'))
+           )
+}
 
-.config$models <- c('../models.rda')
+.config$data <- {
+  z <- iris
 
+  z$order.by.sepal.length <- compute.ranks(Sepal.Length, Species, envir=z)
 
-.config$data <- load.table('../iris.rda')
+  z
+}
 
-.config$query <- 'q'
+.config$query <- 'Species'
 
 .config$query.id <- .config$query
 
-.config$truth <- 'true.order'
+.config$truth <- 'order.by.sepal.length'
 
-.config$display <- list('a',
-                        'b',
-                        'a plus b' = list(c('a','b'), function(a, b) a + b)
-                        )
+.config$display <- c('Sepal.Width','Petal.Length','Petal.Width')
+
+.config$display.limit <- Inf
 
 .config$drop <- TRUE
+

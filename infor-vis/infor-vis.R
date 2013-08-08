@@ -16,8 +16,10 @@
 
 import('shiny',
        'utils',
+       'infor',
        'cmdargs',
-       'yaml')
+       'mdls',
+       'doMC')
 
 #### parse command line args
 raw.args <- commandArgs(T)
@@ -34,7 +36,11 @@ args <- parse.args('infor-vis.R',
                                else if (s == 'error') SimpleLog.ERROR
                                else if (s == 'debug') SimpleLog.DEBUG
                                else NA
-                             })
+                             }),
+                        list(name='-parallel',
+                             desc='parallelization',
+                             default=3,
+                             parser=as.integer)
                         ),
                    raw.args)
 
@@ -44,6 +50,11 @@ timer <- Timer(logger)
 #### load config
 .config <- list()
 source(args[['-config']], chdir=T)
+
+if(args[['-parallel']] > 0){
+  .config$parallel <- args[['-parallel']]
+  registerDoMC(.config$parallel)
+}
 
 ## check config blocks present
 required.config.blocks <- c('models', 'data', 'query', 'query.id', 'display')
@@ -55,14 +66,12 @@ stop.if.not(length(missing.config.blocks) == 0, sprintf('missing configuration b
 missing.required.columns <- setdiff(.config$required.columns, names(.config$data))
 stop.if.not(length(missing.required.columns) == 0, 'missing required columns %s', paste(missing.required.columns, collapse=','))
 
-.config$for.display.columns <- c(unlist(lapply(.config$display, function(d) d[[1]])))
-missing.for.display.columns <- setdiff(.config$for.display.columns, names(.config$data))
-write.msg(logger, 'missing columns required for display %s', paste(missing.for.display.columns, collapse=','), level = 'warning')
+missing.display.columns <- setdiff(.config$display, names(.config$data))
+write.msg(logger, 'missing columns for display %s', paste(missing.display.columns, collapse=','), level = 'warning')
+for(col in missing.display.columns)
+  .config$data[[col]] <- NA
 
-write.msg(logger, 'missing columns required for display %s', paste(missing.for.display.columns, collapse=','), level = 'warning')
-
-## load models and check features
-.config$models <- flatten(lapply(.config$models, load.data))
+## check features
 .config$models <- Filter(function(m){
   missing.features <- setdiff(m$features, names(.config$data))
   can.evaluate <- length(missing.features) == 0

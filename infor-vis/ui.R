@@ -14,23 +14,45 @@
 
 import('shiny')
 
-# Define UI for application that plots random distributions
 shinyUI(pageWithSidebar(
+                        headerPanel("infor-vis"),
 
-  # Application title
-  headerPanel("Hello Shiny!"),
+                        sidebarPanel(
+                                     selectInput("query.id", "Query",
+                                                 {
+                                                   qs <- tapply(as.character(.config$data[[.config$query]]),
+                                                                as.character(.config$data[[.config$query.id]]),
+                                                                function(x) x[1])
 
-  # Sidebar with a slider input for number of observations
-  sidebarPanel(
-    sliderInput("obs",
-                "Number of observations:",
-                min = 1,
-                max = 1000,
-                value = 500)
-  ),
+                                                   named(names(qs), if(.config$query.id == .config$query) names(qs) else sprintf('%s (%s)', qs, names(qs)))
+                                                 }),
 
-  # Show a plot of the generated distribution
-  mainPanel(
-    plotOutput("distPlot")
-  )
-))
+                                     selectInput("sort.by", "Sort By:",
+                                                 {
+                                                   ms <- named(lapply(.config$models, function(m) m$id),
+                                                               unlist(lapply(.config$models, function(m) m$id)))
+
+                                                   cs <- named(names(.config$data), names(.config$data))
+
+                                                   c(ms, cs)
+                                                 }),
+
+                                     radioButtons("order.decr", "Ordering:",
+                                                  list('High-to-Low' = '1',
+                                                       'Low-to-High' = '0'))
+                                     ),
+
+                        mainPanel(
+                                  htmlOutput('main.panel.title'),
+
+                                  tabsetPanel(id='tabs',
+                                              tabPanel(
+                                                       title='Results',
+                                                       value='results',
+                                                       htmlOutput('results.table')
+                                                       )
+                                              )
+                                  )
+                        )
+        )
+

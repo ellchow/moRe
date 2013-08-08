@@ -18,18 +18,40 @@ import('shiny')
 # Define server logic required to generate and plot a random distribution
 shinyServer(function(input, output) {
 
-  # Expression that generates a plot of the distribution. The expression
-  # is wrapped in a call to renderPlot to indicate that:
-  #
-  #  1) It is "reactive" and therefore should be automatically
-  #     re-executed when inputs change
-  #  2) Its output type is a plot
-  #
-  output$distPlot <- renderPlot({
+  select.model <- function(id)
+    Filter(function(m) m$id == id, .config$models)[1]
 
-    # generate an rnorm distribution and plot it
-    dist <- rnorm(input$obs)
-    hist(dist)
+  single.query <- reactive(function(){
+    if(!is.null(input$query.id) && !is.null(input$sort.by) && !is.null(input$order.decr)){
+      q <- .config$data[.config$data[[.config$query.id]] == input$query.id, ]
+
+      sort.score <- NULL
+      if(input$sort.by %in% names(q))
+        sort.score <- q[[input$sort.by]]
+      else{
+        m <- select.model(input$sort.by)
+        if(!is.na(m)){
+          sort.score <- mdls.predict(m, q)[[1]][[1]]
+          q[[input$sort.by]] <- sort.score
+        }
+      }
+
+      if(!is.null(sort.score)){
+        q <- head(q[order(sort.score, decreasing = input$order.decr == '1'), ],
+                  .config$display.limit)
+
+      }
+    }else
+      NULL
   })
+
+  output$results.table <- reactive(function(){
+    q <- single.query()
+    if(!is.null(q))
+      dataframe.to.html.table(q, table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
+                              prepend.row.names = NULL, .parallel=.config$parallel > 0)
+  })
+
+
 })
 
