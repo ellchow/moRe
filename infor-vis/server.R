@@ -36,9 +36,20 @@ shinyServer(function(input, output) {
       }
 
       if(!is.null(sort.score)){
-        q[['[sort.score]']] <- sort.score
-        q <- head(cbind(rank=1:length(sort.score), q[order(sort.score, decreasing = input$order.decr == '1'), ]),
-                  .config$display.limit)
+        ord <- order(sort.score, decreasing = input$order.decr == '1')
+
+        r <- vector('integer', length(ord))
+        r[ord] <- indices(r)
+
+        head(cbind(rank=r,
+                   q[, unique(c(.config$query, .config$display))],
+                   '[sort.score]' = sort.score,
+                   'Compare (Source)' = sprintf('<input type="radio" checked="%s" value="%s" name="compare.item.src">',
+                     ifelse(ord == 1, 'checked', 'unchecked'), q[['[row.id]']]),
+                   'Compare (Sink)' = sprintf('<input type="radio" checked="%s" value="%s" name="compare.item.snk">',
+                     ifelse(ord == 2, 'checked', 'unchecked'), q[['[row.id]']])
+                   )[ord, ],
+             .config$display.limit)
       }
     }else
       NULL
@@ -46,12 +57,18 @@ shinyServer(function(input, output) {
 
   output$results.table <- reactive(function(){
     q <- single.query()
-    if(!is.null(q))
+    if(!is.null(q)){
       dataframe.to.html.table(q, table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
+                              add.td.attr = function(i,j){
+                                if(names(q)[j] %in% c('rank', 'Compare (Source)', 'Compare (Sink)')) 'style="text-align:center"' else 'style="text-align:right"'
+                              },
                               prepend.row.names = NULL, .parallel=.config$parallel > 0)
+    }
   })
 
-
+  output$compare.items <- reactive(function(){
+    sprintf('%s - %s', input$compare.item.src, input$compare.item.snk)
+  })
 
 
 

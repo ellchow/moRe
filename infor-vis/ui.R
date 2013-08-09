@@ -50,6 +50,12 @@ shinyUI(pageWithSidebar(
                                                        title='Results',
                                                        value='results',
                                                        htmlOutput('results.table')
+                                                       ),
+
+                                              tabPanel(
+                                                       title='Compare Items',
+                                                       value='compare',
+                                                       htmlOutput('compare.items')
                                                        )
                                               )
                                   )

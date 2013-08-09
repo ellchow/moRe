@@ -81,6 +81,9 @@ if(.config$drop){
   write.msg(logger, 'only keeping columns %s', paste(keep, collapse=','))
   .config$data <- subset(.config$data, select = keep)
 }
+
+.config$data[['[row.id]']] <- 1:nrow(.config$data)
+
 gc()
 
 

@@ -29,6 +29,5 @@
 #### drop columns upfront
 .config$drop <- TRUE
 
-
 #### parallelization
 .config$parallel <- 3
