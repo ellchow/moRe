@@ -77,7 +77,7 @@ for(col in missing.display.columns)
 }, .config$models)
 
 if(.config$drop){
-  keep <- unique(c(.config$required.columns, .config$display, unlist(lapply(.config$models, function(m) m$features))))
+  keep <- unique(c(.config$required.columns, .config$display, .config$display.compare, unlist(lapply(.config$models, function(m) m$features))))
   write.msg(logger, 'only keeping columns %s', paste(keep, collapse=','))
   .config$data <- subset(.config$data, select = keep)
 }

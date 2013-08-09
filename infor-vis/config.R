@@ -21,10 +21,13 @@
 #### display columns
 .config$display <- c('Sepal.Width','Petal.Length','Petal.Width')
 
+#### display info on compare items
+.config$display.compare <- c('Sepal.Length', 'Sepal.Width')
+
 #### row/cell formatting
 
 .config$row.format <- function(x, i){
-  if(x[i,]$rank %% 2 == 0) '' else ''
+  if(x[i,]$rank %% 2 == 0) 'style="background-color:#EEEEE"' else ''
 }
 
 #### max number of items to display per query
