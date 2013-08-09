@@ -40,7 +40,7 @@ args <- parse.args('infor-vis.R',
                         ),
                    raw.args)
 
-logger <- SimpleLog('info-vis', args[['-loglevel']])
+logger <- SimpleLog('infor-vis', args[['-loglevel']])
 timer <- Timer(logger)
 
 #### load config
