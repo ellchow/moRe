@@ -24,7 +24,8 @@ shinyUI(pageWithSidebar(
                                                                 as.character(.config$data[[.config$query.id]]),
                                                                 function(x) x[1])
 
-                                                   named(names(qs), if(.config$query.id == .config$query) names(qs) else sprintf('%s (%s)', qs, names(qs)))
+                                                   labels <- if(.config$query.id == .config$query) names(qs) else sprintf('%s   (%s)', qs, names(qs))
+                                                   named(names(qs), labels)[order(labels)]
                                                  }),
 
                                      selectInput("sort.by", "Sort By:",

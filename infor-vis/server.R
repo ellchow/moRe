@@ -50,7 +50,7 @@ shinyServer(function(input, output) {
 
         z <- cbind(rank=r,
                    ## '[Sort Score]' = sort.score,
-                   q[, unique(c(.config$query, .config$display))],
+                   q[, unique(.config$display)],
                    'Compare (Source)' = sprintf('<input type="radio" %s value="%s" name="compare.item.src">', '', q[['[row.id]']]), # ifelse(r == 2, 'checked="checked"', '')
                    'Compare (Sink)' = sprintf('<input type="radio" %s value="%s" name="compare.item.snk">', '', q[['[row.id]']]) # ifelse(r == 1, 'checked="checked"', '')
                    )[ord, ]
@@ -85,33 +85,31 @@ shinyServer(function(input, output) {
 
   output$compare.items <- reactive(function(){
     m <- select.model(input$sort.by)
-    if(is.na(m))
-      '<span style="color:red">ERROR: cannot compare using fixed values - please select a model</span>'
-    else if(is.null(input$compare.item.src) && is.null(input$compare.item.snk))
-      '<span style="color:red">ERROR: please select source and sink for comparison</span>'
-    else if(is.null(input$compare.item.src) || is.null(input$compare.item.snk))
-      '<span style="color:grey">Loading...</span>'
-    else{
-      x.1 <- .config$data[input$compare.item.src,]
-      x.2 <- .config$data[input$compare.item.snk,]
+    if(input$tabs == 'compare'){
+      if(is.na(m))
+        '<span style="color:red">ERROR: cannot compare using fixed values - please select a model</span>'
+      else if(is.null(input$compare.item.src) && is.null(input$compare.item.snk))
+        '<span style="color:red">ERROR: please select source and sink for comparison</span>'
+      else{
+        x.1 <- .config$data[input$compare.item.src,]
+        x.2 <- .config$data[input$compare.item.snk,]
 
-      x <- cbind(t(x.1[.config$display.compare]), t(x.2[.config$display.compare]))
+        x <- cbind(t(x.1[.config$display.compare]), t(x.2[.config$display.compare]))
 
-      colnames(x) <- c('Source', 'Sink')
+        colnames(x) <- c('Source', 'Sink')
 
-      item.info <- dataframe.to.html.table(x, table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"')
+        item.info <- dataframe.to.html.table(x, table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"')
 
 
-      fc <- feature.contributions(m[[1]], x.1, x.2, .parallel = .config$parallel > 0)
+          fc <- feature.contributions(m[[1]], x.1, x.2, .parallel = .config$parallel > 0)
 
-      contribs <- dataframe.to.html.table(as.data.frame(lapply(fc, function(x) if(is.numeric(x)) signif(x, digits=.config$compare.signif) else x)),
-                                          table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
-                                          prepend.row.names = NULL)
+        contribs <- dataframe.to.html.table(as.data.frame(lapply(fc, function(x) if(is.numeric(x)) signif(x, digits = .config$compare.signif) else x)),
+                                            table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
+                                            prepend.row.names = NULL)
 
-      paste(item.info,contribs, sep='\n')
-
+        paste(item.info,contribs, sep='\n')
+      }
     }
-
 
 
   })
