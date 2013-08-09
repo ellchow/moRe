@@ -46,15 +46,17 @@ shinyServer(function(input, output) {
         r <- vector('integer', length(ord))
         r[ord] <- indices(r)
 
-        head(cbind(rank=r,
+        z <- cbind(rank=r,
+                   ## '[Sort Score]' = sort.score,
                    q[, unique(c(.config$query, .config$display))],
-                   '[sort.score]' = sort.score,
-                   'Compare (Source)' = sprintf('<input type="radio" %s value="%s" name="compare.item.src">', # ifelse(r == 2, 'checked="checked"', '')
-                     '', q[['[row.id]']]),
-                   'Compare (Sink)' = sprintf('<input type="radio" %s value="%s" name="compare.item.snk">', # ifelse(r == 1, 'checked="checked"', '')
-                     '', q[['[row.id]']])
-                   )[ord, ],
-             .config$display.limit)
+                   'Compare (Source)' = sprintf('<input type="radio" %s value="%s" name="compare.item.src">', '', q[['[row.id]']]), # ifelse(r == 2, 'checked="checked"', '')
+                   'Compare (Sink)' = sprintf('<input type="radio" %s value="%s" name="compare.item.snk">', '', q[['[row.id]']]) # ifelse(r == 2, 'checked="checked"', '')
+                   )[ord, ]
+
+
+
+
+        head(z, .config$display.limit)
       }
     }else
       NULL
@@ -66,7 +68,17 @@ shinyServer(function(input, output) {
       dataframe.to.html.table(q, table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
                               add.tr.attr = function(i) .config$row.format(q, i),
                               add.td.attr = function(i,j){
-                                if(names(q)[j] %in% c('rank', 'Compare (Source)', 'Compare (Sink)')) 'style="text-align:center"' else 'style="text-align:right"'
+                                if(names(q)[j] %in% c('rank', 'Compare (Source)', 'Compare (Sink)'))
+                                  align <- 'text-align:center'
+                                else
+                                  align <- 'text-align:right'
+
+                                ## if(names(q)[j] == '[Sort Score]')
+                                ##   highlight.sort <- 'background-color:#EEEEEE'
+                                ## else
+                                ##   highlight.sort <- ''
+
+                                sprintf('style="%s"', paste(align, sep=';')) ## paste(highlight.sort, align, sep=';')
                               },
                               prepend.row.names = NULL, .parallel=.config$parallel > 0)
     }

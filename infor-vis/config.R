@@ -27,7 +27,7 @@
 #### row/cell formatting
 
 .config$row.format <- function(x, i){
-  if(x[i,]$rank %% 2 == 0) 'style="background-color:#EEEEE"' else ''
+  if(x[i,]$rank %% 2 == 0) '' else ''
 }
 
 #### max number of items to display per query
