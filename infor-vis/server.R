@@ -49,10 +49,10 @@ shinyServer(function(input, output) {
         head(cbind(rank=r,
                    q[, unique(c(.config$query, .config$display))],
                    '[sort.score]' = sort.score,
-                   'Compare (Source)' = sprintf('<input type="radio" %s value="%s" name="compare.item.src">',
-                     ifelse(r == 2, 'checked="checked"', ''), q[['[row.id]']]),
-                   'Compare (Sink)' = sprintf('<input type="radio" %s value="%s" name="compare.item.snk">',
-                     ifelse(r == 1, 'checked="checked"', ''), q[['[row.id]']])
+                   'Compare (Source)' = sprintf('<input type="radio" %s value="%s" name="compare.item.src">', # ifelse(r == 2, 'checked="checked"', '')
+                     '', q[['[row.id]']]),
+                   'Compare (Sink)' = sprintf('<input type="radio" %s value="%s" name="compare.item.snk">', # ifelse(r == 1, 'checked="checked"', '')
+                     '', q[['[row.id]']])
                    )[ord, ],
              .config$display.limit)
       }
@@ -64,6 +64,7 @@ shinyServer(function(input, output) {
     q <- single.query()
     if(!is.null(q)){
       dataframe.to.html.table(q, table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
+                              add.tr.attr = function(i) .config$row.format(q, i),
                               add.td.attr = function(i,j){
                                 if(names(q)[j] %in% c('rank', 'Compare (Source)', 'Compare (Sink)')) 'style="text-align:center"' else 'style="text-align:right"'
                               },
@@ -75,10 +76,13 @@ shinyServer(function(input, output) {
     m <- select.model(input$sort.by)
     if(is.na(m))
       '<span style="color:red">ERROR: cannot compare using fixed values - please select a model</span>'
+    else if(is.null(input$compare.item.src) || is.null(input$compare.item.snk))
+      '<span style="color:red">ERROR: please select 2 items for comparison</span>'
     else
       dataframe.to.html.table(feature.contributions(m[[1]], .config$data[input$compare.item.src,], .config$data[input$compare.item.snk,], .parallel = .config$parallel > 0),
                               table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
                               prepend.row.names = NULL, .parallel=.config$parallel > 0)
+
 
   })
 

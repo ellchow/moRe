@@ -21,6 +21,12 @@
 #### display columns
 .config$display <- c('Sepal.Width','Petal.Length','Petal.Width')
 
+#### row/cell formatting
+
+.config$row.format <- function(x, i){
+  if(x[i,]$rank %% 2 == 0) '' else ''
+}
+
 #### max number of items to display per query
 .config$display.limit <- Inf
 
