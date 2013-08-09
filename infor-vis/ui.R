@@ -32,7 +32,7 @@ shinyUI(pageWithSidebar(
                                                    ms <- named(lapply(.config$models, function(m) m$id),
                                                                unlist(lapply(.config$models, function(m) m$id)))
 
-                                                   cs <- named(names(.config$data), names(.config$data))
+                                                   cs <- named(.config$display, .config$display)
 
                                                    c(ms, cs)
                                                  }),
