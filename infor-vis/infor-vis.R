@@ -76,13 +76,12 @@ for(col in missing.display.columns)
   can.evaluate
 }, .config$models)
 
-stop.if(length(.config$models) == 0 && !(.config$truth %in% names(.config$data)), 'no models or true order to display')
-
 if(.config$drop){
-  keep <- unique(c(.config$required.columns, unlist(lapply(.config$models, function(m) m$features))))
+  keep <- unique(c(.config$required.columns, .config$display, unlist(lapply(.config$models, function(m) m$features))))
   write.msg(logger, 'only keeping columns %s', paste(keep, collapse=','))
   .config$data <- subset(.config$data, select = keep)
 }
+gc()
 
 
 #### start server
