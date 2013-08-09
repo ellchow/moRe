@@ -24,8 +24,10 @@
 #### display info on compare items
 .config$display.compare <- c('Sepal.Length', 'Sepal.Width')
 
-#### row/cell formatting
+#### significant digits to display for compare items
+.config$compare.signif <- 4
 
+#### row/cell formatting
 .config$row.format <- function(x, i){
   if(x[i,]$rank %% 2 == 0) '' else ''
 }
@@ -38,3 +40,4 @@
 
 #### parallelization
 .config$parallel <- 3
+

@@ -15,7 +15,7 @@
 
 import('shiny')
 
-# Define server logic required to generate and plot a random distribution
+                                        # Define server logic required to generate and plot a random distribution
 shinyServer(function(input, output) {
 
   available.models <- unlist(lapply(.config$models, function(m) m$id))
@@ -38,9 +38,7 @@ shinyServer(function(input, output) {
 
         if(!is.na(m)){
           s <- mdls.predict(m, q)
-          print(s)
           sort.score <- s[[1]][[1]]
-
         }
       }
 
@@ -54,16 +52,13 @@ shinyServer(function(input, output) {
                    ## '[Sort Score]' = sort.score,
                    q[, unique(c(.config$query, .config$display))],
                    'Compare (Source)' = sprintf('<input type="radio" %s value="%s" name="compare.item.src">', '', q[['[row.id]']]), # ifelse(r == 2, 'checked="checked"', '')
-                   'Compare (Sink)' = sprintf('<input type="radio" %s value="%s" name="compare.item.snk">', '', q[['[row.id]']]) # ifelse(r == 2, 'checked="checked"', '')
+                   'Compare (Sink)' = sprintf('<input type="radio" %s value="%s" name="compare.item.snk">', '', q[['[row.id]']]) # ifelse(r == 1, 'checked="checked"', '')
                    )[ord, ]
-
-
-
 
         head(z, .config$display.limit)
       }
     }else
-      NULL
+    NULL
   })
 
   output$results.table <- reactive(function(){
@@ -92,8 +87,10 @@ shinyServer(function(input, output) {
     m <- select.model(input$sort.by)
     if(is.na(m))
       '<span style="color:red">ERROR: cannot compare using fixed values - please select a model</span>'
+    else if(is.null(input$compare.item.src) && is.null(input$compare.item.snk))
+      '<span style="color:red">ERROR: please select source and sink for comparison</span>'
     else if(is.null(input$compare.item.src) || is.null(input$compare.item.snk))
-      '<span style="color:red">ERROR: please select 2 items for comparison</span>'
+      '<span style="color:grey">Loading...</span>'
     else{
       x.1 <- .config$data[input$compare.item.src,]
       x.2 <- .config$data[input$compare.item.snk,]
@@ -102,11 +99,12 @@ shinyServer(function(input, output) {
 
       colnames(x) <- c('Source', 'Sink')
 
-      item.info <- dataframe.to.html.table(x,
-                                           table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"')
+      item.info <- dataframe.to.html.table(x, table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"')
 
 
-      contribs <- dataframe.to.html.table(feature.contributions(m[[1]], x.1, x.2, .parallel = .config$parallel > 0),
+      fc <- feature.contributions(m[[1]], x.1, x.2, .parallel = .config$parallel > 0)
+
+      contribs <- dataframe.to.html.table(as.data.frame(lapply(fc, function(x) if(is.numeric(x)) signif(x, digits=.config$compare.signif) else x)),
                                           table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
                                           prepend.row.names = NULL)
 
