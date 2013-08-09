@@ -1,12 +1,10 @@
 
 #### list of models, as trained by mdls.fit
 .config$models <- {
-  ## mdls.fit(iris,
-  ##          lm.model.def('lmmodel', Sepal.Length,
-  ##                       c('Sepal.Width','Petal.Length','Petal.Width'))
-  ##          )
-
-  list()
+  mdls.fit(iris,
+           lm.model.def('lmmodel', Sepal.Length,
+                        c('Sepal.Width','Petal.Length','Petal.Width'))
+           )
 }
 
 
