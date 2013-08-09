@@ -35,8 +35,12 @@ shinyServer(function(input, output) {
         sort.score <- q[[input$sort.by]]
       else{
         m <- select.model(input$sort.by)
+
         if(!is.na(m)){
-          sort.score <- mdls.predict(m, q)[[1]][[1]]
+          s <- mdls.predict(m, q)
+          print(s)
+          sort.score <- s[[1]][[1]]
+
         }
       }
 

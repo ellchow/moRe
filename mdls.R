@@ -160,6 +160,8 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
+  model.ids <- lapply(models, function(m) m$id)
+
   timer <- Timer(logger)
   flatten(lapply(lzip(dataset.ids,datasets),
                  function(x){
@@ -178,9 +180,12 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
 
                    models.filtered <- Filter(function(m){
                      any(sapply(lzip(names(mapping), mapping),
-                                function(mp) str_detect(ds.id, mp[[1]]) && str_detect(m[[1]], mp[[2]]) ))
+                                function(mp){
+                                  str_detect(ds.id, mp[[1]]) && str_detect(m[[1]], mp[[2]])
+                                }))
 
-                   }, lzip(names(models), models))
+                   }, lzip(model.ids, models))
+
 
                    start.timer(timer,sprintf('computing predictions on "%s"', ds.id))
                    z <- flatten(llply(models.filtered,
