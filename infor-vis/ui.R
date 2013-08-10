@@ -35,7 +35,9 @@ shinyUI(pageWithSidebar(
 
                                                    cs <- named(.config$display, .config$display)
 
-                                                   c(ms, cs)
+                                                   s <- c(ms, cs)
+
+                                                   s[order(names(s))]
                                                  }),
 
                                      radioButtons("order.decr", "Ordering:",
