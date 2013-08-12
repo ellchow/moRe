@@ -30,24 +30,6 @@ is.between <- function(x, bounds, inclusive=T){
 cap <- function(x, lb, ub, na.rm = FALSE)
   pmin(ub,pmax(lb, x, na.rm=na.rm), na.rm=na.rm)
 
-winsor.mean <- function(x, trim=0.02){
-  stop.if.not(trim >= 0 && trim <= 1, "trim must be between 0 and 1")
-
-  mean(cap(x,quantile(x,trim), quantile(x,1 - trim)))
-}
-
-winsor.var <- function(x, trim=0.02){
-  stop.if.not(trim >= 0 && trim <= 1, "trim must be between 0 and 1")
-
-  var(cap(x,quantile(x,trim), quantile(x,1 - trim)))
-}
-
-skewness <- function(x, ...)
-  mean((x - mean(x, ...)) ^ 3, ...) / (mean((x - mean(x, ...)) ^ 2) ^ 1.5)
-
-kurtosis <- function(x, ...)
-  -3 + mean((x - mean(x, ...)) ^ 4, ...) / (mean((x - mean(x, ...)) ^ 2, ...) ^ 2)
-
 bucketize <- function(x, buckets = quantile(x,seq(0,1,0.1)), label='names',
                       uniq.boundaries = TRUE, drop.ub = TRUE){
   if(drop.ub)
@@ -77,6 +59,43 @@ bucketize <- function(x, buckets = quantile(x,seq(0,1,0.1)), label='names',
 
 rdiscrete <- function(n, prob, domain = indices(prob))
   bucketize(runif(n), named(c(0,cumsum(prob / sum(prob))), domain))
+
+ffilter <- function(x,w,indexes=1:length(x),sides=2){
+  stop.if(length(w) %% 2 == 0 && sides == 2,'filter must have odd length if two-sided')
+  offset <-  if(sides == 2){-as.integer(length(w)/2)}else{0}
+  bw <- length(w)
+  n <- length(x)
+  sapply(indexes,
+         function(i){
+           is <- (offset + i):(offset + i + bw - 1)
+           keep <- is > 0 & is <= n
+           is <- is[keep]
+           w <-  w[keep]
+           w %*% x[is]
+         })
+}
+
+######################
+#### statistics
+######################
+
+winsor.mean <- function(x, trim=0.02){
+  stop.if.not(trim >= 0 && trim <= 1, "trim must be between 0 and 1")
+
+  mean(cap(x,quantile(x,trim), quantile(x,1 - trim)))
+}
+
+winsor.var <- function(x, trim=0.02){
+  stop.if.not(trim >= 0 && trim <= 1, "trim must be between 0 and 1")
+
+  var(cap(x,quantile(x,trim), quantile(x,1 - trim)))
+}
+
+skewness <- function(x, ...)
+  mean((x - mean(x, ...)) ^ 3, ...) / (mean((x - mean(x, ...)) ^ 2) ^ 1.5)
+
+kurtosis <- function(x, ...)
+  -3 + mean((x - mean(x, ...)) ^ 4, ...) / (mean((x - mean(x, ...)) ^ 2, ...) ^ 2)
 
 beta.params <- function(a,b,method='ab'){
   stop.if.not(method %in% c('ab','md'), 'unknown method: %s', method)
@@ -109,18 +128,18 @@ beta.estimate <- function(x, m=mean, v=var){
 beta.update <- function(params, s, n)
   beta.params(s + params['a'], n + params['b'])
 
-ffilter <- function(x,w,indexes=1:length(x),sides=2){
-  stop.if(length(w) %% 2 == 0 && sides == 2,'filter must have odd length if two-sided')
-  offset <-  if(sides == 2){-as.integer(length(w)/2)}else{0}
-  bw <- length(w)
-  n <- length(x)
-  sapply(indexes,
-         function(i){
-           is <- (offset + i):(offset + i + bw - 1)
-           keep <- is > 0 & is <= n
-           is <- is[keep]
-           w <-  w[keep]
-           w %*% x[is]
-         })
+######################
+#### optimization
+######################
+
+has.converged <- function(xs, stat = mean, tol = 0.001, n = 4, is.relative.tol = TRUE){
+  plot(abs(diff(xs) / head(xs,1)))
+
+  xs <- tail(xs, n)
+
+  if(is.relative.tol)
+    stat(abs(diff(xs)) - head(xs,1)) < tol
+  else
+    stat(abs(diff(xs))) < tol
 }
 

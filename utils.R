@@ -567,9 +567,6 @@ merge.lists <- function(all,FUN=function(n,x){x}){
   z
 }
 
-## merge.lists <- function(...){
-## }
-
 setdiff2 <- function(x,y){
   list(setdiff(x,y), setdiff(y, x))
 }
@@ -580,11 +577,13 @@ make.combinations <- function(...){
         function(z) as.list(z))
 }
 
-parameter.scan <- function(params.list, f, .parallel=FALSE){
-  named(llply(params.list,
-               function(params) f %wargs% params,
-              .parallel=.parallel),
-        names(params.list),)
+parameter.scan <- function(f, params.list, .parallel=FALSE){
+  llply(params.list,
+               function(params){
+                 list(value = f %wargs% params,
+                      params = params)
+              },
+        .parallel=.parallel)
 }
 
 sample.by <- function(x,...,as.filter=TRUE){

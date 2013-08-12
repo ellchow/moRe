@@ -1268,7 +1268,7 @@ clsfy.confusion <- function(prediction, label){
 }
 
 clsfy.confusion.scan <- function(score, label, to.prediction = function(t){ function(s) s > t }, params.list=as.list(quantile(score,seq(0,1,0.01))), .parallel=FALSE){
-  rbind %wargs% llply(named(parameter.scan(params.list, to.prediction), names(params.list)),
+  rbind %wargs% llply(named(parameter.scan(to.prediction, params.list), names(params.list)),
                       function(f)
                       clsfy.confusion(f(score),label),
                       .parallel=.parallel)
@@ -1287,11 +1287,6 @@ clsfy.accuracy <- function(confusion)
 
 clsfy.fallout <- function(confusion)
   confusion$false.positive / (confusion$false.positive + confusion$true.negative)
-
-
-
-
-
 
 
 
