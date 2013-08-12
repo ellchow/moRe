@@ -422,6 +422,10 @@ nan.rm <- function(...) na.rm(..., discard = is.nan)
 
 invalid.rm <- function(...) na.rm(..., discard = function(z) is.na(z) | is.nan(z) | is.infinite(z))
 
+replicate <- function(n, expr, .parallel=FALSE)
+  llply(integer(n), eval.parent(substitute(function(...) expr)),
+        .parallel=.parallel)
+
 tapply <- function (X.expr, INDEX.expr, FUN = NULL, simplify = TRUE, ret.type='list', envir = NULL) {
   ## lookup inputs in envir if supplied
   if(is.null(envir)){
