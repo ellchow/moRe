@@ -106,7 +106,7 @@ feature.contributions.infor.metric <- function(mdl, d, values, g, metric, featur
 
           write.msg(logger,sprintf('scoring model with randomized %s', paste(featureSet, collapse=',')))
           s.r <- mdl$predict(mdl$model, d.r[,mdl$features])
-          r.r <- compute.ranks(s.r, d.r$QueryID)
+          r.r <- compute.ranks(s.r, d.r[[g]])
 
           compute.infor.metric(r.r, values, g, metric)
         },
