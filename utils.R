@@ -578,12 +578,11 @@ make.combinations <- function(...){
 }
 
 parameter.scan <- function(f, params.list, .parallel=FALSE){
-  llply(params.list,
+  rbind.fill(llply(params.list,
                function(params){
-                 list(value = f %wargs% params,
-                      params = params)
+                 cbind(as.data.frame(params), f = f %wargs% params)
               },
-        .parallel=.parallel)
+        .parallel=.parallel))
 }
 
 sample.by <- function(x,...,as.filter=TRUE){

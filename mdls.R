@@ -767,6 +767,9 @@ gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution =
   }
 }
 
+gbm.loss <- function(target, prediction, distribution, weight=rep(1,length(target)), offset=NA, baseline=0, group = NULL, max.rank = NULL)
+  gbm::gbm.loss(target, prediction, weight, offset, if(is.character(distribution)) list(name=distribution) else distribution, baseline, group, max.rank)
+
 gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log.level = SimpleLog.INFO, .parallel = TRUE){
 
   stop.if.not(text.as %in% c('txt','html','textile'),
