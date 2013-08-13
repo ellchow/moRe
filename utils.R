@@ -506,9 +506,9 @@ lzip <- function(...){
          function(i){
            zip.to.named(lapply(indices(args),
                   function(j){
-                    y <- args[[j]]
+                    y <- args[j]
 
-                    list(names(y)[i], y[[i]])
+                    list(names(y)[1], y[[1]][[i]])
                   }))
          })
 }

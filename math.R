@@ -132,14 +132,16 @@ beta.update <- function(params, s, n)
 #### optimization
 ######################
 
-has.converged <- function(xs, stat = mean, tol = 0.001, n = 4, is.relative.tol = TRUE){
-  plot(abs(diff(xs) / head(xs,1)))
-
+has.converged <- function(xs, stat = max, tol = 1e-6, n = 4, is.relative.tol = FALSE){
   xs <- tail(xs, n)
 
-  if(is.relative.tol)
-    stat(abs(diff(xs)) - head(xs,1)) < tol
-  else
-    stat(abs(diff(xs))) < tol
+  if(length(xs) < n){
+    return(FALSE)
+  }else{
+    if(is.relative.tol)
+      stat(abs(diff(xs)) - head(xs,1)) < tol
+    else
+      stat(abs(diff(xs))) < tol
+  }
 }
 

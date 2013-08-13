@@ -69,6 +69,7 @@ stat.sum.df <- function(fun = 'mean_cl_boot', geom='crossbar', colour='steelblue
   stat_summary(fun.data=fun, colour=colour, geom=geom, width=width, ...)
 }
 
+
 vp.layout <- function(x, y) viewport(layout.pos.row=x, layout.pos.col=y)
 
 multi.plot <- function(..., nrow=NULL, ncol=NULL, as.table=FALSE) {
