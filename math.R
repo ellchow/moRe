@@ -145,7 +145,9 @@ has.converged <- function(xs, stat = max, tol = 1e-6, n = 4, is.relative.tol = F
   }
 }
 
-grid.search <- function(f, bounds, num.samples=100, gen.candidates = function(a,b) seq(a, b, length=num.samples) + rnorm(num.samples) * (b - a) / num.samples * 0.005, max.iter=10, g=max, reduce.by = 2, return.trace=FALSE,..., .parallel=FALSE){
+grid.search <- function(f, bounds, num.samples=100, gen.candidates = function(a,b) seq(a, b, length=num.samples) + rnorm(num.samples) * (b - a) / num.samples * 0.005, max.iter=10, g=min, reduce.by = 2, return.trace=FALSE,..., .parallel=FALSE){
+  ## import('math'); grid.search(function(x) x^2, list(x=c(-100,100)), return.trace=T) -> z
+  ## import('math'); grid.search(function(x,y) exp(-y^2) * cos(3*x), list(x=c(-100,100),y=c(-100,100)), g=max, num.samples=1000, return.trace=T) -> z
   loop <- function(iter, bounds, values.trace, params.trace){
     if(iter < 0 || has.converged(values.trace))
       list(value=tail(values.trace,1), params=tail(params.trace,1), trace=list(values=values.trace, params=params.trace))
@@ -178,3 +180,4 @@ grid.search <- function(f, bounds, num.samples=100, gen.candidates = function(a,
     z <- z[c('params','value')]
   z
 }
+
