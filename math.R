@@ -145,3 +145,36 @@ has.converged <- function(xs, stat = max, tol = 1e-6, n = 4, is.relative.tol = F
   }
 }
 
+grid.search <- function(f, bounds, num.samples=100, gen.candidates = function(a,b) seq(a, b, length=num.samples) + rnorm(num.samples) * (b - a) / num.samples * 0.005, max.iter=10, g=max, reduce.by = 2, return.trace=FALSE,..., .parallel=FALSE){
+  loop <- function(iter, bounds, values.trace, params.trace){
+    if(iter < 0 || has.converged(values.trace))
+      list(value=tail(values.trace,1), params=tail(params.trace,1), trace=list(values=values.trace, params=params.trace))
+    else{
+      params.list <- csplat(lzip, lapply(bounds, function(b) gen.candidates(b[1], b[2])))
+
+      scan.out <- parameter.scan(f, params.list, .parallel=.parallel)
+
+      values <- unlist(lapply(scan.out, function(x) x$value))
+
+      best <- scan.out[[head(which(values == g(values, na.rm=TRUE)),1)]]
+
+      new.bounds <- lapply(lzip(names(bounds), bounds),
+                           function(b){
+                             param <- b[[1]]
+                             len <- diff(b[[2]])
+
+                             new.len <- len / reduce.by
+
+                             c(best$params[[param]] - new.len / 2, best$params[[param]] + new.len / 2)
+                           }) %named% names(bounds)
+
+      loop(iter - 1, new.bounds, c(values.trace, best$value), c(params.trace, list(best$params)))
+    }
+  }
+
+  z <- loop(max.iter, bounds, NULL, list())
+
+  if(!return.trace)
+    z <- z[c('params','value')]
+  z
+}
