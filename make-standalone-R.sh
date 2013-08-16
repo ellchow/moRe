@@ -61,3 +61,7 @@ else
     echo "ERROR: R-$R_VERSION was not packaged properly"
     exit 1
 fi
+
+
+## cat R-2.15.3-build.tar.gz | ssh cli "/apache/hadoop/bin/hadoop fs -rm R-2.15.3-build.tar.gz && /apache/hadoop/bin/hadoop fs -put - R-2.15.3-build.tar.gz"
+
