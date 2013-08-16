@@ -62,6 +62,6 @@ else
     exit 1
 fi
 
-
+## ./R-2.15.3/bin/R -e 'source("~/git/moRe/import.R", chdir=T); import("utils","mdls","math","plots","infor")'
 ## cat R-2.15.3-build.tar.gz | ssh cli "/apache/hadoop/bin/hadoop fs -rm R-2.15.3-build.tar.gz && /apache/hadoop/bin/hadoop fs -put - R-2.15.3-build.tar.gz"
 
