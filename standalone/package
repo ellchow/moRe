@@ -14,26 +14,7 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-
-
-## NOTE: tested on UBUNTU
-
 R_VERSION='2.15.3'
-
-## compile R
-if test -f "R-$R_VERSION/_BUILD_SUCCESS" ; then
-    echo "R-$R_VERSION has already been built - continuing..."
-else
-    echo 'download and build R 2.15.3...'
-    rm -rf R-$R_VERSION
-    curl -o R-$R_VERSION.tar.gz "http://cran.cnr.berkeley.edu/src/base/R-"`echo $R_VERSION | awk -F'.' '{print $1}' `"/R-$R_VERSION.tar.gz" && \
-    tar xvzf R-$R_VERSION.tar.gz && \
-    cd R-$R_VERSION && \
-    ./configure --with-x=no && \
-    make && \
-    touch _BUILD_SUCCESS &&
-    cd ..
-fi
 
 if test -f "R-$R_VERSION/_BUILD_SUCCESS" ; then
     rm -f R-$R_VERSION/_PACKAGE_SUCCESS
@@ -61,3 +42,4 @@ else
     echo "ERROR: R-$R_VERSION was not packaged properly"
     exit 1
 fi
+
