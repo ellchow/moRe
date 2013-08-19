@@ -15,7 +15,7 @@
 source('import.R')
 
 ## by convention, stdin is placed into variable .input
-.input <- pipe('cat /dev/stdin')
+.input <- pipe('cat /dev/stdin', open='r')
 .output <- NULL
 
 ## function to produce output; overwrite in your script as desired
