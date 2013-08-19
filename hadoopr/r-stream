@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/usr/bin/env python
 
 ## Copyright 2013 Elliot Chow
 
@@ -15,8 +15,74 @@
 ## limitations under the License.
 
 
-d=`dirname $0`
+import os
+import sys
+import re
+import subprocess
+from optparse import OptionParser
+import getpass
 
-cmd=`$d/gen-r-stream-cmd $@`
+if __name__ == '__main__':
+  script_dir = os.path.dirname(sys.argv[0])
 
-$cmd
+  parser = OptionParser()
+
+  parser.add_option("-i", dest = "input",
+                    help="input directory")
+
+  parser.add_option("-o", dest = "output",
+                    help="output directory")
+
+  parser.add_option("-w", dest = "workspace",
+                    default = ".",
+                    help="workspace containing mapper.R and (possibly) reducer.R")
+
+  parser.add_option("--hargs", dest = "hadoop_args",
+                    default = '',
+                    help="hadoop arguments")
+
+  parser.add_option("-x", dest = "extra_files",
+                    default = 'extra files to include',
+                    help="hadoop arguments")
+
+  parser.add_option("--overwrite", action = 'store_true', dest = "overwrite",
+                    help="hadoop arguments")
+
+  parser.add_option("--exclude-moRe", action = 'store_true', dest = "exclude_moRe",
+                    help="excluded moRe")
+
+  parser.add_option("-p", action = 'store_true', dest = "print_only",
+                    help="only hadoop print command")
+
+  parser.add_option("--R", dest = "r_location",
+                    default = "/user/%s/R-2.15.3-build.tar.gz" % getpass.getuser(),
+                    help="path to R build")
+
+  (options, args) = parser.parse_args()
+
+  if not options.input: raise Exception('-i is required')
+  if not options.output: raise Exception('-o is required')
+
+  try: hadoop_home = os.environ['HADOOP_HOME']
+  except Exception as e: raise Exception('HADOOP_HOME not set')
+
+  try: streaming_jar = subprocess.check_output("find -L %s -name '*streaming*jar'" % hadoop_home)
+  except Exception as e: raise Exception('failed find streaming jar in %s' % hadoop_home)
+
+  mapper_path = os.path.join(options.workspace, 'mapper.R')
+  if not os.path.exists(mapper_path): raise Exception('mapper.R is missing in workspace %s' % options.workspace)
+
+  reducer_path = os.path.join(options.workspace, 'reducer.R')
+  reducer_path = reducer_path if os.path.exists(reducer_path) else None
+
+  moRe_files = map(lambda p: os.path.join(script_dir, '..', p), filter(lambda p: re.match(r'.*[.]R$',p), os.listdir(os.path.join(script_dir, '..')) if not options.exclude_moRe else []))
+  extra_files = re.split(r'\s+', options.extra_files)
+  files = map(lambda p: '-file %s' % p, filter(lambda x: x and os.path.isfile(x), moRe_files + [os.path.join(script_dir, 'mapper.sh'), os.path.join(script_dir, 'reducer.sh'), os.path.join(script_dir, 'run-mapper.R'), os.path.join(script_dir, 'run-reducer.R'), mapper_path, reducer_path] + extra_files))
+
+  run_job_cmd = '%(hadoop_home)s/bin/hadoop jar %(streaming_jar)s %(hadoop_args)s -cacheArchive %(r_location)s#R-build -input %(input)s -output %(output)s %(files)s -mapper %(mapper)s -reducer %(reducer)s' % {'hadoop_home': hadoop_home, 'streaming_jar': streaming_jar, 'hadoop_args': options.hadoop_args, 'r_location': options.r_location, 'input': options.input, 'output': options.output, 'files': ' '.join(files), 'mapper': './mapper.sh', 'reducer': './reducer.sh' if reducer_path else "NONE"}
+
+  print run_job_cmd
+
+  if not options.print_only:
+    hadoop_job_process = subprocess.call(run_job_cmd, shell=True)
+
