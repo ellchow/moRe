@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ## Copyright 2013 Elliot Chow
 
 ## Licensed under the Apache License, Version 2.0 (the "License")
@@ -12,19 +14,9 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-source('import.R')
+R_VERSION='2.15.3'
 
-## by convention, stdin is placed into variable .input
-.input <- pipe('cat /dev/stdin', open='r')
-.output <- NULL
+./R-$R_VERSION/bin/R --vanilla -e '
+source("~/git/moRe/import.R", chdir=T); import("utils","mdls","math","plots","infor"); do.call(import, as.list(strsplit("'$@'",",")[[1]]))
+'
 
-## function to produce output; overwrite in your script as desired
-.produce.output <- function() cat(.output)
-
-## runs your mapper script in mapper.R
-sink(stderr())
-source('reducer.R',echo=T)
-sink()
-
-## produce
-.produce.output()

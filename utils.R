@@ -155,7 +155,7 @@ url.reserved.chars <- c(";", "/", "?", ":", "@", "&", "=", "+", "$", ",")
 
 url.quote <- function(s, reserved = url.reserved.chars,  plus.spaces = T){
   chars <- int.to.char(1:255)
-  safe <- named(ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%%%X', 1:255)),
+  safe <- named(ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%%%.2X', 1:255)),
                 chars)
 
   if(plus.spaces)
@@ -167,7 +167,7 @@ url.quote <- function(s, reserved = url.reserved.chars,  plus.spaces = T){
 url.unquote <- function(s, reserved = NULL, plus.spaces = T){
   chars <- int.to.char(1:255)
   safe <- named(chars,
-                ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%X', 1:255)))
+                ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%.2X', 1:255)))
 
   z <- lapply(strsplit(s, '%'),
          function(xs){
@@ -340,6 +340,12 @@ load.table <- function(path, ..., sep='\t', header=T, comment.char='', quote='',
 
   load.data(path, load.fun, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
 }
+
+serialize.to.text <- function(object, encoder=I)
+  encoder(rawToChar(serialize(m, connection = NULL, ascii=T)))
+
+unserialize.from.text <- function(s, decoder=I)
+  unserialize(decoder(textConnection(s)))
 
 run.once <- function(expr, store = 'load.once.store__', algo='md5', lazy = TRUE, log.level=SimpleLog.INFO){
   logger <- SimpleLog('run.once', log.level)
@@ -651,9 +657,8 @@ str.align <- function(data, maxLengths, .parallel=FALSE){
   result
 }
 
-dataframe.to.tsv <- function(x, file, sep='\t'){
-  write.table(x, file=file , sep=sep, row.names=F, quote=FALSE)
-}
+dataframe.to.tsv <- function(x, file, ..., sep='\t', row.names=F, quote=FALSE)
+  write.table(x, file=file, ..., row.names=row.names, quote=quote)
 
 pprint.dataframe <- function(data, sep='  |  ', prepend.row.names = ' ', .parallel=FALSE){
   if(is.matrix(data))

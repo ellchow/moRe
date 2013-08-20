@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/usr/bin/env bash
 
 ## Copyright 2013 Elliot Chow
 
