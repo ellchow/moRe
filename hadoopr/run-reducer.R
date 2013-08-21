@@ -16,15 +16,16 @@ source('import.R')
 
 ## by convention, stdin is placed into variable .input
 .input <- pipe('cat /dev/stdin', open='r')
-.output <- NULL
 
-## function to produce output; overwrite in your script as desired
-.produce.output <- function() cat(.output)
 
-## runs your mapper script in mapper.R
-sink(stderr())
+.chunk.size <- 5000
+.key.column <- 1
+
+on.dataframe <- function(f){
+  streaming.group.by.key(function(lines) f(read.table(textConnection(unlist(lines)), sep='\t', header=F)),
+                         function(x) strsplit(x,'\t')[[.key.column]][1])(.input, .chunk.size)
+}
+
+## runs your mapper script in reducer.R
+## output should be printed to stdout
 source('reducer.R',echo=T)
-sink()
-
-## produce
-.produce.output()
