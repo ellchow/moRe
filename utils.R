@@ -351,6 +351,7 @@ unserialize.from.text <- function(s, decoder=I)
 
 streaming.group.by.key <- function(f, get.key=function(x) x[[1]]){
   ## assumes sorted by key!
+  ##  s <- textConnection('1\t2\n1\ta\n3\tb\n5\t3\t10'); streaming.group.by.key(function(lines) print(read.table(textConnection(unlist(lines)),sep='\t',header=F)), function(x) strsplit(x,'\t')[[1]][1])(s, 1100)
   function(con, chunk.size = 1000){
     if(!isOpen(con))
       con <- open(con, open='r')
