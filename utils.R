@@ -74,16 +74,16 @@ setMethodS3('write.msg','SimpleLog',
                 msg <- paste(list(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)), collapse = sep)
 
                 success <- all(sapply(log$outputs,
-                           function(o) {
-                             if((!is.null(globalenv()$SimpleLog.CONFIG$colorize) && globalenv()$SimpleLog.CONFIG$colorize) && (o %in% c(stderr(), stdout()))){
-                               color <- log$colors[lvl]
-                               if(!is.na(color))
-                                 msg <- colourise(msg, color)
-                             }
+                                      function(o) {
+                                        if((!is.null(globalenv()$SimpleLog.CONFIG$colorize) && globalenv()$SimpleLog.CONFIG$colorize) && (o %in% c(stderr(), stdout()))){
+                                          color <- log$colors[lvl]
+                                          if(!is.na(color))
+                                            msg <- colourise(msg, color)
+                                        }
 
-                             tryCatch(is.null(cat(msg, '\n', file=o, append=TRUE)),
-                                      error = function(e) FALSE)
-                           }))
+                                        tryCatch(is.null(cat(msg, '\n', file=o, append=TRUE)),
+                                                 error = function(e) FALSE)
+                                      }))
 
                 if(return.success) success else invisible(success)
               }
@@ -120,9 +120,9 @@ stop.if <- function(x, msg, ..., tags=list(), cleanup = function(){}, failed.con
   call <- sys.call(1)
   if(x){
     err <- csplat(tag, c(list(simpleError(paste(c(sprintf(msg, ...),
-                                             '\n  Failed condition: ', failed.cond),
-                                           collapse=''),
-                                     call)),
+                                                  '\n  Failed condition: ', failed.cond),
+                                                collapse=''),
+                                          call)),
                          tags))
 
     cleanup()
@@ -170,18 +170,18 @@ url.unquote <- function(s, reserved = NULL, plus.spaces = T){
                 ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%.2X', 1:255)))
 
   z <- lapply(strsplit(s, '%'),
-         function(xs){
-           y <- paste(safe[str_sub(xs[-1], end = 2)],
-                 str_sub(xs[-1], start = 3),
-                 sep = '')
+              function(xs){
+                y <- paste(safe[str_sub(xs[-1], end = 2)],
+                           str_sub(xs[-1], start = 3),
+                           sep = '')
 
-           z <- paste(c(xs[1], y), collapse = '')
+                z <- paste(c(xs[1], y), collapse = '')
 
-           if(plus.spaces)
-             gsub('\\+',' ',z)
-           else
-             z
-         })
+                if(plus.spaces)
+                  gsub('\\+',' ',z)
+                else
+                  z
+              })
 
   unlist(z)
 }
@@ -191,7 +191,7 @@ url.encode.params <- function(params){
   paste(paste(url.quote(names(params), reserved = NULL, plus.spaces=T),
               url.quote(params, reserved = NULL, plus.spaces=T),
               sep = '='),
-         collapse = '&')
+        collapse = '&')
 }
 
 ####################
@@ -307,7 +307,9 @@ load.data <- function(path, load.fun, ..., cache.path = '.cache', show.progress 
     options(warn=0)
     z
   },
-           error = function(e) load.fun(conn, ...))
+           error = function(e){
+             load.fun(conn, ...)
+           })
 }
 
 load.lines <- function(path, parser = NULL, cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
@@ -346,6 +348,47 @@ serialize.to.text <- function(object, encoder=I)
 
 unserialize.from.text <- function(s, decoder=I)
   unserialize(decoder(textConnection(s)))
+
+streaming.group.by.key <- function(f, get.key=function(x) x[[1]]){
+  ## assumes sorted by key!
+  ##  s <- textConnection('1\t2\n1\ta\n3\tb\n5\t3\t10'); streaming.group.by.key(function(lines) print(read.table(textConnection(unlist(lines)),sep='\t',header=F)), function(x) strsplit(x,'\t')[[1]][1])(s, 1100)
+  function(con, chunk.size = 1000){
+    if(!isOpen(con))
+      con <- open(con, open='r')
+
+    done.reading <- FALSE
+    buf <- list()
+    buf.keys <- list()
+    current.key <- NULL
+    repeat {
+      incoming <- as.list(readLines(con, chunk.size))
+
+      if (length(incoming) == 0)
+        done.reading <- TRUE
+      if(done.reading && length(buf) == 0)
+        break
+
+      buf <- c(buf, incoming)
+      buf.keys <- c(buf.keys, lapply(incoming, get.key))
+
+      if(is.null(current.key))
+        current.key <- buf.keys[[1]]
+
+      last.buf.key <- tail(buf.keys, 1)
+      if((current.key != last.buf.key) || done.reading){
+        to.process <- buf.keys == current.key
+        f(buf[to.process])
+
+        buf <- buf[!to.process]
+        buf.keys <- buf.keys[!to.process]
+        current.key <- if(length(buf.keys) > 0) buf.keys[[1]] else NA
+      }
+    }
+  }
+}
+
+
+
 
 run.once <- function(expr, store = 'load.once.store__', algo='md5', lazy = TRUE, log.level=SimpleLog.INFO){
   logger <- SimpleLog('run.once', log.level)
@@ -511,11 +554,11 @@ lzip <- function(...){
   lapply(1:n,
          function(i){
            zip.to.named(lapply(indices(args),
-                  function(j){
-                    y <- args[j]
+                               function(j){
+                                 y <- args[j]
 
-                    list(names(y)[1], y[[1]][[i]])
-                  }))
+                                 list(names(y)[1], y[[1]][[i]])
+                               }))
          })
 }
 
@@ -585,10 +628,10 @@ make.combinations <- function(...){
 
 parameter.scan <- function(f, params.list, .parallel=FALSE){
   rbind.fill(llply(params.list,
-               function(params){
-                 cbind(as.data.frame(params), f = f %wargs% params)
-              },
-        .parallel=.parallel))
+                   function(params){
+                     cbind(as.data.frame(params), f = f %wargs% params)
+                   },
+                   .parallel=.parallel))
 }
 
 sample.by <- function(x,...,as.filter=TRUE){
@@ -680,7 +723,7 @@ pprint.dataframe <- function(data, sep='  |  ', prepend.row.names = ' ', .parall
         paste(rep('-',str_length(header)), collapse = ''),
         paste(apply(result, 1,
                     function(x) paste(x, collapse = sep)
-                  ),
+                    ),
               collapse = '\n'),
         '',
         sep = '\n')
