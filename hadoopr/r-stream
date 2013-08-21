@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
   parser.add_option("--hargs", dest = "hadoop_args",
                     default = '',
-                    help="hadoop arguments")
+                    help="hadoop arguments (e.g. -Dmapred.job.queue.name=my-queue, -Dmapred.reduce.tasks.speculative.execution=true)")
 
   parser.add_option("-x", dest = "extra_files",
                     default = 'extra files to include',
