@@ -12,12 +12,12 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-source('import.R')
+tryCatch(source('import.R'), error = function(e) source('../import.R',chdir=T))
 
 ## by convention, stdin is placed into variable .input
 .input <- pipe('cat /dev/stdin', open='r')
 
 ## runs your mapper script in mapper.R
 ## output should be printed to stdout
-source('mapper.R',echo=T)
+source('mapper.R')
 

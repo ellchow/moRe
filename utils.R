@@ -701,7 +701,7 @@ str.align <- function(data, maxLengths, .parallel=FALSE){
 }
 
 dataframe.to.tsv <- function(x, file, ..., sep='\t', row.names=F, quote=FALSE)
-  write.table(x, file=file, ..., row.names=row.names, quote=quote)
+  write.table(x, file=file, ..., sep=sep, row.names=row.names, quote=quote)
 
 pprint.dataframe <- function(data, sep='  |  ', prepend.row.names = ' ', .parallel=FALSE){
   if(is.matrix(data))

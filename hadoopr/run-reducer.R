@@ -12,20 +12,21 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-source('import.R')
+tryCatch(source('import.R'), error = function(e) source('../import.R',chdir=T))
+
 
 ## by convention, stdin is placed into variable .input
 .input <- pipe('cat /dev/stdin', open='r')
 
-
 .chunk.size <- 5000
-.key.column <- 1
 
 on.dataframe <- function(f){
   streaming.group.by.key(function(lines) f(read.table(textConnection(unlist(lines)), sep='\t', header=F)),
-                         function(x) strsplit(x,'\t')[[.key.column]][1])(.input, .chunk.size)
+                         function(x) {
+                           strsplit(x,'\t')[[1]][1]
+                         })(.input, .chunk.size)
 }
 
 ## runs your mapper script in reducer.R
 ## output should be printed to stdout
-source('reducer.R',echo=T)
+source('reducer.R')

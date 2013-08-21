@@ -12,11 +12,12 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
+import('utils')
+
 tryCatch({
-  .output <- read.table(.input,sep='\t',header=F,comment.char='',quote='')
+  output <- read.table(.input, sep='\t',header=F,comment.char='',quote='')
 
-  .output <- cbind(NEW='aaaa',.output)
+  output$NEW <- 'aaaa'
 
-  .produce.output <- function() write.table(.output,sep=',',row.names=F,quote=FALSE)
-
-}, error=function(e) print(e))
+  dataframe.to.tsv(output, col.names=F, file=stdout())
+}, error=function(e) print(e) )
