@@ -16,6 +16,7 @@ source('import.R',chdir=T)
 import('utils', 'RJDBC')
 
 #options(java.parameters = "-Xmx4g")
+#set JAVA_HOME environment variable (MAC -> export JAVA_HOME=$(/usr/libexec/java_home), ...)
 
 TERADATA_JDBC_CONFIG <- list(class='com.teradata.jdbc.TeraDriver',
                          protocol='jdbc:teradata:',
