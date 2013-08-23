@@ -16,6 +16,7 @@ source('import.R',chdir=T)
 import('utils', 'RJDBC')
 
 #options(java.parameters = "-Xmx4g")
+#set JAVA_HOME environment variable (MAC -> export JAVA_HOME=$(/usr/libexec/java_home), ...)
 
 TERADATA_JDBC_CONFIG <- list(class='com.teradata.jdbc.TeraDriver',
                          protocol='jdbc:teradata:',
@@ -34,12 +35,12 @@ ORACLE_JDBC_CONFIG <- list(class='oracle.jdbc.OracleDriver',
                            jar='/usr/lib/java/ojdbc6.jar',
                            type='mysql')
 
-connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','error'),log.output=stderr()){
+connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','error')){
   driver <- JDBC(jdbc.config$class,jdbc.config$jar)
   uri <- paste(jdbc.config$protocol,host,sep="//")
   conn <- dbConnect(driver, uri, ...)
   type <- jdbc.config$type
-  logger <- SimpleLog('jdbc.connect',level=log.level,outputs=log.output)
+  logger <- SimpleLog('jdbc.connect',level=log.level)
   timer <- Timer(logger)
   list(driver=driver,
        connection=conn,
