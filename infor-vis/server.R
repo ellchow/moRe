@@ -25,7 +25,7 @@ shinyServer(function(input, output) {
   }
 
 
-  single.query <- reactive(function(){
+  single.query <- reactive({
     if(!is.null(input$query.id) && !is.null(input$sort.by) && !is.null(input$order.decr)){
       q <- .config$data[.config$data[[.config$query.id]] == input$query.id, ]
 
@@ -60,7 +60,7 @@ shinyServer(function(input, output) {
     NULL
   })
 
-  output$results.table <- reactive(function(){
+  output$results.table <- reactive({
     q <- single.query()
     if(!is.null(q)){
       dataframe.to.html.table(q, table.attrs = 'class="data table table-bordered table-condensed" style="color:#555555"',
@@ -82,7 +82,7 @@ shinyServer(function(input, output) {
     }
   })
 
-  output$compare.items <- reactive(function(){
+  output$compare.items <- reactive({
     m <- select.model(input$sort.by)
     if(input$tabs == 'compare'){
       if(is.na(m))
