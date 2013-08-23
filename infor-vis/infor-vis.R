@@ -28,6 +28,10 @@ args <- parse.args('infor-vis.R',
                         list(name='-config',
                              desc='path to config file',
                              default='config.R'),
+                        list(name='-port',
+                             desc='port number',
+                             default=8100,
+                             parser = as.integer),
                         list(name='-loglevel',
                              desc='log level',
                              default = SimpleLog.ERROR,
@@ -88,5 +92,5 @@ gc()
 
 
 #### start server
-runApp('./')
+runApp('./', port=args[['-port']])
 
