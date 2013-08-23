@@ -49,3 +49,5 @@ hadoop streaming helpers
 
 scripts for building a standalone instance of R - only tried on ubuntu
 
+*infor-vis*
+shiny app for visualizing information retrieval results
