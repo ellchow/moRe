@@ -35,13 +35,18 @@ ORACLE_JDBC_CONFIG <- list(class='oracle.jdbc.OracleDriver',
                            jar='/usr/lib/java/ojdbc6.jar',
                            type='mysql')
 
-connect.to.db <- function(host,jdbc.config,...,log.level=c('info','warning','error')){
-  driver <- JDBC(jdbc.config$class,jdbc.config$jar)
-  uri <- paste(jdbc.config$protocol,host,sep="//")
-  conn <- dbConnect(driver, uri, ...)
-  type <- jdbc.config$type
+connect.to.db <- function(host, jdbc.config, ..., log.level=SimpleLog.ERROR){
   logger <- SimpleLog('jdbc.connect',level=log.level)
   timer <- Timer(logger)
+
+  driver <- JDBC(jdbc.config$class,jdbc.config$jar)
+  uri <- paste(jdbc.config$protocol,host,sep="//")
+  write.msg(logger, 'uri: %s', uri)
+
+  conn <- dbConnect(driver, uri, ...)
+  type <- jdbc.config$type
+
+
   list(driver=driver,
        connection=conn,
        type=jdbc.config$type,
