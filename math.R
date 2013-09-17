@@ -30,7 +30,13 @@ is.between <- function(x, bounds, inclusive=T){
 cap <- function(x, lb, ub, na.rm = FALSE)
   pmin(ub,pmax(lb, x, na.rm=na.rm), na.rm=na.rm)
 
-bucketize <- function(x, buckets = quantile(x,seq(0,1,0.1)), label='names',
+decile <- function(x, ...)
+  quantile(x, seq(0,1,0.1), ...)
+
+percentile <- function(x, ...)
+  quantile(x, seq(0,1,0.01), ...)
+
+bucketize <- function(x, buckets = decile(x), label='names',
                       uniq.boundaries = TRUE, drop.ub = TRUE){
   if(drop.ub)
     buckets <- head(buckets, -1)

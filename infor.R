@@ -49,13 +49,16 @@ rel.to <- function(f=cor){
     f(r, x)
 }
 
+overlap <- function(n=10)
+  rel.to(function(r, r.ref) sum((r <= n) & (r.ref <= n)))
+
 compute.ranks <- function(s, g, ties.method='random', envir=NULL){
   if(!is.null(envir)){
     s <- eval(substitute(s),envir)
     g <- eval(substitute(g),envir)
   }
 
-  tapply(s, g,function(x) rank(-x, ties.method=ties.method), ret.type='par')
+  tapply(s, g, function(x) rank(-x, ties.method=ties.method), ret.type='par')
 }
 
 compute.skips <- function(rnk, pos, g, envir=NULL){
