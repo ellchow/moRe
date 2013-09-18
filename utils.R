@@ -216,6 +216,11 @@ var.name <- function(x) deparse(substitute(x))
 
 is.global.env <- function(env) environmentName(env) == 'R_GlobalEnv'
 
+curry1 <- function(f, ...){
+  function(x)
+    f(x, ...)
+}
+
 ####################
 #### Files
 ####################
