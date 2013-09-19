@@ -186,13 +186,21 @@ url.unquote <- function(s, reserved = NULL, plus.spaces = T){
   unlist(z)
 }
 
-url.encode.params <- function(params){
+url.encode.params <- function(params, ...){
   params <- unlist(params)
-  paste(paste(url.quote(names(params), reserved = NULL, plus.spaces=T),
-              url.quote(params, reserved = NULL, plus.spaces=T),
+  paste(paste(url.quote(names(params), ),
+              url.quote(params, ...),
               sep = '='),
         collapse = '&')
 }
+
+url.parse.params <- function(params.str, ...){
+  lapply(strsplit(params.str, '&'),
+                   function(kv) url.unquote(unlist(zip.to.named(strsplit(kv, '='))), ...))
+}
+
+url.qry.string <- function(url)
+  unlist(lapply(strsplit(url, '\\?'), function(x) x[[2]]))
 
 ####################
 #### Functions

@@ -114,7 +114,6 @@ beta.params <- function(a,b,method='ab'){
   }
 }
 
-
 beta.estimate <- function(x, m=mean, v=var){
   if(is.null(dim(x)) || ncol(x) != 2){
     sample.mean <- m(x)
