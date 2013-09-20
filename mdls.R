@@ -244,12 +244,14 @@ mdls.report <- function(mdls, root, text.as = 'html', overwrite = FALSE, log.lev
 
 gbm.model.def <- function(id, target.expr, features, ..., weights=function(data) NULL){
   params <- list(...)
+
   g <- tryCatch(params$distribution$group, error=function(e) NULL)
   features <- unique(c(features,g))
 
   t <- substitute(target.expr)
 
-  list(id=id, target.gen=function(data) eval(t, envir=data), fit=function(...,weights=NULL) gbm.fit.plus(...,group = g, w=weights), features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
+  list(id=id, target.gen=function(data) eval(t, envir=data), fit=function(...,weights=NULL) gbm.fit.plus(..., group = g, w=weights),
+       features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
 }
 
 gbm.fit.plus <- function(x, y, ..., group = NULL, y.label="y"){
@@ -278,8 +280,12 @@ check.gbm.model.def <- function(model.def, target, data, weights){
   if(length(missing) != 0)
     problems$missing.features <- missing
 
-  gt1024levels <- sapply(available,
+  group.col <- tryCatch(model.def$params$distribution$group, error=function(e) NULL)
+
+  gt1024levels <- sapply(setdiff(available, group.col),
                          function(f){is.factor(data[[f]]) && (length(levels(data[[f]])) > 1024)})
+
+
   if(any(gt1024levels)){problems$too.many.levels <- available[gt1024levels]}
 
   all.na <- sapply(available, function(f){all(is.na(data[[f]]))})
