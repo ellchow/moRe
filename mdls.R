@@ -245,7 +245,7 @@ mdls.report <- function(mdls, root, text.as = 'html', overwrite = FALSE, log.lev
 gbm.model.def <- function(id, target.expr, features, ...,
                           weights=function(data) NULL){
   params <- with.defaults(list(...),
-                          list(train.fraction=0.8, shrinkage=0.01, n.trees=100, interaction.depth=8, keep.data=FALSE,))
+                          list(train.fraction=0.8, shrinkage=0.01, n.trees=100, interaction.depth=8, keep.data=FALSE))
 
   g <- tryCatch(params$distribution$group, error=function(e) NULL)
   features <- unique(c(features,g))
