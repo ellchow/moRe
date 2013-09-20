@@ -283,7 +283,7 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
     cmd <- curl.cmd(path, cached.file, ...)
 
     write.msg(logger, 'curl command:  %s', cmd, level = SimpleLog.DEBUG)
-    write.msg(logger, 'cached file at %s', cached.file)
+    write.msg(logger, 'caching to %s', cached.file)
 
     dir.create(cache.path, showWarnings = FALSE)
     exit.code <- 0
@@ -448,6 +448,17 @@ get.or.else <- function(x, field, default){
   if(is.null(z))
     z <- default
   z
+}
+
+with.defaults <- function(xs, defaults){
+  ys <- xs
+
+  for(i in names(defaults)){
+    if(!(i %in% names(ys)))
+      ys[[i]] <- defaults[[i]]
+  }
+
+  ys
 }
 
 csplat <- function(f,a,...)
