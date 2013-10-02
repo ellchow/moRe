@@ -110,7 +110,7 @@ beta.params <- function(a,b,method='ab'){
     beta <-  b - alpha
     beta.params(alpha, beta, 'ab')
   }else{
-    c(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
+    cbind(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
   }
 }
 
@@ -127,11 +127,11 @@ beta.estimate <- function(x, m=mean, v=var){
 
   b <- (1 - sample.mean) * ((sample.mean * (1 - sample.mean)) / sample.var - 1)
 
-  beta.params(a,b)
+  beta.params(a, b)
 }
 
 beta.update <- function(params, s, n)
-  beta.params(s + params['a'], n + params['b'])
+  beta.params(s + params[,'a'], n + params[,'b'])
 
 ######################
 #### optimization
