@@ -1,7 +1,7 @@
 moRe
 ========
 
-just a bunch of functions to make R nicer to use.  a large part is dedicated to modeling as that is what I have been working on lately.
+a collection of R functions and utilities. 
 
 *utils*
 
@@ -50,4 +50,5 @@ hadoop streaming helpers
 scripts for building a standalone instance of R - only tried on ubuntu
 
 *infor-vis*
+
 shiny app for visualizing information retrieval results
