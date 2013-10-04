@@ -116,6 +116,20 @@ setMethodS3('stop.timer', 'Timer',
             })
 options(warn=0)
 
+
+timer <- function(expr){
+  s.expr <- substitute(expr)
+
+  t <- Timer()
+
+  start.timer(t, 'timing %s', deparse(s.expr))
+
+  res <- eval(s.expr, parent.frame())
+  stop.timer(t)
+
+  res
+}
+
 stop.if <- function(x, msg, ..., tags=list(), cleanup = function(){}, failed.cond = substitute(x)){
   call <- sys.call(1)
   if(x){
