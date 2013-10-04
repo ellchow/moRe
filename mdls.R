@@ -258,11 +258,10 @@ gbm.model.def <- function(id, target.expr, features, ...,
        features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
 }
 
-gbm.fit.plus <- function(x, y, ..., group = NULL, y.label="y"){
+gbm.fit.plus <- function(x, y, ..., train.fraction = 0.8, group = NULL, y.label="y"){
   features <- setdiff(names(x), group)
-  x[[y.label]] <- y
-  f <- sprintf("%s ~ %s", y.label, paste(features, collapse=" + "))
-  gbm(formula(f), x, ...)
+  nTrain <- train.fraction * nrow(x)
+  gbm.fit(subset(x, select=features), y, ..., nTrain=nTrain, group=x[,group])
 }
 
 gbm.predict <- function(object,newdata,n.trees=NULL,type='response',...){
