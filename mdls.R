@@ -1132,7 +1132,7 @@ optimx.fit <- function(x, y,
 
 optimx.model.def <- function(id, target.gen, features,
                              f = function(w, x) as.matrix(x) %*% w,
-                             loss = function(y, y.hat) mean(y - y.hat)^2,
+                             loss = function(y, y.hat) mean((y - y.hat)^2),
                              par = vector('double', length(features)),
                              method = 'BFGS',
                              report=function(..., log.level=SimpleLog.INFO){logger <- SimpleLog('optimx.model.report', log.level); write.msg(logger, 'nothing to report for optimx model')}, ...){
