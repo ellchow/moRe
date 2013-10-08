@@ -33,7 +33,7 @@ yfin.monthly <- 'm'
 yfin.weekly <- 'w'
 yfin.daily <- 'd'
 
-yfin.standard.symbols <- strsplit('AGG,BIV,BLV,BND,BSV,EDV,^FTSE,GLD,^GSPC,^HSI,IAU,^MID,SLV,^SML,VAW,VB,VCR,VDC,VDE,VEU,VFH,VGK,VGT,VHT,VIS,^VIX,VNQ,VOX,VPL,VPU,VSS,VTI,VUG,VWO,VXF',',')[[1]]
+yfin.standard.symbols <- c('AGG','BIV','BLV','BND','BSV','EDV','^FTSE','GLD','^GSPC','^HSI','IAU','^MID','SLV','^SML','VAW','VB','VCR','VDC','VDE','VEU','VFH','VGK','VGT','VHT','VIS','^VIX','VNQ','VOX','VPL','VPU','VSS','VTI','VUG','VWO','VXF','EBAY','PG','AAPL','FB','MSFT')
 
 yfin.url <- function(symbol, start.date = '1900-01-01',
                      end.date = format(Sys.time(), yfin.date.fmt),
