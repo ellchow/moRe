@@ -116,6 +116,20 @@ setMethodS3('stop.timer', 'Timer',
             })
 options(warn=0)
 
+
+timer <- function(expr){
+  s.expr <- substitute(expr)
+
+  t <- Timer()
+
+  start.timer(t, 'timing %s', deparse(s.expr))
+
+  res <- eval(s.expr, parent.frame())
+  stop.timer(t)
+
+  res
+}
+
 stop.if <- function(x, msg, ..., tags=list(), cleanup = function(){}, failed.cond = substitute(x)){
   call <- sys.call(1)
   if(x){
@@ -186,13 +200,21 @@ url.unquote <- function(s, reserved = NULL, plus.spaces = T){
   unlist(z)
 }
 
-url.encode.params <- function(params){
+url.encode.params <- function(params, ...){
   params <- unlist(params)
-  paste(paste(url.quote(names(params), reserved = NULL, plus.spaces=T),
-              url.quote(params, reserved = NULL, plus.spaces=T),
+  paste(paste(url.quote(names(params), ),
+              url.quote(params, ...),
               sep = '='),
         collapse = '&')
 }
+
+url.parse.params <- function(params.str, ...){
+  lapply(strsplit(params.str, '&'),
+                   function(kv) url.unquote(unlist(zip.to.named(strsplit(kv, '='))), ...))
+}
+
+url.qry.string <- function(url)
+  unlist(lapply(strsplit(url, '\\?'), function(x) x[[2]]))
 
 ####################
 #### Functions
@@ -216,6 +238,11 @@ var.name <- function(x) deparse(substitute(x))
 
 is.global.env <- function(env) environmentName(env) == 'R_GlobalEnv'
 
+curry1 <- function(f, ...){
+  function(x)
+    f(x, ...)
+}
+
 ####################
 #### Files
 ####################
@@ -238,7 +265,7 @@ curl.cmd <- function(url, output.path, params = NULL, method = 'get', show.progr
   stop.if.not(is.null(show.progress) || show.progress %in% c('bar','text'), 'progress must be bar or text')
 
   if(!is.null(params))
-    ps <- url.encode.params(params)
+    ps <- url.encode.params(params, reserved=NULL)
   else
     ps <- ''
 
@@ -270,7 +297,7 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
     cmd <- curl.cmd(path, cached.file, ...)
 
     write.msg(logger, 'curl command:  %s', cmd, level = SimpleLog.DEBUG)
-    write.msg(logger, 'cached file at %s', cached.file)
+    write.msg(logger, 'caching to %s', cached.file)
 
     dir.create(cache.path, showWarnings = FALSE)
     exit.code <- 0
@@ -435,6 +462,17 @@ get.or.else <- function(x, field, default){
   if(is.null(z))
     z <- default
   z
+}
+
+with.defaults <- function(xs, defaults){
+  ys <- xs
+
+  for(i in names(defaults)){
+    if(!(i %in% names(ys)))
+      ys[[i]] <- defaults[[i]]
+  }
+
+  ys
 }
 
 csplat <- function(f,a,...)

@@ -30,7 +30,13 @@ is.between <- function(x, bounds, inclusive=T){
 cap <- function(x, lb, ub, na.rm = FALSE)
   pmin(ub,pmax(lb, x, na.rm=na.rm), na.rm=na.rm)
 
-bucketize <- function(x, buckets = quantile(x,seq(0,1,0.1)), label='names',
+decile <- function(x, ...)
+  quantile(x, seq(0,1,0.1), ...)
+
+percentile <- function(x, ...)
+  quantile(x, seq(0,1,0.01), ...)
+
+bucketize <- function(x, buckets = decile(x), label='names',
                       uniq.boundaries = TRUE, drop.ub = TRUE){
   if(drop.ub)
     buckets <- head(buckets, -1)
@@ -104,10 +110,9 @@ beta.params <- function(a,b,method='ab'){
     beta <-  b - alpha
     beta.params(alpha, beta, 'ab')
   }else{
-    c(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
+    cbind(a=a, b=b, mean=(a / (a + b)), var=(a*b / ((a+b)^2 * (a+b+1))))
   }
 }
-
 
 beta.estimate <- function(x, m=mean, v=var){
   if(is.null(dim(x)) || ncol(x) != 2){
@@ -122,11 +127,11 @@ beta.estimate <- function(x, m=mean, v=var){
 
   b <- (1 - sample.mean) * ((sample.mean * (1 - sample.mean)) / sample.var - 1)
 
-  beta.params(a,b)
+  beta.params(a, b)
 }
 
 beta.update <- function(params, s, n)
-  beta.params(s + params['a'], n + params['b'])
+  beta.params(s + params[,'a'], n + params[,'b'])
 
 ######################
 #### optimization

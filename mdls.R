@@ -107,7 +107,6 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                              NA
                                                            })
                                              problems <- md$check(md,t,data,w)
-
                                              if(length(problems) > 0){
                                                lapply(lzip(names(problems),problems),
                                                       function(p){
@@ -144,6 +143,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                  return(z)
                                                }
                                              }
+
                                              write.msg(logger,sprintf('could not train "%s" (skipped)', id,
                                                                       level='warning'))
 
@@ -242,21 +242,26 @@ mdls.report <- function(mdls, root, text.as = 'html', overwrite = FALSE, log.lev
 #####################################
 
 
-gbm.model.def <- function(id, target.expr, features, ..., weights=function(data) NULL){
-  params <- list(...)
+gbm.model.def <- function(id, target.expr, features, ...,
+                          weights=function(data) NULL){
+  params <- with.defaults(list(...),
+                          list(train.fraction=0.8, shrinkage=0.01,
+                               n.trees=100, interaction.depth=8, keep.data=FALSE,
+                               verbose=TRUE))
+
   g <- tryCatch(params$distribution$group, error=function(e) NULL)
   features <- unique(c(features,g))
 
   t <- substitute(target.expr)
 
-  list(id=id, target.gen=function(data) eval(t, envir=data), fit=function(...,weights=NULL) gbm.fit.plus(...,group = g, w=weights), features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
+  list(id=id, target.gen=function(data) eval(t, envir=data), fit=function(...,weights=NULL) gbm.fit.plus(..., group = g, w=weights),
+       features=features, predict=gbm.predict, params=params, check=check.gbm.model.def, weights=weights, report=gbm.model.report)
 }
 
-gbm.fit.plus <- function(x, y, ..., group = NULL, y.label="y"){
+gbm.fit.plus <- function(x, y, ..., train.fraction = 0.8, group = NULL, y.label="y"){
   features <- setdiff(names(x), group)
-  x[[y.label]] <- y
-  f <- sprintf("%s ~ %s", y.label, paste(features, collapse=" + "))
-  gbm(formula(f), x, ...)
+  nTrain <- train.fraction * nrow(x)
+  gbm.fit(subset(x, select=features), y, ..., nTrain=nTrain, group=x[,group])
 }
 
 gbm.predict <- function(object,newdata,n.trees=NULL,type='response',...){
@@ -278,8 +283,12 @@ check.gbm.model.def <- function(model.def, target, data, weights){
   if(length(missing) != 0)
     problems$missing.features <- missing
 
-  gt1024levels <- sapply(available,
+  group.col <- tryCatch(model.def$params$distribution$group, error=function(e) NULL)
+
+  gt1024levels <- sapply(setdiff(available, group.col),
                          function(f){is.factor(data[[f]]) && (length(levels(data[[f]])) > 1024)})
+
+
   if(any(gt1024levels)){problems$too.many.levels <- available[gt1024levels]}
 
   all.na <- sapply(available, function(f){all(is.na(data[[f]]))})
@@ -1107,6 +1116,36 @@ betareg.model.report <- function(object, root, text.as = 'txt', log.level = Simp
   dir.create(root, recursive = TRUE)
   cat(str_replace_all(paste(capture.output(summary(object)), collapse = '\n'), '[’‘]', '"'),
       file=file.path(root, 'summary.txt'))
+}
+
+
+#####################################
+#### optimx modifications and helpers
+#####################################
+
+optimx.fit <- function(x, y,
+                       f = function(w, x) as.matrix(x) %*% w,
+                       loss = function(y, y.hat) mean(y - y.hat)^2,
+                       par = vector('double', ncol(x)), ...){
+  optimx(par, function(w) loss(y, f(w,x)), ...)
+}
+
+optimx.model.def <- function(id, target.gen, features,
+                             f = function(w, x) as.matrix(x) %*% w,
+                             loss = function(y, y.hat) mean((y - y.hat)^2),
+                             par = vector('double', length(features)),
+                             method = 'BFGS',
+                             report=function(..., log.level=SimpleLog.INFO){logger <- SimpleLog('optimx.model.report', log.level); write.msg(logger, 'nothing to report for optimx model')}, ...){
+  params <- list(par=par, ..., method=method)
+
+  stop.if.not(length(method) == 1, 'optimx.model.def "%d" must have length 1', id)
+
+  list(id=id, target.gen=target.gen, fit = function(..., weights=NULL) { optimx.fit(...) },
+       features=features,
+       predict=function(w, x) f(unlist(w$par), x),
+       params=params,
+       check=function(...) list(),
+       weights=function(...) NULL, report=report)
 }
 
 #######################################
