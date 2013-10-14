@@ -513,6 +513,17 @@ replicate <- function(n, expr, .parallel=FALSE)
   llply(integer(n), eval.parent(substitute(function(...) expr)),
         .parallel=.parallel)
 
+grep <- function(pat, x, ..., value=FALSE){
+  stop.if.not(is.logical(value) || (value == 'logical'), 'unknown value type "%s"', value)
+
+  if(value == 'logical'){
+    i <- base::grep(pat, x, ..., value = FALSE)
+    (1:length(x)) %in% i
+  }else{
+    base::grep(pat, x, ..., value=value)
+  }
+}
+
 tapply <- function (X.expr, INDEX.expr, FUN = NULL, simplify = TRUE, ret.type='list', envir = NULL) {
   ## lookup inputs in envir if supplied
   if(is.null(envir)){
