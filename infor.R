@@ -93,7 +93,9 @@ compute.infor.metric <- function(rnk, values, g, metric, envir=NULL){
 }
 
 
-feature.contributions.infor.metric <- function(mdl, d, values, g, metric, featureSets = mdl$features, log.level=SimpleLog.INFO, .parallel=TRUE){
+feature.contributions.infor.metric <- function(mdl, d, values, g, metric, featureSets = mdl$features,
+                                               agg = smean.cl.boot,
+                                               log.level=SimpleLog.INFO, .parallel=TRUE){
   logger <- SimpleLog('feature.contributions.infor.metric', log.level)
 
   rnk <- eval(substitute(rnk),envir)
@@ -103,6 +105,7 @@ feature.contributions.infor.metric <- function(mdl, d, values, g, metric, featur
   named(llply(featureSets,
         function(featureSet){
           write.msg(logger,sprintf('randomizing features: %s', paste(featureSet, collapse=',')))
+
           d.r <- d
           for(i in featureSet)
             d.r[[i]] <- sample(d.r[[i]])
@@ -111,7 +114,7 @@ feature.contributions.infor.metric <- function(mdl, d, values, g, metric, featur
           s.r <- mdl$predict(mdl$model, d.r[,mdl$features])
           r.r <- compute.ranks(s.r, d.r[[g]])
 
-          compute.infor.metric(r.r, values, g, metric)
+          agg(compute.infor.metric(r.r, values, g, metric))
         },
         .parallel=.parallel),
         sapply(featureSets, function(featureSet) paste(featureSet, collapse=',')))

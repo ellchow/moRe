@@ -265,7 +265,7 @@ curl.cmd <- function(url, output.path, params = NULL, method = 'get', show.progr
   stop.if.not(is.null(show.progress) || show.progress %in% c('bar','text'), 'progress must be bar or text')
 
   if(!is.null(params))
-    ps <- url.encode.params(params)
+    ps <- url.encode.params(params, reserved=NULL)
   else
     ps <- ''
 
