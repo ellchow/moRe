@@ -30,39 +30,45 @@ import('utils',
 ##############################################
 
 is.model.def <- function(x){
-  all(names(x) == c(
-             "id", # name of model
-             "target.gen", # function that takes in a superset of the training data  and returns the target
-             "fit", # function for fitting the model of the same form as gbm.fit
-             "features", # vector of feature names to be used by the model
-             "predict", # function for computing a prediction of the same form as gbm.predict
-             "params", # extra parameters for the fitting function
-             "check", # function that takes in a model definition, target, and data and checks if there are any issues
-             "weights", # weights on training examples
-             "report" # function that generates report for model
-             ))
+  attrs <- list(
+             "id" = is.character, # name of model
+             "target.gen" = is.function, # function that takes in a superset of the training data  and returns the target
+             "fit" = is.function, # function for fitting the model of the same form as gbm.fit
+             "features" = is.character, # vector of feature names to be used by the model
+             "predict" = is.function, # function for computing a prediction of the same form as gbm.predict
+             "params" = is.list, # extra parameters for the fitting function
+             "check" = is.function, # function that takes in a model definition, target, and data and checks if there are any issues
+             "weights" = is.function, # weights on training examples
+             "report" = is.function# function that generates report for model
+             )
+
+
+  (length(x) == length(attrs)) && all(names(x) == names(attrs)) && all(unlist(lapply(names(attrs), function(a) attrs[[a]](x[[a]]) )))
 }
 
 mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=FALSE){
-  ## import('mdls')
-  ## mdls.fit(iris[,1:4],
-  ##          gbm.model.def("gbmmodel", Sepal.Length,
-  ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
-  ##                        distribution='gaussian',train.fraction=0.8,interaction.depth=6,weights=function(data) runif(nrow(data))),
-  ##          lm.model.def('lmmodel', Sepal.Length,
-  ##                       c('Sepal.Width','Petal.Length','Petal.Width')),
-  ##          glm.model.def('glmmodel', Sepal.Length,
-  ##                       c('Sepal.Width','Petal.Length','Petal.Width'), family = 'gaussian'),
-  ##          betareg.model.def("betaregmodel", Sepal.Width / Sepal.Length,
-  ##                            c('Sepal.Width','Petal.Length','Petal.Width'),
-  ##                            phi.features='Sepal.Width'),
-  ##          .parallel=F) -> ms
+  import('mdls')
+  mdls.fit(iris[,1:4],
+           gbm.model.def("gbmmodel", Sepal.Length,
+                         c('Sepal.Width','Petal.Length','Petal.Width'),
+                         distribution='gaussian',train.fraction=0.8,interaction.depth=6,weights=function(data) runif(nrow(data))),
+           lm.model.def('lmmodel', Sepal.Length,
+                        c('Sepal.Width','Petal.Length','Petal.Width')),
+           glm.model.def('glmmodel', Sepal.Length,
+                        c('Sepal.Width','Petal.Length','Petal.Width'), family = 'gaussian'),
+           betareg.model.def("betaregmodel", Sepal.Width / Sepal.Length,
+                             c('Sepal.Width','Petal.Length','Petal.Width'),
+                             phi.features='Sepal.Width'),
+           .parallel=F) -> ms
 
   logger <- SimpleLog('mdls.fit',log.level)
 
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
   model.defs <- list(...)
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
+
+  valid.model.defs <- unlist(lapply(model.defs, is.model.def))
+  stop.if.not(all(valid.model.defs), 'invalid model defs (%s)', paste(which(valid.model.defs),collapse=','))
 
   timer <- Timer(logger)
   flatten(lapply(lzip(dataset.ids, datasets),
