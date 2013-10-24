@@ -202,8 +202,9 @@ url.unquote <- function(s, reserved = NULL, plus.spaces = T){
 
 url.encode.params <- function(params, ...){
   params <- unlist(params)
-  paste(paste(url.quote(names(params), ),
-              url.quote(params, ...),
+
+  paste(paste(url.quote(names(params), ...),
+              url.quote(as.character(params), ...),
               sep = '='),
         collapse = '&')
 }
@@ -229,7 +230,7 @@ tag <- function(x,...) {
   if(length(dots) > 0){
     for(i in indices(dots))
       attr(tagged, names(dots)[i]) <- dots[[i]]
-  }
+ss  }
 
   tagged
 }
@@ -467,12 +468,7 @@ get.or.else <- function(x, field, default){
 with.defaults <- function(xs, defaults){
   ys <- xs
 
-  for(i in names(defaults)){
-    if(!(i %in% names(ys)))
-      ys[[i]] <- defaults[[i]]
-  }
-
-  ys
+  c(ys, defaults[setdiff(names(defaults), names(xs))])
 }
 
 csplat <- function(f,a,...)
