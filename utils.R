@@ -33,8 +33,12 @@ options(scipen=6)
 ####################
 options(warn=-1)
 setConstructorS3('SimpleLog',
+                 ## logging object
+                 ## id: id of the logger
+                 ## level: recognized logging levels
+                 ## colors: colors to use if colorizing logs
                  function(id='log',
-                          level=c('info','warning','error'),
+                          level=c('info','warning','error','debug'),
                           colors = c('info'='light gray','warning'='yellow','error'='red','debug'='dark gray')
                           ## outputs=stderr(),
                           ##overwrite=TRUE
@@ -56,17 +60,27 @@ setConstructorS3('SimpleLog',
                           )
                  })
 
+## logging levels
 SimpleLog.INFO <- 'info'
 SimpleLog.WARNING <- c(SimpleLog.INFO, 'warning')
 SimpleLog.ERROR <- c(SimpleLog.WARNING, 'error')
 SimpleLog.DEBUG <- c(SimpleLog.ERROR, 'debug')
 
 if(!exists('SimpleLog.CONFIG', envir = globalenv())){
+  ## global var to hold SimpleLog configuration
   assign('SimpleLog.CONFIG', new.env(), envir=globalenv())
 }
 
 setMethodS3('write.msg','SimpleLog',
-            function(log,...,level=SimpleLog.INFO,sep=' - ', return.success=FALSE){
+            ## write a message to standard error
+            ## log: SimpleLog object
+            ## ...: message (and string formatting parameters)
+            ## level: level of the message
+            ## sep: separating chars in log
+            ## return.success: set to true if you should return whether or not the message was successfully written
+
+            function(log, ..., level=SimpleLog.INFO, sep=' - ', return.success=FALSE){
+
               check <- TRUE
 
               lvl <- intersect(tail(level,1), log$level)
@@ -90,6 +104,7 @@ setMethodS3('write.msg','SimpleLog',
             })
 
 setConstructorS3('Timer',
+                 ## timer object
                  function(log=NULL){
                    if(is.null(log)){
                      log <- SimpleLog('timerLog')
@@ -98,6 +113,9 @@ setConstructorS3('Timer',
                           log=log)
                  })
 setMethodS3('start.timer', 'Timer',
+            ## start timing
+            ## msg: message to print on start
+            ## ...: args for write.msg
             function(self, msg=NULL, ...){
               if(!is.null(msg)){
                 write.msg(self$log,msg, ...)
@@ -105,6 +123,8 @@ setMethodS3('start.timer', 'Timer',
               self$startTime <- proc.time()[3]
             })
 setMethodS3('stop.timer', 'Timer',
+            ## stop timing
+            ## ...: args for write.msg
             function(self, ...){
               self$stopTime <- proc.time()[3]
               dt <- self$stopTime - self$startTime
@@ -118,6 +138,7 @@ options(warn=0)
 
 
 timer <- function(expr){
+  ## simple timer for an expression
   s.expr <- substitute(expr)
 
   t <- Timer()
@@ -131,6 +152,12 @@ timer <- function(expr){
 }
 
 stop.if <- function(x, msg, ..., tags=list(), cleanup = function(){}, failed.cond = substitute(x)){
+  ## throw an exception if condition is met
+  ## x: boolean value (true to throw exception)
+  ## msg: error message
+  ## tags: list of tags and values to be attached to the exception
+  ## cleanup: a function with no arguments to be executed (like finally)
+  ## failed.cond: expression representing the failed condition
   call <- sys.call(1)
   if(x){
     err <- csplat(tag, c(list(simpleError(paste(c(sprintf(msg, ...),
@@ -145,11 +172,15 @@ stop.if <- function(x, msg, ..., tags=list(), cleanup = function(){}, failed.con
   }
 }
 stop.if.not <- function(x, ...){
+  ## throw an exception if the condition isnot met
+  ## ...: args for stop if
   failed.cond <- substitute(!(x))
   stop.if(!x, ..., failed.cond = failed.cond)
 }
 
 dump.frames.on.failure <- function(on = TRUE){
+  ## dumps frames for debugging upon unexpected exit
+  ## on: turn on/off
   if(on)
     options(error = quote({ dump.frames('dump-frames', to.file = TRUE)
                             system('echo "frames dumped to dump-frames.rda"')
@@ -168,6 +199,10 @@ url.always.safe.chars <- c("A","B","C","D","E","F","G","H","I","J","K","L","M","
 url.reserved.chars <- c(";", "/", "?", ":", "@", "&", "=", "+", "$", ",")
 
 url.quote <- function(s, reserved = url.reserved.chars,  plus.spaces = T){
+  ## url encode a string
+  ## s: string to encode
+  ## reserved: vector of reserved characters
+  ## plus.spaces: convert spaces to +
   chars <- int.to.char(1:255)
   safe <- named(ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%%%.2X', 1:255)),
                 chars)
@@ -179,6 +214,10 @@ url.quote <- function(s, reserved = url.reserved.chars,  plus.spaces = T){
 }
 
 url.unquote <- function(s, reserved = NULL, plus.spaces = T){
+  ## url decode a string
+  ## s: string to decode
+  ## reserved: vector of reserved characters
+  ## plus.spaces: convert + to spaces
   chars <- int.to.char(1:255)
   safe <- named(chars,
                 ifelse(chars %in% c(url.always.safe.chars, reserved), chars, sprintf('%.2X', 1:255)))
@@ -201,6 +240,9 @@ url.unquote <- function(s, reserved = NULL, plus.spaces = T){
 }
 
 url.encode.params <- function(params, ...){
+  ## encode a named list as url parameters
+  ## params: named list of params
+  ## ...: args for url.quote
   params <- unlist(params)
   paste(paste(url.quote(names(params), ),
               url.quote(params, ...),
@@ -209,20 +251,27 @@ url.encode.params <- function(params, ...){
 }
 
 url.parse.params <- function(params.str, ...){
+  ## parse parameters to named list
+  ## params.str: string of url parameters
   lapply(strsplit(params.str, '&'),
                    function(kv) url.unquote(unlist(zip.to.named(strsplit(kv, '='))), ...))
 }
 
 url.qry.string <- function(url)
+  ## exctract the query string from url
+  ## url: url from which to extract qs
   unlist(lapply(strsplit(url, '\\?'), function(x) x[[2]]))
 
 ####################
 #### Functions
 ####################
 
+## evaluate an expression within an environment
 "%within%" <- function(expr, envir) eval(substitute(expr), envir=envir)
 
+
 tag <- function(x,...) {
+  ## tag a value with attributes
   tagged <- x
   dots <- list(...)
 
@@ -234,10 +283,13 @@ tag <- function(x,...) {
   tagged
 }
 
+## read var name as string
 var.name <- function(x) deparse(substitute(x))
 
+## test if an environment is the global environment
 is.global.env <- function(env) environmentName(env) == 'R_GlobalEnv'
 
+## curry a function with 1 argument
 curry1 <- function(f, ...){
   function(x)
     f(x, ...)
@@ -248,6 +300,10 @@ curry1 <- function(f, ...){
 ####################
 
 rrmdir <- function(path,rm.contents.only=FALSE){
+  ## recursivedly remove directory
+  ## path: path to remove
+  ## rm.contents.only: leave path untouched
+
   path <- gsub('/( )*$','',path)
   isDir <- file.info(path)$isdir
   if(!is.na(isDir) && isDir){
@@ -261,6 +317,7 @@ rrmdir <- function(path,rm.contents.only=FALSE){
 }
 
 curl.cmd <- function(url, output.path, params = NULL, method = 'get', show.progress = NULL, custom.opts = ''){
+  ## construct a curl command
   stop.if.not(method %in% c('get','post'), 'method must be get or post')
   stop.if.not(is.null(show.progress) || show.progress %in% c('bar','text'), 'progress must be bar or text')
 
