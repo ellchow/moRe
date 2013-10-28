@@ -33,7 +33,13 @@ yfin.monthly <- 'm'
 yfin.weekly <- 'w'
 yfin.daily <- 'd'
 
-yfin.standard.symbols <- c('AGG','BIV','BLV','BND','BSV','EDV','^FTSE','GLD','^GSPC','^HSI','IAU','^MID','SLV','^SML','VAW','VB','VCR','VDC','VDE','VEU','VFH','VGK','VGT','VHT','VIS','^VIX','VNQ','VOX','VPL','VPU','VSS','VTI','VUG','VWO','VXF','EBAY','PG','AAPL','FB','MSFT')
+yfin.standard.symbols <- c('AGG','BIV','BLV','BND','BSV','EDV','^FTSE','GLD','^GSPC','^HSI','IAU','^MID','SLV','^SML','VAW','VB','^VIX',
+                           'VCR','VDC','VDE','VEU','VFH','VGK','VGT','VHT','VIS','VNQ','VOX','VPL','VPU','VSS','VTI','VUG','VWO','VXF',
+                           'AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD','TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ','INTC','AMD','NVDA','SSNLF',
+                           'PG','JNJ','PEP','KO','WMT','TGT','KSS','K'
+                           )
+
+
 
 yfin.url <- function(symbol, start.date = '1900-01-01',
                      end.date = format(Sys.time(), yfin.date.fmt),
@@ -105,6 +111,7 @@ yfin.archive <- function(symbols, path, ...,
 
                if(start.date < end.date){
                  x <- yfin.download(symbol, ..., start.date = as.character(start.date), end.date = as.character(end.date), frequency = frequency, cache.path = cache.path, log.level = log.level)
+
                  if(!is.na(x) && nrow(x) > 0)
                    subset(x, date > start.date)
                  else
@@ -167,12 +174,18 @@ compute.values <- function(z, init=1){
 }
 
 yfin.report <- function(root.dir = '~/Documents/investments/data',
-                        symbols.list = list(market=c('VTI','VB','VEU','BND','EDV','IAU'),
-                                             sector=c('VDC','VCR','VDE','VNQ','VGT')),
+                        symbols.list = list(
+                          market=c('VTI','VB','VEU','BND','EDV','IAU'),
+                          sector=c('VDC','VCR','VDE','VNQ','VGT'),
+                          ## tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD',
+                          ##   'TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ',
+                          ##   'INTC','AMD','NVDA','SSNLF'),
+                          ## consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K')
+                          ),
                         time.intervals = list('03-months' = 90, '01-year' = 260),
                         log.level = SimpleLog.INFO,
                         .parallel = FALSE){
-  ## import('yahoofin'); registerDoMC(2); system(sprintf('open %s', yfin.report()))
+  ## import('yahoofin'); registerDoMC(2); out <- yfin.report() ;system(sprintf('open %s && open `ls %s/plots/*.png`', out, out))
   logger <- SimpleLog('yfin.download', log.level)
 
   ## get data
