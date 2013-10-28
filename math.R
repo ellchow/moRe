@@ -55,12 +55,14 @@ bucketize <- function(x, buckets = decile(x), label='names',
 
   f <- approxfun(sort(buckets),indices(buckets), yleft = 1, yright = length(buckets))
   b <- floor(f(x))
-  if(label == 'names')
+
+  if(!is.null(b))
+    b
+  else if(label == 'names')
     factor(names(buckets)[b],levels=names(buckets), ordered=T)
   else if(label == 'buckets')
     factor(buckets[b],levels=buckets, ordered=T)
-  else
-    b
+
 }
 
 rdiscrete <- function(n, prob, domain = indices(prob))
@@ -132,6 +134,21 @@ beta.estimate <- function(x, m=mean, v=var){
 
 beta.update <- function(params, s, n)
   beta.params(s + params[,'a'], n + params[,'b'])
+
+
+entropy <- function(p.x, discretize = function(z) bucketize(z, seq(min(z), max(z), length=1000)), b=2, normalize=FALSE){
+  if(!is.null(discretize))
+    p.x <- table(discretize(p.x))
+
+  p.x <- p.x / sum(p.x)
+
+  res <- -(p.x %*% log(p.x,b))
+
+  if(normalize)
+    res <- res / log(length(p.x),b)
+
+  res
+}
 
 ######################
 #### optimization
