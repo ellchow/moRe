@@ -279,7 +279,7 @@ tag <- function(x,...) {
   if(length(dots) > 0){
     for(i in indices(dots))
       attr(tagged, names(dots)[i]) <- dots[[i]]
-ss  }
+  }
 
   tagged
 }
