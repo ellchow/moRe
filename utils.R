@@ -347,6 +347,7 @@ curl.cmd <- function(url, output.path, params = NULL, method = 'get', show.progr
 }
 
 cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = SimpleLog.INFO){
+  ## cache data by downloading (if necessary) using curl; return connection
   logger <- SimpleLog('cache.data', log.level)
 
   if(str_detect(path,'http[s]?://')){
@@ -372,6 +373,8 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
 }
 
 load.data <- function(path, load.fun, ..., cache.path = '.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  ## cache/load data
+
   logger <- SimpleLog('load.data', log.level)
 
   if(missing(load.fun)){
@@ -398,6 +401,7 @@ load.data <- function(path, load.fun, ..., cache.path = '.cache', show.progress 
 }
 
 load.lines <- function(path, parser = NULL, cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  ## cache/load data line by line
   load <- function(conn)
     readLines(conn, warn = F)
 
@@ -410,6 +414,7 @@ load.lines <- function(path, parser = NULL, cache.path='.cache', show.progress =
 }
 
 load.string <- function(path, parser = NULL, cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  ## cache/load data as string
   load <- function(conn)
     file.to.string(conn)
 
@@ -422,19 +427,25 @@ load.string <- function(path, parser = NULL, cache.path='.cache', show.progress 
 }
 
 load.table <- function(path, ..., sep='\t', header=T, comment.char='', quote='', cache.path='.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
+  ## cache/load data as table
   load.fun <- function(conn)
     read.table(conn, sep=sep, header=header, comment.char=comment.char, quote=quote, ...)
 
   load.data(path, load.fun, cache.path = cache.path, show.progress = show.progress, force = force, log.level = log.level)
 }
 
-serialize.to.text <- function(object, encoder=I)
+serialize.to.text <- function(object, encoder=I){
+  ## text serialization
   encoder(rawToChar(serialize(m, connection = NULL, ascii=T)))
+}
 
-unserialize.from.text <- function(s, decoder=I)
+unserialize.from.text <- function(s, decoder=I){
+  ## text deserialization
   unserialize(decoder(textConnection(s)))
+}
 
 streaming.group.by.key <- function(f, get.key=function(x) x[[1]]){
+  ## group streaming data by key
   ## assumes sorted by key!
   ##  s <- textConnection('1\t2\n1\ta\n3\tb\n5\t3\t10'); streaming.group.by.key(function(lines) print(read.table(textConnection(unlist(lines)),sep='\t',header=F)), function(x) strsplit(x,'\t')[[1]][1])(s, 1100)
   function(con, chunk.size = 1000){
@@ -472,10 +483,8 @@ streaming.group.by.key <- function(f, get.key=function(x) x[[1]]){
   }
 }
 
-
-
-
 run.once <- function(expr, store = 'load.once.store__', algo='md5', lazy = TRUE, log.level=SimpleLog.INFO){
+  ## execute and expression and cache it
   logger <- SimpleLog('run.once', log.level)
 
   g <- globalenv()
@@ -499,8 +508,10 @@ run.once <- function(expr, store = 'load.once.store__', algo='md5', lazy = TRUE,
   g[[store]][[var.name]]
 }
 
-file.to.string <- function(file)
+file.to.string <- function(file){
+  ## read file contents to string
   readChar(file, file.info(file)$size)
+}
 
 brew.string <- function(s,...){
   dots <- list(...)
