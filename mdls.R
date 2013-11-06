@@ -47,6 +47,11 @@ is.model.def <- function(x){
 }
 
 mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=FALSE){
+  ## train models on datasets
+  ## datasets: single or list of data.frames/paths to data.frames/functions that load a data.frame
+  ## ... : model definitions
+  ## mapping : mapping by matching model def id pattern (value in list) to dataset id pattern (name in list)
+
   import('mdls')
   mdls.fit(iris[,1:4],
            gbm.model.def("gbmmodel", Sepal.Length,
@@ -162,6 +167,11 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
 }
 
 mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=FALSE){
+  ## predict models (trained with mdls.fit) over a datasets
+  ## models: output of mdls.fit
+  ## datasets: single or list of data.frames/paths to data.frames/functions that load a data.frame
+  ## mapping : mapping by matching model def id pattern (value in list) to dataset id pattern (name in list)
+
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
@@ -221,6 +231,12 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
 }
 
 mdls.report <- function(mdls, root, text.as = 'html', overwrite = FALSE, log.level = SimpleLog.INFO, .parallel=FALSE){
+  ## generate reports for each model trained by mdls.fit
+  ## mdls: output of mdls.fit
+  ## root: root output directory for reports
+  ## text.as: output format
+  ## overwrite: overwrite output directory or not
+
   ## import('mdls'); mdls.fit(iris, gbm.model.def("gbmmodel",function(x) x$Sepal.Length + as.integer(x$Species), c('Sepal.Width','Petal.Length','Petal.Width','Species'),distribution='gaussian',weights=function(data) runif(nrow(data)), train.fraction=0.8),glm.model.def('glmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'), family='gaussian'),lm.model.def('lmmodel', function(x) x$Sepal.Length, c('Sepal.Width','Petal.Length','Petal.Width'))) -> ms; system('rm -r ~/tmp/test/'); mdls.report(ms,'~/tmp/test')
   if(overwrite)
     rrmdir(root)
@@ -340,9 +356,11 @@ check.gbm.model.def <- function(model.def, target, data, weights){
 }
 
 gbm.opt.n.trees <- function(object, method='test')
+  ## get optimal trees
   gbm.perf(object,method=method,plot.it=F)
 
 gbm.tree.as.df <- function(object, i.tree = 1){
+  ## read a gbm tree into a data.frame
   stop.if((i.tree < 1) || (i.tree > object$n.trees),
           "i.tree %d is out of range (%d)", i.tree, object$n.trees)
   tree <- named(data.frame(object$trees[[i.tree]]),
@@ -394,9 +412,11 @@ gbm.tree.row.as.list <- function(tree, node){
 }
 
 gbm.tree.as.list <- function(object, i.tree)
+  ## turn a tree into a list
   gbm.tree.row.as.list(gbm.tree.as.df(object, i.tree), 1)
 
 gbm.model.as.list <- function(object, n.trees=object$n.trees, name="", .parallel=FALSE){
+  ## turn model into a list - can be easily serializable to JSON or YAML
   usedVariables <- gbm.model.used.variables(object)
   trees <- llply(1:n.trees, function(tree) gbm.tree.as.list(object, i.tree=tree), .parallel=.parallel)
 
@@ -412,9 +432,11 @@ gbm.model.as.list <- function(object, n.trees=object$n.trees, name="", .parallel
 }
 
 gbm.model.used.variables <- function(object, trees=object$n.trees)
+  ## variables with nonzero importance
   as.character(subset(summary.gbm(object,plotit=F), rel.inf > 0,)$var)
 
 gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
+  ## split points using this variable
   if(is.numeric(var.name))
     var.name <- object$var.names[var.name]
 
@@ -433,6 +455,7 @@ gbm.split.points <- function(object, var.name=1, trees=object$n.trees){
 
 gbm.feature.importance <- function(object, k=min(10,length(object$var.names)),
                                    n.trees=gbm.opt.n.trees(object), ...){
+  ## feature importance displayed with ggplot
   stop.if(k < 1, "k must be >= 1")
 
   x <- as.data.frame(as.list(summary(object, n.trees=n.trees, plotit=FALSE)[k:1,]))
@@ -446,6 +469,7 @@ gbm.feature.importance <- function(object, k=min(10,length(object$var.names)),
 
 gbm.plot <- function (x, i.var = 1, n.trees = x$n.trees, continuous.resolution = list('splits',NA),
                       return.grid = FALSE, type = "link", ...)
+  ## customized dependency plots (allow for plotting at split points, displaying as steps)
 {
   if (!is.element(type, c("link", "response"))) {
     stop("type must be either 'link' or 'response'")
@@ -786,7 +810,7 @@ gbm.loss <- function(target, prediction, distribution, weight=rep(1,length(targe
   gbm::gbm.loss(target, prediction, weight, offset, if(is.character(distribution)) list(name=distribution) else distribution, baseline, group, max.rank)
 
 gbm.model.report <- function(object, root, text.as = 'html', plot.it = TRUE, log.level = SimpleLog.INFO, .parallel = TRUE){
-
+  ## reporting for gbm model (error, feature importance, dependency plots)
   stop.if.not(text.as %in% c('txt','html','textile'),
               'unknown text format: %s', text.as)
   stop.if(file.exists(root), 'output directory "%s" already exists ', root)
@@ -1159,6 +1183,12 @@ optimx.model.def <- function(id, target.gen, features,
 #######################################
 
 feature.contributions <- function(mdl, src, snk, select=which.max, score.idx = 1, log.level=SimpleLog.ERROR, .parallel=FALSE){
+  ## compute approximate feature contributions - useful for seeing why an example receives a higher/lower score than another example
+  ## mdl: model (one element our mdls.fit output)
+  ## src: starting example
+  ## snk: target example
+  ## select: method of selecting next feature
+
   logger <- SimpleLog('feature.contributions',log.level)
   ## feature.contributions(ms$gbmmodel,iris[1,],iris[100,],which.max)
   ## feature.contributions(list(id="m",model=ms$gbmmodel$model,features=ms$gbmmodel$model$var.names,predict=gbm.predict), iris[6,], iris[5,])
@@ -1206,6 +1236,50 @@ feature.contributions <- function(mdl, src, snk, select=which.max, score.idx = 1
   names(z) <- c('var.name','delta','src.var.value','snk.var.value','score.before','score.after')
   row.names(z) <- NULL
   z[order(z$delta,decreasing=TRUE),]
+}
+
+feature.selection.by.filter <- function(target, features, initSelected, evaluate, update, n=ncol(features),log.level=SimpleLog.ERROR){
+  ## greedy feature selection
+  ## target: target of model
+  ## features: dataframe with features
+  ## initSelected: initially selected features
+  ## evaluate: how to evaluate features for selecting the next one
+  ## update: update scores
+  ## n: number of features to select
+
+  logger <- SimpleLog('feature.selection.by.filter',log.level)
+  z <- list(selected = initSelected,
+            remaining = setdiff(names(features), initSelected),
+            scores = c(),
+            complete_scores = list())
+  for(i in 1:n){
+    if(length(z$remaining) > 0){
+      scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining),log.level=log.level)
+      z <- update(z, scores)
+      write.msg(logger,'feature %d: %s',i, tail(z$selected,1))
+      z$complete_scores <- c(z$complete_scores, list(scores))
+    }
+  }
+  z
+}
+
+forward.filter.feature.selection <- function(target, features, evaluate=cor.feature.selection.filter, choose.best=max, n=ncol(features), .parallel=FALSE, log.level=SimpleLog.ERROR){
+  ## forward filter feature selectio
+  logger <- SimpleLog('forward.filter.feature.selection',log.level)
+  feature.selection.by.filter(target, features, NULL, function(...) evaluate(...,.parallel=.parallel),
+                              function(z, scores){
+                                are.na <- names(scores)[is.na(scores)]
+                                write.msg(logger,'score for features "%s" is na - dropping',paste(are.na, collapse = ','), level='warn')
+                                bestScore <- choose.best(na.rm(scores))
+                                best <- match(TRUE,scores == bestScore)
+                                z$selected <- c(z$selected, names(scores[best]))
+                                z$remaining <- z$remaining[-1 * best]
+                                z$remaining <- z$remaining[!(z$remaining %in% are.na)]
+                                z$scores <- c(z$scores, bestScore)
+                                z
+                              },
+                              n=n
+                              )
 }
 
 interinfo.feature.selection.filter <- function(t,s,r,.parallel=FALSE,log.level=SimpleLog.ERROR){
@@ -1267,46 +1341,12 @@ glm.feature.selection.filter <- function(..., f=function(x) x^2){
   }
 }
 
-forward.filter.feature.selection <- function(target, features, evaluate=cor.feature.selection.filter, choose.best=max, n=ncol(features), .parallel=FALSE, log.level=SimpleLog.ERROR){
-  logger <- SimpleLog('forward.filter.feature.selection',log.level)
-  feature.selection.by.filter(target, features, NULL, function(...) evaluate(...,.parallel=.parallel),
-                              function(z, scores){
-                                are.na <- names(scores)[is.na(scores)]
-                                write.msg(logger,'score for features "%s" is na - dropping',paste(are.na, collapse = ','), level='warn')
-                                bestScore <- choose.best(na.rm(scores))
-                                best <- match(TRUE,scores == bestScore)
-                                z$selected <- c(z$selected, names(scores[best]))
-                                z$remaining <- z$remaining[-1 * best]
-                                z$remaining <- z$remaining[!(z$remaining %in% are.na)]
-                                z$scores <- c(z$scores, bestScore)
-                                z
-                              },
-                              n=n
-                              )
-}
-
-feature.selection.by.filter <- function(target, features, initSelected, evaluate, update, n=ncol(features),log.level=SimpleLog.ERROR){
-  logger <- SimpleLog('feature.selection.by.filter',log.level)
-  z <- list(selected = initSelected,
-            remaining = setdiff(names(features), initSelected),
-            scores = c(),
-            complete_scores = list())
-  for(i in 1:n){
-    if(length(z$remaining) > 0){
-      scores <- evaluate(target, subset(features,select=z$selected), subset(features,select=z$remaining),log.level=log.level)
-      z <- update(z, scores)
-      write.msg(logger,'feature %d: %s',i, tail(z$selected,1))
-      z$complete_scores <- c(z$complete_scores, list(scores))
-    }
-  }
-  z
-}
-
 ######################
 #### Metrics
 ######################
 
 clsfy.confusion <- function(prediction, label){
+  ## make confusion matrix
   p <- as.logical(prediction)
   l <- as.logical(label)
   data.frame(true.positive = sum(p & l),
@@ -1316,6 +1356,7 @@ clsfy.confusion <- function(prediction, label){
 }
 
 clsfy.confusion.scan <- function(score, label, to.prediction = function(t){ function(s) s > t }, params.list=as.list(quantile(score,seq(0,1,0.01))), .parallel=FALSE){
+  ## confusion matrix at specified thresholds
   rbind %wargs% llply(named(parameter.scan(to.prediction, params.list), names(params.list)),
                       function(f)
                       clsfy.confusion(f(score),label),

@@ -573,11 +573,14 @@ nan.rm <- function(...) na.rm(..., discard = is.nan)
 
 invalid.rm <- function(...) na.rm(..., discard = function(z) is.na(z) | is.nan(z) | is.infinite(z))
 
+
 replicate <- function(n, expr, .parallel=FALSE)
+  ## same as base replicate with parallel option
   llply(integer(n), eval.parent(substitute(function(...) expr)),
         .parallel=.parallel)
 
 grep <- function(pat, x, ..., value=FALSE){
+  ## same as base grep with option to return boolean match/no match
   stop.if.not(is.logical(value) || (value == 'logical'), 'unknown value type "%s"', value)
 
   if(value == 'logical'){
@@ -589,7 +592,7 @@ grep <- function(pat, x, ..., value=FALSE){
 }
 
 tapply <- function (X.expr, INDEX.expr, FUN = NULL, simplify = TRUE, ret.type='list', envir = NULL) {
-  ## lookup inputs in envir if supplied
+  ## modified tapply: 1) lookup inputs in envir if supplied, 2) list of inputs for 1st argument, 3) various output formats
   if(is.null(envir)){
     X <- X.expr
     INDEX <- INDEX.expr
@@ -624,7 +627,7 @@ tapply <- function (X.expr, INDEX.expr, FUN = NULL, simplify = TRUE, ret.type='l
   }
   if(is.null(FUN))
     return(group)
-  ## use mapply/split to allow for multipl inputs
+  ## use mapply/split to allow for multiple inputs
   ans <- do.call(mapply, c(FUN, lapply(X, function(x) split(x, group)), SIMPLIFY=FALSE))
   index <- as.integer(names(ans))
 
@@ -657,7 +660,9 @@ tapply <- function (X.expr, INDEX.expr, FUN = NULL, simplify = TRUE, ret.type='l
   ansmat
 }
 
+
 lzip <- function(...){
+  ## zip multiple lists together
   delayedAssign('args', lapply(list(...), as.list))
 
   n <- min(sapply(args,length))
@@ -678,6 +683,7 @@ lzip <- function(...){
 "%zip%" <- function(a,b) lzip(a, b)
 
 zip.to.named <- function(x,nameCol=1,valCol=2){
+  ## convert zipped list to named list
   flatten(lapply(x,
                  function(y){
                    z <- list(y[[valCol]])
@@ -710,9 +716,8 @@ keep.if <- function(x,f){
   x[mask]
 }
 
-flatten <- function(x){
+flatten <- function(x)
   do.call(c,x)
-}
 
 merge.lists <- function(all,FUN=function(n,x){x}){
   allNames <- unique(do.call(c,lapply(all,names)))
@@ -734,12 +739,14 @@ setdiff2 <- function(x,y){
 }
 
 make.combinations <- function(...){
+  ## generate combinations taking an element from each input vector
   dots <- list(...)
   apply(expand.grid %wargs% dots, 1,
         function(z) as.list(z))
 }
 
 parameter.scan <- function(f, params.list, .parallel=FALSE){
+  ## apply f over a list of parameters
   rbind.fill(llply(params.list,
                    function(params){
                      cbind(as.data.frame(params), f = f %wargs% params)
@@ -766,6 +773,7 @@ sample.by <- function(x,...,as.filter=TRUE){
 ####################
 
 rbind.fill.par <- function(lst, m = 1000) {
+  ## chunk and parallelize rbind.fill
   n <- length(lst)
   ldply(1:ceiling(n / m),
         function(offset){
@@ -817,6 +825,7 @@ dataframe.to.tsv <- function(x, file, ..., sep='\t', row.names=F, quote=FALSE)
   write.table(x, file=file, ..., sep=sep, row.names=row.names, quote=quote)
 
 pprint.dataframe <- function(data, sep='  |  ', prepend.row.names = ' ', .parallel=FALSE){
+  ## pretty print data frame in text format
   if(is.matrix(data))
     data <- as.data.frame(data)
 
@@ -843,6 +852,7 @@ pprint.dataframe <- function(data, sep='  |  ', prepend.row.names = ' ', .parall
 }
 
 dataframe.to.textile <- function(x, attr.for = function(e, i, j) NA, header = T, prepend.row.names = ' ', .parallel=FALSE){
+  ## print dataframe to textile
   row.to.tt <- function(row) paste('|', paste(as.character(row), collapse = ' |'), ' |', sep='')
 
   add.attr <- function(e, i, j) {
@@ -877,6 +887,7 @@ dataframe.to.html.table <- function(x,
                                     add.td.attr=function(i,j){''},
                                     prepend.row.names = ' ',
                                     .parallel=FALSE){
+  ## print dataframe to html
   if(is.matrix(x))
     x <- as.data.frame(x)
 
@@ -911,6 +922,7 @@ dataframe.to.html.table <- function(x,
 }
 
 sorttable.import <- function(loc='http://www.kryogenix.org/code/browser/sorttable/sorttable.js'){
+  ## add import for simple sortable tables
   sprintf('<script src="%s"></script>
 <style media="screen" type="text/css">
 
@@ -948,6 +960,7 @@ today <- function(sep='-') unix.timestamp.to.fmt(unix.timestamp.now(), paste('%Y
 ####################
 
 str.fmt <- function(s,...){
+  ## named string formatting
   dots <- list(...)
   named.pat <- '(^|[^%])(%)\\(([A-Za-z0-9_.]+?)\\)(([0-9.]+)?[sdf])' ## name params can contain alphanumeric chars, underscores, and periods
   unnamed.pat <- '(^|[^%])(%[sdf])'
