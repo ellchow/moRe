@@ -73,6 +73,7 @@ stat.sum.df <- function(fun = 'mean_cl_boot', geom='crossbar', colour='steelblue
 vp.layout <- function(x, y) viewport(layout.pos.row=x, layout.pos.col=y)
 
 multi.plot <- function(..., nrow=NULL, ncol=NULL, as.table=FALSE) {
+  ## put multiple plots on same display
   dots <- list(...)
   n <- length(dots)
 

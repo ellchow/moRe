@@ -15,12 +15,14 @@
 import('utils')
 
 linear.norm <- function(x, lb, ub, clip = c(FALSE,FALSE), na.rm = FALSE){
+  ## linear scaling
   y <- cap(x, if(clip[1]) lb else -Inf, if(clip[2]) ub else Inf)
 
   (y - lb) / (ub - lb)
 }
 
 is.between <- function(x, bounds, inclusive=T){
+  ## check if value is in some range
   if(inclusive)
     (x >= bounds[1]) & (x <= bounds[2])
   else
@@ -28,7 +30,8 @@ is.between <- function(x, bounds, inclusive=T){
 }
 
 cap <- function(x, lb, ub, na.rm = FALSE)
-  pmin(ub,pmax(lb, x, na.rm=na.rm), na.rm=na.rm)
+  ## cap values
+  pmin(ub, pmax(lb, x, na.rm=na.rm), na.rm=na.rm)
 
 decile <- function(x, ...)
   quantile(x, seq(0,1,0.1), ...)
@@ -38,6 +41,7 @@ percentile <- function(x, ...)
 
 bucketize <- function(x, buckets = decile(x), label='names',
                       uniq.boundaries = TRUE, drop.ub = TRUE){
+  ## put values into discrete buckets
   if(drop.ub)
     buckets <- head(buckets, -1)
 
@@ -66,6 +70,7 @@ bucketize <- function(x, buckets = decile(x), label='names',
 }
 
 rdiscrete <- function(n, prob, domain = indices(prob))
+  ## generate random discrete values according to some distribution
   bucketize(runif(n), named(c(0,cumsum(prob / sum(prob))), domain))
 
 ffilter <- function(x,w,indexes=1:length(x),sides=2){
@@ -106,6 +111,7 @@ kurtosis <- function(x, ...)
   -3 + mean((x - mean(x, ...)) ^ 4, ...) / (mean((x - mean(x, ...)) ^ 2, ...) ^ 2)
 
 beta.params <- function(a,b,method='ab'){
+  ## container for beta distribution parameters
   stop.if.not(method %in% c('ab','md'), 'unknown method: %s', method)
   if(method == 'md'){
     alpha <- a * b
@@ -117,6 +123,7 @@ beta.params <- function(a,b,method='ab'){
 }
 
 beta.estimate <- function(x, m=mean, v=var){
+  ## empirical bayes to fit beta
   if(is.null(dim(x)) || ncol(x) != 2){
     sample.mean <- m(x)
     sample.var <- v(x)
@@ -133,10 +140,13 @@ beta.estimate <- function(x, m=mean, v=var){
 }
 
 beta.update <- function(params, s, n)
+  ## posterior update for beta distribution
   beta.params(s + params[,'a'], n + params[,'b'])
 
 
 entropy <- function(p.x, discretize = function(z) bucketize(z, seq(min(z), max(z), length=1000)), b=2, normalize=FALSE){
+  ## entropy via discretization
+
   if(!is.null(discretize))
     p.x <- table(discretize(p.x))
 

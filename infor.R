@@ -14,7 +14,7 @@
 
 import('utils', 'mdls')
 
-
+#### metrics
 dcg <- function(value=I, discount=function(i) pmax(1, log(i,2))){
   function(r, x)
     sum(value(x[r]) / discount(1:length(x)))
@@ -52,7 +52,13 @@ rel.to <- function(f=cor){
 overlap <- function(n=10)
   rel.to(function(r, r.ref) sum((r <= n) & (r.ref <= n)))
 
+####
+
 compute.ranks <- function(s, g, ties.method='random', envir=NULL){
+  ## compute ranks from scores
+  ## s: score of the example
+  ## g: group (e.g. query)
+
   if(!is.null(envir)){
     s <- eval(substitute(s),envir)
     g <- eval(substitute(g),envir)
@@ -62,6 +68,11 @@ compute.ranks <- function(s, g, ties.method='random', envir=NULL){
 }
 
 compute.skips <- function(rnk, pos, g, envir=NULL){
+  ## compute skips (e.g. examples above and including lowest click)
+  ## rnk: rank of the item in group g
+  ## pos: positives (e.g. click)
+  ## g: group (e.g. query)
+
   if(!is.null(envir)){
     rnk <- eval(substitute(rnk),envir)
     pos <- eval(substitute(pos),envir)
@@ -80,6 +91,12 @@ compute.skips <- function(rnk, pos, g, envir=NULL){
 }
 
 compute.infor.metric <- function(rnk, values, g, metric, envir=NULL){
+  ## compute some information retrieval metric
+  ## rnk: rank of the item in group g
+  ## values: values to be used for computing metric
+  ## g: group (e.g. query)
+  ## metric: function for computing metric (see above metrics)
+
   if(!is.null(envir)){
     rnk <- eval(substitute(rnk),envir)
     values <- eval(substitute(values),envir)
@@ -96,9 +113,18 @@ compute.infor.metric <- function(rnk, values, g, metric, envir=NULL){
 feature.contributions.infor.metric <- function(mdl, d, values, g, metric, featureSets = mdl$features,
                                                agg = smean.cl.boot,
                                                log.level=SimpleLog.INFO, .parallel=TRUE){
+  ## approximately compute the impact of a feature on a ranking metric by randomizing the feature and recomputing the metric
+  ## mdl: model used for score the data (one element from outpt of mdls.fit)
+  ## d: dataset to compute contributions over
+  ## values: values used to compute metric
+  ## g: group (e.g. query)
+  ## metric: function for computing metric (see above metrics)
+  ## featureSets: features (names) to compute contribution
+  ## agg: aggregation function over groups
+
   logger <- SimpleLog('feature.contributions.infor.metric', log.level)
 
-  rnk <- eval(substitute(rnk),envir)
+  rnk <- eval(substitute(rnk),d)
   values <- eval(substitute(values),d)
   g <- eval(substitute(g),d)
 
