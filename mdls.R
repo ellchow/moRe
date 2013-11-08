@@ -52,19 +52,19 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
   ## ... : model definitions
   ## mapping : mapping by matching model def id pattern (value in list) to dataset id pattern (name in list)
 
-  import('mdls')
-  mdls.fit(iris[,1:4],
-           gbm.model.def("gbmmodel", Sepal.Length,
-                         c('Sepal.Width','Petal.Length','Petal.Width'),
-                         distribution='gaussian',train.fraction=0.8,interaction.depth=6,weights=function(data) runif(nrow(data))),
-           lm.model.def('lmmodel', Sepal.Length,
-                        c('Sepal.Width','Petal.Length','Petal.Width')),
-           glm.model.def('glmmodel', Sepal.Length,
-                        c('Sepal.Width','Petal.Length','Petal.Width'), family = 'gaussian'),
-           betareg.model.def("betaregmodel", Sepal.Width / Sepal.Length,
-                             c('Sepal.Width','Petal.Length','Petal.Width'),
-                             phi.features='Sepal.Width'),
-           .parallel=F) -> ms
+  ## import('mdls')
+  ## mdls.fit(iris[,1:4],
+  ##          gbm.model.def("gbmmodel", Sepal.Length,
+  ##                        c('Sepal.Width','Petal.Length','Petal.Width'),
+  ##                        distribution='gaussian',train.fraction=0.8,interaction.depth=6,weights=function(data) runif(nrow(data))),
+  ##          lm.model.def('lmmodel', Sepal.Length,
+  ##                       c('Sepal.Width','Petal.Length','Petal.Width')),
+  ##          glm.model.def('glmmodel', Sepal.Length,
+  ##                       c('Sepal.Width','Petal.Length','Petal.Width'), family = 'gaussian'),
+  ##          betareg.model.def("betaregmodel", Sepal.Width / Sepal.Length,
+  ##                            c('Sepal.Width','Petal.Length','Petal.Width'),
+  ##                            phi.features='Sepal.Width'),
+  ##          .parallel=F) -> ms
 
   logger <- SimpleLog('mdls.fit',log.level)
 

@@ -3,6 +3,8 @@ moRe
 
 a collection of R functions and utilities. 
 
+for simple "installation", run setup.sh.
+
 *utils*
 
 utilities for improving day-to-day data exploration
