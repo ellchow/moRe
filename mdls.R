@@ -166,7 +166,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                  }))
 }
 
-mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.groups = NULL, metrics.mapping=NULL, log.level=SimpleLog.ERROR, .parallel=FALSE){
+mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.groups = NULL, metrics.mapping=list('.*'='.*'), log.level=SimpleLog.ERROR, .parallel=FALSE){
   ## predict models (trained with mdls.fit) over a datasets
   ## models: output of mdls.fit
   ## datasets: single or list of data.frames/paths to data.frames/functions that load a data.frame
@@ -190,7 +190,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
   ##                     'mean.at.top' = function(r, d) compute.infor.metric(r, d$Sepal.Length, d$Species, at.top(4))
   ##                     )
   ##                   ))
-  ## mdls.predict(ms, iris, metric.groups=metrics, metrics.mapping=list('.*'='.*')) -> ss
+  ## mdls.predict(ms, iris, metric.groups=metrics) -> ss
 
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
