@@ -242,14 +242,6 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
                                         z
                                       }, .parallel=.parallel))
 
-## list('ranking'=list(
-##        'preprocess' = function(s,d){ compute.ranks(s,d$query) }
-##        'metrics' = list(
-##          'mrr' = function(r, d) smean.cl.boot(compute.infor.metric(r, d$conversion, d$query, mean.reciprocal.rank))
-##          )
-##        ))
-
-
                    metrics.filtered <- Filter(function(m){
                      any(sapply(lzip(names(metrics.mapping), metrics.mapping),
                                 function(mp){
@@ -259,7 +251,8 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
                    }, lzip(metric.group.ids, metric.groups))
 
                    avg.num.metrics.per.group <- if(is.null(metrics.filtered)) 0 else mean(unlist(lapply(metrics.filtered, function(mg) length(mg[[2]]$metrics))))
-                   .parallel.layer <- if(length(z.pred) > avg.num.metrics.per.group) 1 else 2
+                   .parallel.layer <- if(length(z.pred) >= avg.num.metrics.per.group) 1 else 2
+                   write.msg(logger, 'parallelizing over %s (# models: %s, average # metrics in group: %s)', if(.parallel.layer == 1) 'models' else 'metrics', length(z.pred), avg.num.metrics.per.group, level=SimpleLog.DEBUG)
                    z.metrics <- flatten(lapply(metrics.filtered,
                                               function(metric.group){
                                                 metric.group.id <- metric.group[[1]]
