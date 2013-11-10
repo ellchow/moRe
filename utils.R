@@ -26,7 +26,7 @@ import('doMC',
        as.library='utils')
 
 ## options(width=110,scipen=6)
-options(scipen=6)
+options(scipen=6, menu.graphics=FALSE)
 
 ####################
 #### Logging
@@ -370,6 +370,8 @@ cache.data <- function(path, ..., cache.path='.cache', force=FALSE, log.level = 
   }else{
     conn <- path
   }
+
+  conn
 }
 
 load.data <- function(path, load.fun, ..., cache.path = '.cache', show.progress = NULL, force=FALSE, log.level = SimpleLog.INFO){
