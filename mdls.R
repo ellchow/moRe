@@ -175,7 +175,13 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
   ## metrics.mapping: regex mapping of metric groups to datasets (same format as 'mapping' parameter)
 
   ## import('mdls','infor')
-  ## metrics <- list('simple'=list('metrics' = list('mse' = function(p, d) mean(((if(is.matrix(p)) p[,1] else p) - d$Sepal.Length)^2)) ),
+  ## metrics <- list(
+  ##                 'basic'=list(
+  ##                   'metrics' = list(
+  ##                     'mse' = function(p, d) mean(((if(is.matrix(p)) p[,1] else p) - d$Sepal.Length)^2),
+  ##                     'foo' = function(p, d) ggplot(data.frame(x=1:10,y=rnorm(10)), aes(x=x,y=y)) + geom_point()
+  ##                     )
+  ##                   ),
   ##                 'grouped'=list(
   ##                   'preprocess' = function(s,d){
   ##                     compute.ranks(if(is.matrix(s)) s[,1] else s, d$Species)
