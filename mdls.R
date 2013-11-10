@@ -261,7 +261,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
 
                                                 write.msg(logger, 'computing metrics group "%s"', metric.group.id)
 
-                                                flatten(llply(names(z.pred),
+                                                z.ms.all <- flatten(llply(names(z.pred),
                                                               function(pred.name){
                                                                 write.msg(logger, 'preprocess predictions of "%s"', pred.name, level=SimpleLog.DEBUG)
                                                                 processed.pred <- preprocess(z.pred[[pred.name]], data)
@@ -287,11 +287,9 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
                                                                 list(z.ms) %named% pred.name
                                                               },
                                                               .parallel = .parallel && (.parallel.layer == 1)))
+
+                                                list(z.ms.all) %named% metric.group.id
                                               }))
-
-
-
-
 
                    z <- list(list(scores=z.pred, metrics=z.metrics)) %named% ds.id
                    stop.timer(timer)
