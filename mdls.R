@@ -182,7 +182,8 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
   ##                   'metrics' = list(
   ##                     'mse' = function(p, d) mean(((if(is.matrix(p)) p[,1] else p) - d$Sepal.Length)^2),
   ##                     'foo' = function(p, d) ggplot(data.frame(x=1:10,y=rnorm(10)), aes(x=x,y=y)) + geom_point()
-  ##                     )
+  ##                     ),
+  ##                   'baselines' = list('random' = function(d) rnorm(nrow(d)))
   ##                   ),
   ##                 'grouped'=list(
   ##                   'preprocess' = function(s,d){
@@ -266,13 +267,34 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
                                                 metric.group.id <- metric.group[[1]]
                                                 preprocess <- get.or.else(metric.group[[2]], 'preprocess', function(s,d) s)
                                                 metrics.lst <- metric.group[[2]]$metrics
+                                                baselines.lst <- metric.group[[2]]$baselines
 
                                                 write.msg(logger, 'computing metrics group "%s"', metric.group.id)
+                                                z.pred.with.baselines <- c(z.pred,
+                                                                           flatten(lapply(names(baselines.lst),
+                                                                                  function(b.name){
+                                                                                    write.msg(logger, 'adding baseline "%s"', b.name)
+                                                                                    b <- tryCatch(baselines.lst[[b.name]](data),
+                                                                                                  error = function(e){
+                                                                                                    write.msg(logger, str_trim(as.character(e)), level=SimpleLog.ERROR)
+                                                                                                    NA
+                                                                                                  })
+                                                                                    if(all(is.na(b)))
+                                                                                      write.msg(logger, 'failed to compute baseline "%s" from "%s" on "%s" (skipped)', b.name, metric.group.id, ds.id, level=SimpleLog.WARNING)
 
-                                                z.ms.all <- flatten(llply(names(z.pred),
+                                                                                    list(b) %named% b.name
+                                                                                  })))
+
+                                                z.ms.all <- flatten(llply(names(z.pred.with.baselines),
                                                               function(pred.name){
                                                                 write.msg(logger, 'preprocess predictions of "%s"', pred.name, level=SimpleLog.DEBUG)
-                                                                processed.pred <- preprocess(z.pred[[pred.name]], data)
+                                                                processed.pred <- tryCatch(preprocess(z.pred.with.baselines[[pred.name]], data),
+                                                                                           error = function(e){
+                                                                                             write.msg(logger, str_trim(as.character(e)), level=SimpleLog.ERROR)
+                                                                                             NA
+                                                                                           })
+                                                                if(all(is.na(processed.pred)))
+                                                                  write.msg(logger, 'failed to preprocess "%s" for "%s" on "%s" (skipped)', pred.name, metric.group.id, ds.id, level=SimpleLog.WARNING)
 
                                                                 z.ms <- flatten(llply(lzip(names(metrics.lst), metrics.lst),
                                                                                       function(m){
@@ -286,7 +308,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
                                                                                                           NA
                                                                                                         })
                                                                                         if(all(is.na(z.m)))
-                                                                                          write.msg(logger, 'failed to compute computing metric "%s" for "%s" on "%s" (skipped)', m.id, pred.name, ds.id, level=SimpleLog.WARNING)
+                                                                                          write.msg(logger, 'failed to compute metric "%s" for "%s" on "%s" (skipped)', m.id, pred.name, ds.id, level=SimpleLog.WARNING)
 
                                                                                         list(z.m) %named% m.id
                                                                                       },
