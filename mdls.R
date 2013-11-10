@@ -52,6 +52,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
   ## ... : model definitions
   ## mapping : mapping by matching model def id pattern (value in list) to dataset id pattern (name in list)
 
+  #### EXAMPLE: targets aren't all meaningful
   ## import('mdls')
   ## mdls.fit(iris[,1:4],
   ##          gbm.model.def("gbmmodel", Sepal.Length,
@@ -174,6 +175,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
   ## metric.groups: definitions of metrics to compute for each model/dataset (see example below)
   ## metrics.mapping: regex mapping of metric groups to datasets (same format as 'mapping' parameter)
 
+  ##### EXAMPLE - metrics aren't really meaningful here!
   ## import('mdls','infor')
   ## metrics <- list(
   ##                 'basic'=list(

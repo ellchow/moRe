@@ -1,9 +1,9 @@
 moRe
 ========
 
-a collection of R functions and utilities. 
+a collection of R (v2.15.3) functions and utilities.
 
-for simple "installation", run setup.sh.
+**for simple "installation", run setup.sh.**
 
 *utils*
 
