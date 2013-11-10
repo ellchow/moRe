@@ -107,14 +107,14 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                              t <- tryCatch(md$target.gen(data),
                                                            error=function(e){
                                                              write.msg(logger,str_trim(as.character(e)),
-                                                                       level='error')
+                                                                       level=SimpleLog.ERROR)
                                                              NA
                                                            })
                                              write.msg(logger, sprintf('adding weights for "%s"', id))
                                              w <- tryCatch(md$weights(data),
                                                            error=function(e){
                                                              write.msg(logger,str_trim(as.character(e)),
-                                                                       level='error')
+                                                                       level=SimpleLog.ERROR)
                                                              NA
                                                            })
                                              problems <- md$check(md,t,data,w)
@@ -139,7 +139,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                                        md$params)),
                                                              error=function(e){
                                                                write.msg(logger,str_trim(as.character(e)),
-                                                                         level='error')
+                                                                         level=SimpleLog.ERROR)
                                                                NA
                                                              })
                                                if(!any(is.na(m))){
@@ -166,17 +166,32 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                  }))
 }
 
-mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=SimpleLog.ERROR, .parallel=FALSE){
+mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.groups = NULL, metrics.mapping=NULL, log.level=SimpleLog.ERROR, .parallel=FALSE){
   ## predict models (trained with mdls.fit) over a datasets
   ## models: output of mdls.fit
   ## datasets: single or list of data.frames/paths to data.frames/functions that load a data.frame
   ## mapping : mapping by matching model def id pattern (value in list) to dataset id pattern (name in list)
+  ## metric.groups: definitions of metrics to compute for each model/dataset (see example below)
+  ## metrics.mapping: regex mapping of metric groups to datasets (same format as 'mapping' parameter)
+
+  ## import('mdls','infor')
+  ## metrics <- list('simple'=list('metrics' = list('mse' = function(p, d) mean(((if(is.matrix(p)) p[,1] else p) - d$Sepal.Length)^2)) ),
+  ##                 'grouped'=list(
+  ##                   'preprocess' = function(s,d){
+  ##                     compute.ranks(if(is.matrix(s)) s[,1] else s, d$Species)
+  ##                   },
+  ##                   'metrics' = list(
+  ##                     'mean.at.top' = function(r, d) compute.infor.metric(r, d$Sepal.Length, d$Species, at.top(4))
+  ##                     )
+  ##                   ))
+  ## mdls.predict(ms, iris, metric.groups=metrics, metrics.mapping=list('.*'='.*')) -> ss
 
   logger <- SimpleLog('mdls.predict',log.level)
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
   model.ids <- lapply(models, function(m) m$id)
+  metric.group.ids <- names(metric.groups)
 
   timer <- Timer(logger)
   flatten(lapply(lzip(dataset.ids,datasets),
@@ -204,7 +219,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
 
 
                    start.timer(timer,sprintf('computing predictions on "%s"', ds.id))
-                   z <- flatten(llply(models.filtered,
+                   z.pred <- flatten(llply(models.filtered,
                                       function(x){
                                         id <- x[[1]]
                                         m <- x[[2]]$model
@@ -213,17 +228,79 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), log.level=Si
                                         predict <- x[[2]]$predict
 
                                         write.msg(logger,sprintf('predicting with "%s"', id))
-                                        pr <- predict(m, subset(data,select=features))
+                                        pr <- tryCatch(predict(m, subset(data,select=features)),
+                                                       error=function(e){
+                                                         write.msg(logger, str_trim(as.character(e)), level=SimpleLog.ERROR)
+                                                         NA
+                                                       })
+
+                                        if(all(is.na(pr)))
+                                          write.msg(logger, 'failed to predict "%s" (skipped)', id, level=SimpleLog.WARNING)
 
                                         z <- list(pr)
                                         names(z) <- id
                                         z
                                       }, .parallel=.parallel))
 
+## list('ranking'=list(
+##        'preprocess' = function(s,d){ compute.ranks(s,d$query) }
+##        'metrics' = list(
+##          'mrr' = function(r, d) smean.cl.boot(compute.infor.metric(r, d$conversion, d$query, mean.reciprocal.rank))
+##          )
+##        ))
+
+
+                   metrics.filtered <- Filter(function(m){
+                     any(sapply(lzip(names(metrics.mapping), metrics.mapping),
+                                function(mp){
+                                  str_detect(ds.id, mp[[1]]) && str_detect(m[[1]], mp[[2]])
+                                }))
+
+                   }, lzip(metric.group.ids, metric.groups))
+
+                   avg.num.metrics.per.group <- if(is.null(metrics.filtered)) 0 else mean(unlist(lapply(metrics.filtered, function(mg) length(mg[[2]]$metrics))))
+                   .parallel.layer <- if(length(z.pred) > avg.num.metrics.per.group) 1 else 2
+                   z.metrics <- flatten(lapply(metrics.filtered,
+                                              function(metric.group){
+                                                metric.group.id <- metric.group[[1]]
+                                                preprocess <- get.or.else(metric.group[[2]], 'preprocess', function(s,d) s)
+                                                metrics.lst <- metric.group[[2]]$metrics
+
+                                                write.msg(logger, 'computing metrics group "%s"', metric.group.id)
+
+                                                flatten(llply(names(z.pred),
+                                                              function(pred.name){
+                                                                write.msg(logger, 'preprocess predictions of "%s"', pred.name, level=SimpleLog.DEBUG)
+                                                                processed.pred <- preprocess(z.pred[[pred.name]], data)
+
+                                                                z.ms <- flatten(llply(lzip(names(metrics.lst), metrics.lst),
+                                                                                      function(m){
+                                                                                        m.id <- m[[1]]
+                                                                                        m <- m[[2]]
+                                                                                        write.msg(logger, 'computing metric "%s" for "%s" on "%s"', m.id, pred.name, ds.id)
+
+                                                                                        z.m <- tryCatch(m(processed.pred, data),
+                                                                                                        error = function(e){
+                                                                                                          write.msg(logger, str_trim(as.character(e)), level=SimpleLog.ERROR)
+                                                                                                          NA
+                                                                                                        })
+                                                                                        if(all(is.na(z.m)))
+                                                                                          write.msg(logger, 'failed to compute computing metric "%s" for "%s" on "%s" (skipped)', m.id, pred.name, ds.id, level=SimpleLog.WARNING)
+
+                                                                                        list(z.m) %named% m.id
+                                                                                      },
+                                                                                      .parallel = .parallel && (.parallel.layer == 2)))
+
+                                                                list(z.ms) %named% pred.name
+                                                              },
+                                                              .parallel = .parallel && (.parallel.layer == 1)))
+                                              }))
 
 
 
-                   z <- named(list(z), ds.id)
+
+
+                   z <- list(list(scores=z.pred, metrics=z.metrics)) %named% ds.id
                    stop.timer(timer)
                    z
                  })
