@@ -32,7 +32,7 @@ import('utils',
 is.model.def <- function(x){
   attrs <- list(
              "id" = is.character, # name of model
-             "target.gen" = is.function, # function that takes in a superset of the training data  and returns the target
+             "target.gen" = function(tg) is.function(tg) || is.null(tg), # function that takes in a superset of the training data  and returns the target
              "fit" = is.function, # function for fitting the model of the same form as gbm.fit
              "features" = is.character, # vector of feature names to be used by the model
              "predict" = is.function, # function for computing a prediction of the same form as gbm.predict
@@ -41,7 +41,6 @@ is.model.def <- function(x){
              "weights" = is.function, # weights on training examples
              "report" = is.function# function that generates report for model
              )
-
 
   (length(x) == length(attrs)) && all(names(x) == names(attrs)) && all(unlist(lapply(names(attrs), function(a) attrs[[a]](x[[a]]) )))
 }
@@ -103,14 +102,18 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                            function(md){
                                              id <- sprintf('%s%s', md$id,
                                                            if(length(datasets) > 1) sprintf("__%s", ds.id) else "")
-                                             write.msg(logger, sprintf('building target for "%s"', id))
 
-                                             t <- tryCatch(md$target.gen(data),
-                                                           error=function(e){
-                                                             write.msg(logger,str_trim(as.character(e)),
-                                                                       level=SimpleLog.ERROR)
-                                                             NA
-                                                           })
+                                             t <- NULL
+                                             if(!is.null(md$target.gen)){
+                                               write.msg(logger, sprintf('building target for "%s"', id))
+                                               t <- tryCatch(md$target.gen(data),
+                                                             error=function(e){
+                                                               write.msg(logger,str_trim(as.character(e)),
+                                                                         level=SimpleLog.ERROR)
+                                                               NA
+                                                             })
+                                             }
+
                                              write.msg(logger, sprintf('adding weights for "%s"', id))
                                              w <- tryCatch(md$weights(data),
                                                            error=function(e){
@@ -130,7 +133,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                                   level='warning')
                                                       })
                                              }else{
-                                               write.msg(logger, sprintf('training "%s"', id))
+                                               write.msg(logger, 'training "%s"', id)
 
                                                m <- tryCatch(do.call(md$fit,
                                                                      c(list(subset(data,
@@ -143,6 +146,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                                          level=SimpleLog.ERROR)
                                                                NA
                                                              })
+
                                                if(!any(is.na(m))){
                                                  z <- named(list(list(target=t,
                                                                       model=m,
@@ -1246,6 +1250,80 @@ betareg.model.report <- function(object, root, text.as = 'txt', log.level = Simp
       file=file.path(root, 'summary.txt'))
 }
 
+#####################################
+#### pca modifications and helpers
+#####################################
+
+pca.model.def <- function(id, features, ...){
+  ## import('mdls')
+  ## mdls.fit(USArrests, pca.model.def("pca", names(USArrests))) -> ms
+
+  params <- list(...)
+  list(id=id, target.gen=NULL, fit=function(x,y,...) prcomp(x,...), features=features,
+       predict = function(...) prcomp.predict(...), params = params,
+       check=check.pca.model.def, weights=function(data) NULL, report=pca.model.report)
+}
+
+prcomp.predict <- function(object, newdata, select=ncol(newdata), ...)
+{
+
+    if (missing(newdata)) {
+        if(!is.null(object$x)) return(object$x)
+        else stop("no scores are available: refit with 'retx=TRUE'")
+    }
+    if(length(dim(newdata)) != 2L)
+        stop("'newdata' must be a matrix or data frame")
+    nm <- rownames(object$rotation)
+    if(!is.null(nm)) {
+        if(!all(nm %in% colnames(newdata)))
+            stop("'newdata' does not have named columns matching one or more of the original columns")
+        newdata <- newdata[, nm, drop = FALSE]
+    } else {
+        if(NCOL(newdata) != NROW(object$rotation) )
+            stop("'newdata' does not have the correct number of columns")
+    }
+
+    ## next line does as.matrix
+    prop.of.max <- function(x) is.double(x) && x > 0 && x < 1
+    select.n <- function(x) x > 0 && x <= length(object$sdev)
+
+    stop.if.not(prop.of.max(select) || select.n(select), 'unknown method of selecting PCs "%s"', select)
+
+
+    if(prop.of.max(select))
+      select <- max(which(object$sdev >= (select * max(object$sdev))))
+    else
+      select <- as.integer(select)
+
+    scale(newdata[,1:select], object$center[1:select], object$scale) %*% object$rotation[1:select,]
+}
+
+check.pca.model.def <- function(model.def, target, data, weights){
+  problems <- list()
+
+  missing <- setdiff(model.def$features, names(data))
+  available <- setdiff(model.def$features, missing)
+  if(length(missing) != 0)
+    problems$missing.features <- missing
+
+  na.data <- any(unlist(lapply(data,is.na)))
+  if(na.data)
+    problems$na.data <- NA
+
+  nan.data <- any(unlist(lapply(data,is.nan)))
+  if(nan.data)
+    problems$nan.data <- NA
+
+  inf.data <- any(unlist(lapply(data,is.infinite)))
+  if(inf.data)
+    problems$infinite.data <- NA
+
+  problems
+}
+
+pca.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
+  stop()
+}
 
 #####################################
 #### optimx modifications and helpers
