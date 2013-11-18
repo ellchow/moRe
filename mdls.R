@@ -1250,49 +1250,81 @@ betareg.model.report <- function(object, root, text.as = 'txt', log.level = Simp
 #### pca modifications and helpers
 #####################################
 
-pca.model.def <- function(id, features, ...){
-  ## import('mdls')
-  ## mdls.fit(USArrests, pca.model.def("pca", names(USArrests))) -> ms
+pca.fit <- function(X, center=TRUE, scale=FALSE, tol=function(sds) length(sds), method=NULL, ...){
+  ## perform principal component analysis on x using SVD
+  ##   decompose into X = U D V' => X == u %*% diag(d) %*% t(v)
+  ## X: matrix-like on which to perform PCA
+  ## k: number of PCs to compute
+  ## center: center the columns
+  ## scale: scale the columns
+  ## tol: level at which PCs are discarded
 
-  params <- list(...)
-  list(id=id, target.gen=NULL, fit=function(x,y,...) prcomp(x,...), features=features,
-       predict = function(...) prcomp.predict(...), params = params,
-       check=check.pca.model.def, weights=function(data) NULL, report=pca.model.report)
+  if(is.null(method))
+    method <- 'svd'
+
+  stop.if.not(method %in% c('svd', 'irlba'), 'unknown method "%s"', method)
+  stop.if.not(length(dim(X)) == 2, 'X must be 2-dimensional')
+
+  X <- scale(X, center=center, scale=scale)
+  centers <- attr(X, "scaled:center")
+  scales <- attr(X, "scaled:scale")
+
+  stop.if(any(scales == 0), 'cannot rescale constant columns to unit variance (%s)', paste(which(scales == 0),collapse=','))
+
+  svd.f <- svd
+  if(method == 'irlba'){
+    svd.f <- irlba
+  }
+
+  z <- svd.f(X, ...) ## assume it is of form list(u=, d=, v=, ...)
+
+  z$sd <- z$d/sqrt(max(1, nrow(X) - 1))
+  z$r <- length(z$d)
+  if(!is.null(tol)){
+    r <- tol(z$sd) ## r <- sum(z$sd > (z$sd[1L * tol]))
+    z$r <- length(r)
+    if(r < ncol(X)){
+      z$v <- z$v[, 1L:r, drop=FALSE]
+      z$sd <- z$sd[1L:r]
+    }
+  }
+  dimnames(z$v) <- list(colnames(X), paste0("PC", seq_len(ncol(z$v))))
+
+  z$centers <- if(is.null(centers)) NA else centers
+  z$scales <- if(is.null(scales)) NA else scales
+
+  z
 }
 
-prcomp.predict <- function(object, newdata, select=ncol(newdata), ...)
-{
+pca.importance <- function(object){
+  v <- object$sd^2
+  prop.var <- v / sum(v)
+  cum.prop <- cumsum(prop.var)
 
-    if (missing(newdata)) {
-        if(!is.null(object$x)) return(object$x)
-        else stop("no scores are available: refit with 'retx=TRUE'")
-    }
-    if(length(dim(newdata)) != 2L)
-        stop("'newdata' must be a matrix or data frame")
-    nm <- rownames(object$rotation)
-    if(!is.null(nm)) {
-        if(!all(nm %in% colnames(newdata)))
-            stop("'newdata' does not have named columns matching one or more of the original columns")
-        newdata <- newdata[, nm, drop = FALSE]
-    } else {
-        if(NCOL(newdata) != NROW(object$rotation) )
-            stop("'newdata' does not have the correct number of columns")
-    }
-
-    ## next line does as.matrix
-    prop.of.max <- function(x) is.double(x) && x > 0 && x < 1
-    select.n <- function(x) x > 0 && x <= length(object$sdev)
-
-    stop.if.not(prop.of.max(select) || select.n(select), 'unknown method of selecting PCs "%s"', select)
-
-
-    if(prop.of.max(select))
-      select <- max(which(object$sdev >= (select * max(object$sdev))))
-    else
-      select <- as.integer(select)
-
-    scale(newdata[,1:select], object$center[1:select], object$scale) %*% object$rotation[1:select,]
+  data.frame(sd=object$sd, var=v, prop.var=prop.var, cum.prop=cum.prop)
 }
+
+pca.predict <- function(object, newdata, nv=object$r){
+  stop.if.not(length(dim(newdata)) == 2, 'newdata must be 2-dimensional')
+
+  stop.if.not((!is.null(row.names(object$v)) && all(row.names(object$v) == colnames(newdata))) ||
+              (is.null(row.names(object$v)) && (ncol(newdata) == nrow(object$v))),
+              'newdata does not have the correct number of columns')
+
+  scaled.newdata <- scale(newdata, object$centers, if(is.na(object$scales)) FALSE else object$scales)
+
+  scaled.newdata %*% object$v
+}
+
+## pca.model.def <- function(id, features, ...){
+##   ## import('mdls')
+##   ## mdls.fit(USArrests, pca.model.def("pca", names(USArrests))) -> ms
+
+##   params <- list(...)
+##   list(id=id, target.gen=NULL, fit=function(x,y,...) pca.fit(x,...), features=features,
+##        predict = function(...) pca.predict(...), params = params,
+##        check=check.pca.model.def, weights=function(data) NULL, report=pca.model.report)
+## }
 
 check.pca.model.def <- function(model.def, target, data, weights){
   problems <- list()

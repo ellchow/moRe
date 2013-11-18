@@ -771,7 +771,7 @@ sample.by <- function(x,...,as.filter=TRUE){
 }
 
 ####################
-#### Dataframe
+#### Data.frame
 ####################
 
 rbind.fill.par <- function(lst, m = 1000) {
