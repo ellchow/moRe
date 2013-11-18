@@ -1282,7 +1282,7 @@ pca.fit <- function(X, center=TRUE, scale=FALSE, tol=function(sds) length(sds), 
   z$r <- length(z$d)
   if(!is.null(tol)){
     r <- tol(z$sd) ## r <- sum(z$sd > (z$sd[1L * tol]))
-    z$r <- length(r)
+    z$r <- r
     if(r < ncol(X)){
       z$v <- z$v[, 1L:r, drop=FALSE]
       z$sd <- z$sd[1L:r]
@@ -1301,19 +1301,25 @@ pca.importance <- function(object){
   prop.var <- v / sum(v)
   cum.prop <- cumsum(prop.var)
 
-  data.frame(sd=object$sd, var=v, prop.var=prop.var, cum.prop=cum.prop)
+  named(data.frame(sd=object$sd, var=v, prop.var=prop.var, cum.prop=cum.prop),
+        colnames(object$v),
+        'row')
+
 }
 
-pca.predict <- function(object, newdata, nv=object$r){
+pca.predict <- function(object, newdata, npcs=NULL){
+  if(is.null(npcs))
+    npcs <- object$r
+
   stop.if.not(length(dim(newdata)) == 2, 'newdata must be 2-dimensional')
 
   stop.if.not((!is.null(row.names(object$v)) && all(row.names(object$v) == colnames(newdata))) ||
               (is.null(row.names(object$v)) && (ncol(newdata) == nrow(object$v))),
               'newdata does not have the correct number of columns')
 
-  scaled.newdata <- scale(newdata, object$centers, if(is.na(object$scales)) FALSE else object$scales)
+  scaled.newdata <- scale(newdata[,1:npcs], object$centers[1:npcs], if(is.na(object$scales)) FALSE else object$scales[1:npcs])
 
-  scaled.newdata %*% object$v
+  scaled.newdata %*% object$v[1:npcs,]
 }
 
 pca.model.def <- function(id, features, ..., nv=length(features)){
