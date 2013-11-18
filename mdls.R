@@ -153,7 +153,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                                NA
                                                              })
 
-                                               if(!any(is.na(m))){
+                                               if(is.list(m) || !any(is.na(m))){
                                                  z <- named(list(list(target=t,
                                                                       model=m,
                                                                       id=id,
@@ -1316,15 +1316,16 @@ pca.predict <- function(object, newdata, nv=object$r){
   scaled.newdata %*% object$v
 }
 
-## pca.model.def <- function(id, features, ...){
-##   ## import('mdls')
-##   ## mdls.fit(USArrests, pca.model.def("pca", names(USArrests))) -> ms
+pca.model.def <- function(id, features, ..., nv=length(features)){
+  ## import('mdls')
+  ## mdls.fit(USArrests, pca.model.def("pca", names(USArrests))) -> ms
 
-##   params <- list(...)
-##   list(id=id, target.gen=NULL, fit=function(x,y,...) pca.fit(x,...), features=features,
-##        predict = function(...) pca.predict(...), params = params,
-##        check=check.pca.model.def, weights=function(data) NULL, report=pca.model.report)
-## }
+  params <- list(...)
+  params$nv <- nv
+  list(id=id, target.gen=NULL, fit=function(x,y,...,weights=NULL) pca.fit(x,...), features=features,
+       predict = function(...) pca.predict(...), params = params,
+       check=check.pca.model.def, weights=function(data) NULL, report=pca.model.report)
+}
 
 check.pca.model.def <- function(model.def, target, data, weights){
   problems <- list()
@@ -1350,7 +1351,20 @@ check.pca.model.def <- function(model.def, target, data, weights){
 }
 
 pca.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
-  stop()
+  stop.if(file.exists(root), 'output directory "%s" already exists ', root)
+
+  logger <- SimpleLog('pca.model.report', log.level)
+
+  dir.create(root, recursive = TRUE)
+
+  if('txt' == text.as)
+    format.fun <- pprint.dataframe
+  else if('html' == text.as)
+    format.fun <- function(...) paste(sorttable.import(), dataframe.to.html.table(...), sep='\n')
+  else if('textile' == text.as)
+    format.fun <- dataframe.to.textile
+
+  cat(format.fun(pca.importance(object)), file=file.path(root, sprintf('pc-importance.%s', text.as)))
 }
 
 #####################################
