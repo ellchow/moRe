@@ -98,9 +98,9 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                      stop.timer(timer)
                    }else if(is.function(data)){
                      data <- data()
-                   }else{
-                     data <- as.data.frame(data)
-                   }
+                   }##else{
+                     ## data <- as.data.frame(data)
+                   ## }
 
                    model.defs.filtered <- Filter(function(md){
                      any(sapply(lzip(names(mapping), mapping),
