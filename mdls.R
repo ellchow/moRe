@@ -1365,15 +1365,11 @@ check.pca.model.def <- function(model.def, target, data, weights){
   if(length(missing) != 0)
     problems$missing.features <- missing
 
-  na.data <- any(unlist(lapply(data,is.na)))
+  na.data <- any(is.na(data))
   if(na.data)
     problems$na.data <- NA
 
-  nan.data <- any(unlist(lapply(data,is.nan)))
-  if(nan.data)
-    problems$nan.data <- NA
-
-  inf.data <- any(unlist(lapply(data,is.infinite)))
+  inf.data <- any(is.infinite(data))
   if(inf.data)
     problems$infinite.data <- NA
 
