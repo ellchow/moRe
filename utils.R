@@ -23,6 +23,7 @@ import('doMC',
        'sfsmisc',
        'rjson',
        'testthat',
+       'Matrix',
        as.library='utils')
 
 ## options(width=110,scipen=6)
