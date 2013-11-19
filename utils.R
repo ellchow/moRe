@@ -771,8 +771,23 @@ sample.by <- function(x,...,as.filter=TRUE){
 }
 
 ####################
+#### Matrices
+####################
+
+sparse.matrix.from.file <- function(path, ..., what=list(integer(),integer(),numeric())){
+  entries <- scan(path, what=what, ...)
+  sparseMatrix(i=entries[[1]],  j=entries[[2]],  x=entries[[3]])
+}
+
+####################
 #### Data.frame
 ####################
+
+sort.by <- function(x, ..., decreasing=FALSE){
+  dots <- list(...)
+
+  x[csplat(order, lapply(dots, function(i) x[[i]]), decreasing = decreasing), ]
+}
 
 rbind.fill.par <- function(lst, m = 1000) {
   ## chunk and parallelize rbind.fill
