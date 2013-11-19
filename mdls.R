@@ -1264,14 +1264,13 @@ pca.fit <- function(X, center=FALSE, scale=FALSE, tol=function(sds) length(sds),
   stop.if.not(method %in% c('svd', 'irlba'), 'unknown method "%s"', method)
   stop.if.not(length(dim(X)) == 2, 'X must be 2-dimensional')
 
-  stop.if(any(scales == 0), 'cannot rescale constant columns to unit variance (%s)', paste(which(scales == 0),collapse=','))
-
   centers <- NULL
   scales <- NULL
   if(center || scale){
     X <- scale(X, center=center, scale=scale)
     centers <- attr(X, "scaled:center")
     scales <- attr(X, "scaled:scale")
+    stop.if(any(scales == 0), 'cannot rescale constant columns to unit variance (%s)', paste(which(scales == 0),collapse=','))
   }
 
   svd.f <- svd
@@ -1321,7 +1320,7 @@ pca.predict <- function(object, newdata, npcs=NULL){
               (is.null(row.names(object$v)) && (ncol(newdata) == nrow(object$v))),
               'newdata does not have the correct number of columns')
 
-  scaled.newdata <- scale(newdata[,1:npcs], object$centers[1:npcs], if(is.na(object$scales)) FALSE else object$scales[1:npcs])
+  scaled.newdata <- scale(newdata[,1:npcs], if(is.na(object$centers)) FALSE else object$centers[1:npcs], if(is.na(object$scales)) FALSE else object$scales[1:npcs])
 
   scaled.newdata %*% object$v[1:npcs,]
 }
