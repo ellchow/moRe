@@ -76,10 +76,10 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
 
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
   for(d in datasets){
-    if(is.matrix(d) && is.null(colnames(d)))
-      colnames(d) <- 1:ncol(d)
-    else if(is.null(names(d)))
+    if(is.data.frame(d) && is.null(names(d)))
       names(d) <- 1:ncol(d)
+    else if(is.null(colnames(d)))
+      colnames(d) <- 1:ncol(d)
   }
   model.defs <- list(...)
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
