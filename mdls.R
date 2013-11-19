@@ -75,12 +75,6 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
   logger <- SimpleLog('mdls.fit',log.level)
 
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
-  for(d in datasets){
-    if(is.data.frame(d) && is.null(names(d)))
-      names(d) <- 1:ncol(d)
-    else if(is.null(colnames(d)))
-      colnames(d) <- 1:ncol(d)
-  }
   model.defs <- list(...)
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
@@ -1279,12 +1273,13 @@ pca.fit <- function(X, center=TRUE, scale=FALSE, tol=function(sds) length(sds), 
 
   stop.if(any(scales == 0), 'cannot rescale constant columns to unit variance (%s)', paste(which(scales == 0),collapse=','))
 
-  svd.f <- svd
-  if(method == 'irlba'){
-    svd.f <- irlba
-  }
 
-  z <- svd.f(X, ...) ## assume it is of form list(u=, d=, v=, ...)
+  if(method == 'irlba'){
+    z <- irlba(X, ...)
+  }else{
+    z <- svd(X, ...)
+  }
+  ## assume z is of form list(u=, d=, v=, ...)
 
   z$sd <- z$d/sqrt(max(1, nrow(X) - 1))
   z$r <- length(z$d)
