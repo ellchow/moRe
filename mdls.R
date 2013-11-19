@@ -1360,7 +1360,7 @@ pca.plot <- function(object, newdata=NULL, npcs = NULL, labels = NULL, type='sca
 check.pca.model.def <- function(model.def, target, data, weights){
   problems <- list()
 
-  missing <- setdiff(model.def$features, names(data))
+  missing <- setdiff(model.def$features, colnames(data))
   available <- setdiff(model.def$features, missing)
   if(length(missing) != 0)
     problems$missing.features <- missing
