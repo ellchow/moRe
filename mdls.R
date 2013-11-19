@@ -34,7 +34,7 @@ is.model.def <- function(x){
              "id" = is.character, # name of model
              "target.gen" = function(tg) is.function(tg) || is.null(tg), # function that takes in a superset of the training data  and returns the target
              "fit" = is.function, # function for fitting the model of the same form as gbm.fit
-             "features" = is.character, # vector of feature names to be used by the model
+             "features" = function(x) is.character(x) || is.numeric(x), # vector of feature names to be used by the model
              "predict" = is.function, # function for computing a prediction of the same form as gbm.predict
              "params" = is.list, # extra parameters for the fitting function
              "check" = is.function, # function that takes in a model definition, target, and data and checks if there are any issues
@@ -75,6 +75,12 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
   logger <- SimpleLog('mdls.fit',log.level)
 
   datasets <- if(is.data.frame(datasets) || !is.list(datasets)) list(datasets) else datasets
+  for(d in datasets){
+    if(is.matrix(d) && is.null(colnames(d)))
+      colnames(d) <- 1:ncol(d)
+    else if(is.null(names(d)))
+      names(d) <- 1:ncol(d)
+  }
   model.defs <- list(...)
   dataset.ids <- if(!is.null(names(datasets))) names(datasets) else sapply(1:length(datasets),int.to.char.seq)
 
