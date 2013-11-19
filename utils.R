@@ -144,7 +144,7 @@ timer <- function(expr){
 
   t <- Timer()
 
-  start.timer(t, 'timing %s', deparse(s.expr))
+  start.timer(t, 'timing %s', paste(deparse(s.expr), collapse=''))
 
   res <- eval(s.expr, parent.frame())
   stop.timer(t)
