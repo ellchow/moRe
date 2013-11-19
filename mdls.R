@@ -1252,7 +1252,7 @@ betareg.model.report <- function(object, root, text.as = 'txt', log.level = Simp
 #### pca modifications and helpers
 #####################################
 
-pca.fit <- function(X, center=TRUE, scale=FALSE, tol=function(sds) length(sds), method=NULL, ...){
+pca.fit <- function(X, center=FALSE, scale=FALSE, tol=function(sds) length(sds), method=NULL, ...){
   ## perform principal component analysis on x using SVD
   ##   decompose into X = U D V' => X == u %*% diag(d) %*% t(v)
   ## X: matrix-like on which to perform PCA
@@ -1261,24 +1261,25 @@ pca.fit <- function(X, center=TRUE, scale=FALSE, tol=function(sds) length(sds), 
   ## scale: scale the columns
   ## tol: level at which PCs are discarded
 
-  if(is.null(method))
-    method <- 'svd'
-
   stop.if.not(method %in% c('svd', 'irlba'), 'unknown method "%s"', method)
   stop.if.not(length(dim(X)) == 2, 'X must be 2-dimensional')
 
-  X <- scale(X, center=center, scale=scale)
-  centers <- attr(X, "scaled:center")
-  scales <- attr(X, "scaled:scale")
-
   stop.if(any(scales == 0), 'cannot rescale constant columns to unit variance (%s)', paste(which(scales == 0),collapse=','))
 
-
-  if(method == 'irlba'){
-    z <- irlba(X, ...)
-  }else{
-    z <- svd(X, ...)
+  centers <- NULL
+  scales <- NULL
+  if(center || scale){
+    X <- scale(X, center=center, scale=scale)
+    centers <- attr(X, "scaled:center")
+    scales <- attr(X, "scaled:scale")
   }
+
+  svd.f <- svd
+  if(method == 'irlba'){
+    svd.f <- irlba
+  }
+
+  z <- svd.f(X, ...)
   ## assume z is of form list(u=, d=, v=, ...)
 
   z$sd <- z$d/sqrt(max(1, nrow(X) - 1))
