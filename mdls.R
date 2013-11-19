@@ -1333,6 +1333,21 @@ pca.model.def <- function(id, features, ..., nv=length(features)){
        check=check.pca.model.def, weights=function(data) NULL, report=pca.model.report)
 }
 
+pca.plot <- function(object, newdata=NULL, npcs = NULL, labels = NULL, type='scatter', return.grid=FALSE){
+  stop.if.not(type %in% c('scatter'))
+  if(type == 'scatter'){
+    ret.grid <- as.data.frame(pca.predict(object, newdata, npcs)[, 1:2])
+    ret.grid$label <- if(is.null(labels)) row.names(newdata) else labels
+
+    g <- ggplot(ret.grid, aes(PC1, PC2)) + geom_point(aes(color=label)) + theme(legend.position="bottom")
+  }
+
+  if(return.grid)
+    ret.grid
+  else
+    g
+}
+
 check.pca.model.def <- function(model.def, target, data, weights){
   problems <- list()
 
