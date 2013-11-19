@@ -151,8 +151,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                write.msg(logger, 'training "%s"', id)
 
                                                m <- tryCatch(do.call(md$fit,
-                                                                     c(list(subset(data,
-                                                                                   select=grep("^\\|$",md$features,invert=T,value=T)),
+                                                                     c(list(data[,grep("^\\|$",md$features,invert=T,value=T)],
                                                                             t,
                                                                             weights=w),
                                                                        md$params)),
