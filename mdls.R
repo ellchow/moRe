@@ -38,7 +38,7 @@ is.model.def <- function(x){
              "predict" = is.function, # function for computing a prediction of the same form as gbm.predict
              "params" = is.list, # extra parameters for the fitting function
              "check" = is.function, # function that takes in a model definition, target, and data and checks if there are any issues
-             "weights" = is.function, # weights on training examples
+             "weights" = function(w) is.function(w) || is.null(w), # weights on training examples
              "report" = is.function# function that generates report for model
              )
 
@@ -126,13 +126,16 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                                                              })
                                              }
 
-                                             write.msg(logger, sprintf('adding weights for "%s"', id))
-                                             w <- tryCatch(md$weights(data),
-                                                           error=function(e){
-                                                             write.msg(logger,str_trim(as.character(e)),
-                                                                       level=SimpleLog.ERROR)
-                                                             NA
-                                                           })
+                                             w <- NULL
+                                             if(!is.null(md$weights)){
+                                               write.msg(logger, sprintf('adding weights for "%s"', id))
+                                               w <- tryCatch(md$weights(data),
+                                                             error=function(e){
+                                                               write.msg(logger,str_trim(as.character(e)),
+                                                                         level=SimpleLog.ERROR)
+                                                               NA
+                                                             })
+                                             }
                                              problems <- md$check(md,t,data,w)
                                              if(length(problems) > 0){
                                                lapply(lzip(names(problems),problems),
@@ -1336,7 +1339,7 @@ pca.model.def <- function(id, features, ..., nv=length(features)){
   params$nv <- nv
   list(id=id, target.gen=NULL, fit=function(x,y,...,weights=NULL) pca.fit(x,...), features=features,
        predict = function(...) pca.predict(...), params = params,
-       check=check.pca.model.def, weights=function(data) NULL, report=pca.model.report)
+       check=check.pca.model.def, weights=NULL, report=pca.model.report)
 }
 
 pca.plot <- function(object, newdata=NULL, npcs = NULL, labels = NULL, type='scatter', return.grid=FALSE){
