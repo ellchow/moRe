@@ -249,7 +249,7 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
                                         predict <- x[[2]]$predict
 
                                         write.msg(logger,sprintf('predicting with "%s"', id))
-                                        pr <- tryCatch(predict(m, subset(data,select=features)),
+                                        pr <- tryCatch(predict(m, data[,features]),
                                                        error=function(e){
                                                          write.msg(logger, str_trim(as.character(e)), level=SimpleLog.ERROR)
                                                          NA
