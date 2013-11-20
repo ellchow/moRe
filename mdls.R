@@ -1248,7 +1248,24 @@ betareg.model.report <- function(object, root, text.as = 'txt', log.level = Simp
 #### pca modifications and helpers
 #####################################
 
-pca.fit <- function(X, center=FALSE, scale=FALSE, tol=function(sds) length(sds), method=NULL, ...){
+spectral.pca.fit <- function(X, center=T, scale=F){
+  ## perform principal component analysis on x using spectral decomposition
+  ## X: matrix-like on which to perform PCA
+  ## center: center the columns
+  ## scale: scale the columns
+
+  X <- scale(X,scale=scale,center=center)
+
+  XXt <- t(X) %*% X
+
+  eig <- eigen(XXt, TRUE)
+
+  P <- t(eig$vectors)
+
+  list(P=P, X=P %*% t(X))
+}
+
+svd.pca.fit <- function(X, center=FALSE, scale=FALSE, tol=function(sds) length(sds), method=NULL, ...){
   ## perform principal component analysis on x using SVD
   ##   decompose into X = U D V' => X == u %*% diag(d) %*% t(v)
   ## X: matrix-like on which to perform PCA
@@ -1256,6 +1273,9 @@ pca.fit <- function(X, center=FALSE, scale=FALSE, tol=function(sds) length(sds),
   ## center: center the columns
   ## scale: scale the columns
   ## tol: level at which PCs are discarded
+
+  if(is.null(method))
+    method <- 'svd'
 
   stop.if.not(method %in% c('svd', 'irlba'), 'unknown method "%s"', method)
   stop.if.not(length(dim(X)) == 2, 'X must be 2-dimensional')
@@ -1295,7 +1315,7 @@ pca.fit <- function(X, center=FALSE, scale=FALSE, tol=function(sds) length(sds),
   z
 }
 
-pca.importance <- function(object){
+svd.pca.importance <- function(object){
   v <- object$sd^2
   prop.var <- v / sum(v)
   cum.prop <- cumsum(prop.var)
@@ -1306,7 +1326,7 @@ pca.importance <- function(object){
 
 }
 
-pca.predict <- function(object, newdata, npcs=NULL){
+svd.pca.predict <- function(object, newdata, npcs=NULL){
   if(is.null(npcs))
     npcs <- object$r
 
@@ -1316,12 +1336,12 @@ pca.predict <- function(object, newdata, npcs=NULL){
               (is.null(row.names(object$v)) && (ncol(newdata) == nrow(object$v))),
               'newdata does not have the correct number of columns')
 
-  scaled.newdata <- scale(newdata[,1:npcs], if(is.na(object$centers)) FALSE else object$centers[1:npcs], if(is.na(object$scales)) FALSE else object$scales[1:npcs])
+  scaled.newdata <- scale(newdata[,1:npcs], if(all(is.na(object$centers))) FALSE else object$centers[1:npcs], if(is.na(object$scales)) FALSE else object$scales[1:npcs])
 
   scaled.newdata %*% object$v[1:npcs,]
 }
 
-pca.model.def <- function(id, features, ..., nv=length(features)){
+svd.pca.model.def <- function(id, features, ..., nv=length(features)){
   ## import('mdls')
   ## mdls.fit(USArrests, pca.model.def("pca", names(USArrests))) -> ms
 
@@ -1329,10 +1349,10 @@ pca.model.def <- function(id, features, ..., nv=length(features)){
   params$nv <- nv
   list(id=id, target.gen=NULL, fit=function(x,y,...,weights=NULL) pca.fit(x,...), features=features,
        predict = function(...) pca.predict(...), params = params,
-       check=check.pca.model.def, weights=NULL, report=pca.model.report)
+       check=check.svd.pca.model.def, weights=NULL, report=svd.pca.model.report)
 }
 
-pca.plot <- function(object, newdata, npcs = NULL, labels = NULL, type='scatter', return.grid=FALSE){
+svd.pca.plot <- function(object, newdata, npcs = NULL, labels = NULL, type='scatter', return.grid=FALSE){
   stop.if.not(type %in% c('scatter'))
   if(type == 'scatter'){
     ret.grid <- as.data.frame(pca.predict(object, newdata, npcs)[, 1:2])
@@ -1347,7 +1367,7 @@ pca.plot <- function(object, newdata, npcs = NULL, labels = NULL, type='scatter'
     g
 }
 
-check.pca.model.def <- function(model.def, target, data, weights){
+check.svd.pca.model.def <- function(model.def, target, data, weights){
   problems <- list()
 
   missing <- setdiff(model.def$features, colnames(data))
@@ -1366,7 +1386,7 @@ check.pca.model.def <- function(model.def, target, data, weights){
   problems
 }
 
-pca.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
+svd.pca.model.report <- function(object, root, text.as = 'txt', log.level = SimpleLog.INFO, .parallel = TRUE){
   stop.if(file.exists(root), 'output directory "%s" already exists ', root)
 
   logger <- SimpleLog('pca.model.report', log.level)
