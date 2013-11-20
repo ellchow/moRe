@@ -92,9 +92,7 @@ mdls.fit <- function(datasets, ..., mapping = list(".*"=".*"), log.level=SimpleL
                      stop.timer(timer)
                    }else if(is.function(data)){
                      data <- data()
-                   }##else{
-                     ## data <- as.data.frame(data)
-                   ## }
+                   }
 
                    model.defs.filtered <- Filter(function(md){
                      any(sapply(lzip(names(mapping), mapping),
@@ -226,8 +224,6 @@ mdls.predict <- function(models, datasets, mapping=list(".*"=".*"), metric.group
                      stop.timer(timer)
                    }else if(is.function(data)){
                      data <- data()
-                   }else{
-                     data <- as.data.frame(data)
                    }
 
                    models.filtered <- Filter(function(m){
@@ -1336,7 +1332,7 @@ pca.model.def <- function(id, features, ..., nv=length(features)){
        check=check.pca.model.def, weights=NULL, report=pca.model.report)
 }
 
-pca.plot <- function(object, newdata=NULL, npcs = NULL, labels = NULL, type='scatter', return.grid=FALSE){
+pca.plot <- function(object, newdata, npcs = NULL, labels = NULL, type='scatter', return.grid=FALSE){
   stop.if.not(type %in% c('scatter'))
   if(type == 'scatter'){
     ret.grid <- as.data.frame(pca.predict(object, newdata, npcs)[, 1:2])
