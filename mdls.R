@@ -1248,7 +1248,7 @@ betareg.model.report <- function(object, root, text.as = 'txt', log.level = Simp
 #### pca modifications and helpers
 #####################################
 
-spectral.pca.fit <- function(X, center=T, scale=F){
+spectral.pca.fit <- function(X, center=T, scale=F, is.symm=F){
   ## perform principal component analysis on x using spectral decomposition
   ## X: matrix-like on which to perform PCA
   ## center: center the columns
@@ -1261,9 +1261,11 @@ spectral.pca.fit <- function(X, center=T, scale=F){
   scales <- attr(X, "scaled:scale")
   stop.if(any(scales == 0), 'cannot rescale constant columns to unit variance (%s)', paste(which(scales == 0),collapse=','))
 
-  XXt <- t(X) %*% X
-
-  eig <- eigen(XXt, TRUE)
+  if(!is.symm){
+    XXt <- t(X) %*% X
+    eig <- eigen(XXt, TRUE)
+  }else
+    eig <- eigen(X, TRUE)
 
   P <- t(eig$vectors)
 
