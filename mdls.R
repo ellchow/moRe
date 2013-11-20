@@ -1263,7 +1263,7 @@ pca.fit <- function(X, center=FALSE, scale=FALSE, tol=function(sds) length(sds),
   centers <- NULL
   scales <- NULL
   if(center || scale){
-    X <- scale(X, center=center, scale=scale)
+    X <- scale(as.matrix(X), center=center, scale=scale)
     centers <- attr(X, "scaled:center")
     scales <- attr(X, "scaled:scale")
     stop.if(any(scales == 0), 'cannot rescale constant columns to unit variance (%s)', paste(which(scales == 0),collapse=','))
