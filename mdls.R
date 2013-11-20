@@ -1254,7 +1254,12 @@ spectral.pca.fit <- function(X, center=T, scale=F){
   ## center: center the columns
   ## scale: scale the columns
 
-  X <- scale(X,scale=scale,center=center)
+  ## head(spectral.pca.predict(spectral.pca.fit(as.matrix(USArrests)),USArrests))
+
+  X <- scale(X,scale=scale, center=center)
+  centers <- attr(X, "scaled:center")
+  scales <- attr(X, "scaled:scale")
+  stop.if(any(scales == 0), 'cannot rescale constant columns to unit variance (%s)', paste(which(scales == 0),collapse=','))
 
   XXt <- t(X) %*% X
 
@@ -1262,7 +1267,13 @@ spectral.pca.fit <- function(X, center=T, scale=F){
 
   P <- t(eig$vectors)
 
-  list(P=P, X=P %*% t(X))
+  list(p=P, centers=if(is.null(centers)) NA else centers, scales=if(is.null(scales)) NA else scales)
+}
+
+spectral.pca.predict <- function(object,newdata){
+  t(object$p %*% t(scale(newdata,
+                         center=if(all(is.na(object$centers))) FALSE else object$centers,
+                         scale=if(is.na(object$scales)) FALSE else object$scales)))
 }
 
 svd.pca.fit <- function(X, center=FALSE, scale=FALSE, tol=function(sds) length(sds), method=NULL, ...){
@@ -1273,6 +1284,8 @@ svd.pca.fit <- function(X, center=FALSE, scale=FALSE, tol=function(sds) length(s
   ## center: center the columns
   ## scale: scale the columns
   ## tol: level at which PCs are discarded
+
+  ## head(svd.pca.predict(svd.pca.fit(USArrests,center=T),USArrests))
 
   if(is.null(method))
     method <- 'svd'
@@ -1336,7 +1349,9 @@ svd.pca.predict <- function(object, newdata, npcs=NULL){
               (is.null(row.names(object$v)) && (ncol(newdata) == nrow(object$v))),
               'newdata does not have the correct number of columns')
 
-  scaled.newdata <- scale(newdata[,1:npcs], if(all(is.na(object$centers))) FALSE else object$centers[1:npcs], if(is.na(object$scales)) FALSE else object$scales[1:npcs])
+  scaled.newdata <- scale(newdata[,1:npcs],
+                          center=if(all(is.na(object$centers))) FALSE else object$centers[1:npcs],
+                          scale=if(is.na(object$scales)) FALSE else object$scales[1:npcs])
 
   scaled.newdata %*% object$v[1:npcs,]
 }
