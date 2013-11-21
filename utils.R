@@ -748,13 +748,18 @@ make.combinations <- function(...){
         function(z) as.list(z))
 }
 
-parameter.scan <- function(f, params.list, .parallel=FALSE){
+parameter.scan <- function(f, params.list, as.df=FALSE, .parallel=FALSE){
   ## apply f over a list of parameters
-  rbind.fill(llply(params.list,
+  z <- llply(params.list,
                    function(params){
-                     cbind(as.data.frame(params), f = f %wargs% params)
+                     #cbind(as.data.frame(params), f = f %wargs% params)
+                     c(list(params=params), list(f = f %wargs% params))
                    },
-                   .parallel=.parallel))
+                   .parallel=.parallel)
+  if(as.df)
+    rbind.fill(lapply(z, as.data.frame))
+  else
+    z
 }
 
 sample.by <- function(x,...,as.filter=TRUE){
