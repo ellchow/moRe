@@ -486,7 +486,7 @@ streaming.group.by.key <- function(f, get.key=function(x) x[[1]]){
   }
 }
 
-run.once <- function(expr, store = 'load.once.store__', algo='md5', lazy = TRUE, log.level=SimpleLog.INFO){
+run.once <- function(expr, store = 'run.once.store__', algo='md5', lazy = TRUE, log.level=SimpleLog.INFO){
   ## execute and expression and cache it
   logger <- SimpleLog('run.once', log.level)
 

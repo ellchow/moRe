@@ -88,6 +88,9 @@ ffilter <- function(x,w,indexes=1:length(x),sides=2){
          })
 }
 
+l1norm <- function(x) sum(abs(x))
+l2norm <- function(x) sqrt(x %*% x)
+
 ######################
 #### statistics
 ######################

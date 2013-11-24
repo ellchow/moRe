@@ -1262,8 +1262,8 @@ spectral.pca.fit <- function(X, center=T, scale=F, is.symm=F){
   stop.if(any(scales == 0), 'cannot rescale constant columns to unit variance (%s)', paste(which(scales == 0),collapse=','))
 
   if(!is.symm){
-    XXt <- t(X) %*% X
-    eig <- eigen(XXt, TRUE)
+    XtX <- t(X) %*% X
+    eig <- eigen(XtX, TRUE)
   }else
     eig <- eigen(X, TRUE)
 
