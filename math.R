@@ -60,13 +60,12 @@ bucketize <- function(x, buckets = decile(x), label='names',
   f <- approxfun(sort(buckets),indices(buckets), yleft = 1, yright = length(buckets))
   b <- floor(f(x))
 
-  if(!is.null(b))
-    b
-  else if(label == 'names')
+  if(label == 'names')
     factor(names(buckets)[b],levels=names(buckets), ordered=T)
   else if(label == 'buckets')
     factor(buckets[b],levels=buckets, ordered=T)
-
+  else
+    b
 }
 
 rdiscrete <- function(n, prob, domain = indices(prob))
