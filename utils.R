@@ -576,6 +576,8 @@ nan.rm <- function(...) na.rm(..., discard = is.nan)
 
 invalid.rm <- function(...) na.rm(..., discard = function(z) is.na(z) | is.nan(z) | is.infinite(z))
 
+is.invalid <- function(z) is.na(z) | is.nan(z) | is.infinite(z)
+
 
 replicate <- function(n, expr, .parallel=FALSE)
   ## same as base replicate with parallel option

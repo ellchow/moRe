@@ -147,7 +147,7 @@ beta.update <- function(params, s, n)
   beta.params(s + params[,'a'], n + params[,'b'])
 
 
-entropy <- function(p.x, discretize = function(z) bucketize(z, seq(min(z), max(z), length=1000)), b=2, normalize=FALSE){
+entropy <- function(p.x, discretize = function(z) bucketize(z, seq(min(z), max(z), length=1000)), b=2, normalize=FALSE, n=length(p.x)){
   ## entropy via discretization
 
   if(!is.null(discretize))
@@ -158,7 +158,7 @@ entropy <- function(p.x, discretize = function(z) bucketize(z, seq(min(z), max(z
   res <- -(p.x %*% log(p.x,b))
 
   if(normalize)
-    res <- res / log(length(p.x),b)
+    res <- res / log(n,b)
 
   res
 }

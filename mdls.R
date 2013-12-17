@@ -1476,8 +1476,8 @@ feature.contributions <- function(mdl, src, snk, select=which.max, score.idx = 1
 
   md <- list(this.model=mdl)
   names(md) <- mdl$id
-  srcScore <- extract.score(mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]])
-  snkScore <- extract.score(mdls.predict(md,snk,log.level=predict.log.level)[[1]][[1]])
+  srcScore <- extract.score(mdls.predict(md,src,log.level=predict.log.level)[[1]]$scores[[1]])
+  snkScore <- extract.score(mdls.predict(md,snk,log.level=predict.log.level)[[1]]$scores[[1]])
 
   selected.features <- NA
   scores <- srcScore
@@ -1485,7 +1485,7 @@ feature.contributions <- function(mdl, src, snk, select=which.max, score.idx = 1
     s <- laply(features,
                function(ft){
                  src[[ft]] <- snk[[ft]]
-                 extract.score(mdls.predict(md,src,log.level=predict.log.level)[[1]][[1]])
+                 extract.score(mdls.predict(md,src,log.level=predict.log.level)[[1]]$scores[[1]])
                }, .parallel=.parallel)
 
     selected <- select(snkScore - s)
