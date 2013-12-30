@@ -73,7 +73,7 @@ yfin.download <- function(symbol, ..., start.date = '1900-01-01',
 
   write.msg(logger, 'yahoo finance url: %s', u)
 
-  x <- tryCatch(load.data(u, ..., sep=',', cache.path = cache.path, log.level = log.level) %named% yfin.header,
+  x <- tryCatch(load.table(u, ..., sep=',', cache.path = cache.path, log.level = log.level) %named% yfin.header,
                 error = function(e){
                   write.msg(logger, 'failed to download data for %s', symbol)
                   NA
@@ -91,14 +91,15 @@ yfin.archive <- function(symbols, path, ...,
                          frequency = yfin.daily,
                          log.level = SimpleLog.DEBUG,
                          .parallel = FALSE){
+  ## import('yahoofin'); registerDoMC(2); yfin.archive(yfin.standard.symbols, 'yfin-archive', log.level = SimpleLog.DEBUG, .parallel=T)
   logger <- SimpleLog('yfin.archive', log.level)
 
   end.date <- format(Sys.time(), yfin.date.fmt)
   current.timestamp <- format(Sys.time(), '%Y%m%d%H%M%S')
   cache.path <- paste('.yfin-download', current.timestamp, sep='-')
+  dir.create(cache.path, recursive = TRUE)
 
   write.msg(logger, 'temporary data directory %s', cache.path)
-
   if(file.exists(path))
     z <- load.data(path)
   else
@@ -123,7 +124,7 @@ yfin.archive <- function(symbols, path, ...,
 
   y <- rbind.fill %wargs% y[!is.na(y)]
 
-  if(any(is.na(z)) || is.null(y) || nrow(y) == 0){
+  if(is.null(y) || nrow(y) == 0){
     write.msg(logger, 'no data added')
     y <- z
   }else{
@@ -131,7 +132,7 @@ yfin.archive <- function(symbols, path, ...,
     backup.path <- paste(path, 'bak', current.timestamp, sep='.')
     write.msg(logger, 'backup previous data to %s', backup.path)
     file.rename(path, backup.path)
-    y <- rbind.fill(z,y)
+    y <- if(!any(is.na(z))) rbind.fill(z,y) else y
 
     y <- y[order(y$symbol, y$date),]
     write.msg(logger, 'saving to %s', path)
@@ -226,5 +227,3 @@ yfin.report <- function(root.dir = '~/Documents/investments/data',
 
   file.path(root.dir, today)
 }
-
-
