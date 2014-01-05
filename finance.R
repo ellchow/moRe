@@ -15,8 +15,6 @@
 source('import.R',chdir=T)
 import('utils', 'yahoofin', 'quadprog', 'reshape2')
 
-x <- load.data('~/Documents/investments/data/historical-data-standard.rda')
-
 mpt.minvar.portfolio <- function(r, sigma, target.return, labels=names(r), return.qp = FALSE) {
   n <- length(r)
   A <- cbind(matrix(rep(1, n), nr=n), ## weights sum to 1
@@ -41,26 +39,49 @@ mpt.minvar.portfolio <- function(r, sigma, target.return, labels=names(r), retur
   result
 }
 
-mpt.efficient.frontier <- function(r, sigma, labels=names(r), m=10) {
-  ws <- lapply(seq(max(min(r), 0), max(r), length=m), function(t) {
+mpt.efficient.frontier <- function(r, sigma, labels=names(r), target.returns=seq(max(min(r), 0), max(r), length=10)) {
+  ws <- lapply(target.returns, function(t) {
     tryCatch(mpt.minvar.portfolio(r, sigma, t, labels, return.qp = F), error=function(e) NA)
   })
   as.data.frame(csplat(rbind, lapply(na.rm(ws), function(x) c(x$w, mean=x$mean, sd = x$sd))))
 }
 
-duration <- 90
-m <- 1
+x <- load.data('~/Documents/investments/data/historical-data-standard.rda')
+
+duration <- 180
+ms <- 1:4
+symbols <- c('BND','EDV','IAU','VAW','VB',
+             'VCR','VDC','VDE','VEU','VFH',
+             'VGK','VGT','VHT','VIS','VNQ',
+             'VOX','VPL','VPU','VSS','VTI',
+             'VUG','VWO','VXF')
+target.returns <- yfin.stats(x, symbols, start.date=max(x$date) - duration * (max(ms) + 1), end.date=max(x$date) - duration * min(ms))$mean
+target.returns <- seq(max(min(target.returns),0), max(target.returns), length=10)
+
+mvp <- NA
 
 d <- csplat(rbind,
-       lapply(1:8, function(i) {
-         stdt <- max(x$date) - duration * (i + 1)
-         eddt <- max(x$date) - duration * i
-         stats <- yfin.stats(x, start.date=stdt, end.date=eddt)
-         dd <- mpt.efficient.frontier(stats$mean, stats$cov)
+       lapply(ms, function(m) {
+         stdt <- max(x$date) - duration * (m + 1)
+         eddt <- max(x$date) - duration * m
+         stats <- yfin.stats(x, symbols, start.date=stdt, end.date=eddt)
+         dd <- cbind(mpt.efficient.frontier(stats$mean, stats$cov, target.returns=target.returns), type='ef')
+
+         baseline.70.30 <- ifelse(stats$symbols == 'VTI', 0.7, ifelse(stats$symbols == 'BND', 0.3, 0))
+         baseline.70.30 <- as.data.frame(rbind(c(baseline.70.30, baseline.70.30 %*% stats$mean, sqrt(t(baseline.70.30) %*% stats$cov %*% baseline.70.30))))
+         baseline.70.30 <- cbind(baseline.70.30, type='70-30') %named% names(dd)
+
+         baseline.30.70 <- ifelse(stats$symbols == 'VTI', 0.3, ifelse(stats$symbols == 'BND', 0.7, 0))
+         baseline.30.70 <- as.data.frame(rbind(c(baseline.30.70, baseline.30.70 %*% stats$mean, sqrt(t(baseline.30.70) %*% stats$cov %*% baseline.30.70))))
+         baseline.30.70 <- cbind(baseline.30.70, type='30-70') %named% names(dd)
+
+         dd <- rbind(dd,baseline.70.30,baseline.30.70)
+
          cbind(date=rep(paste(stdt,eddt,sep=' : '), nrow(dd)), dd)
        }))
 d$date <- factor(d$date, levels=sort(unique(d$date)), ordered=T)
-ggplot(d, aes(260 * mean, sqrt(260) * sd)) + geom_point() + geom_line() + facet_wrap(~ date) + coord_flip()
+d$type <- factor(d$type)
+ggplot(d, aes(260 * mean, sqrt(260) * sd, group=type, color=type)) + geom_point() + geom_line() + facet_wrap(~ date) + coord_flip()
 
 
 
