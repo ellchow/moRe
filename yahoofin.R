@@ -197,7 +197,7 @@ yfin.report <- function(root.dir = '~/Documents/investments/data',
 
   ## calculate returns
   write.msg(logger, 'calculating returns')
-  x$ret <- tapply(x$adj.close, x$symbol, function(y)  c(NA, diff(y)) / tail(y, -1), ret.type = 'par')
+  x$ret <- tapply(x$adj.close, x$symbol, function(y)  c(diff(y),NA) / c(tail(y, -1),NA), ret.type = 'par')
 
   ## create output dir
   today <- max(x$date)
@@ -226,4 +226,15 @@ yfin.report <- function(root.dir = '~/Documents/investments/data',
   file.create(file.path(root.dir,today,'_SUCCESS'))
 
   file.path(root.dir, today)
+}
+
+yfin.stats <- function(x, symbols=c('VTI','VEU','VPL','VB','IAU','BND','EDV'),
+                       start.date = max(x$date) - 90, end.date = max(x$date)) {
+  xx <- x[(x$date >= start.date) & (x$date <= end.date) & (x$symbol %in% symbols),]
+  xx$symbol <- drop.levels(xx$symbol)
+  xx$ret <- tapply(adj.close, symbol, function(y)  c(diff(y),NA) / c(head(y, -1),NA), ret.type = 'par', envir=xx)
+  xx <- dcast(xx, date ~ symbol)
+  xx <- xx[apply(xx,1,function(z) !any(is.na(z))), setdiff(names(xx),'date')]
+
+  list(symbols=names(xx),n=ncol(xx),mean=colMeans(xx), cov=cov(xx))
 }
