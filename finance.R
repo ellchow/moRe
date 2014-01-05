@@ -41,21 +41,27 @@ mpt.minvar.portfolio <- function(r, sigma, target.return, labels=names(r), retur
   result
 }
 
-mpt.efficient.frontier <- function(r, sigma, labels=names(r)) {
-  ws <- lapply(seq(max(min(stats$mean), 0), max(stats$mean), length=10), function(t) {
-    tryCatch(mpt.minvar.portfolio(stats$mean, stats$cov, t, stats$symbols, return.qp = F), error=function(e) NA)
+mpt.efficient.frontier <- function(r, sigma, labels=names(r), m=10) {
+  ws <- lapply(seq(max(min(r), 0), max(r), length=m), function(t) {
+    tryCatch(mpt.minvar.portfolio(r, sigma, t, labels, return.qp = F), error=function(e) NA)
   })
-
   as.data.frame(csplat(rbind, lapply(na.rm(ws), function(x) c(x$w, mean=x$mean, sd = x$sd))))
 }
 
-
-
-duration <- 260
+duration <- 90
 m <- 1
-stats <- yfin.stats(x, start.date=max(x$date) - duration * (m + 1), end.date=max(x$date) - duration * m)
-d <- mpt.efficient.frontier(stats$mean, stats$sigma)
-ggplot(d, aes(260 * mean, sd)) + geom_point() + geom_line() + coord_flip()
+
+d <- csplat(rbind,
+       lapply(1:8, function(i) {
+         stdt <- max(x$date) - duration * (i + 1)
+         eddt <- max(x$date) - duration * i
+         stats <- yfin.stats(x, start.date=stdt, end.date=eddt)
+         dd <- mpt.efficient.frontier(stats$mean, stats$cov)
+         cbind(date=rep(paste(stdt,eddt,sep=' : '), nrow(dd)), dd)
+       }))
+d$date <- factor(d$date, levels=sort(unique(d$date)), ordered=T)
+ggplot(d, aes(260 * mean, sqrt(260) * sd)) + geom_point() + geom_line() + facet_wrap(~ date) + coord_flip()
+
 
 
 ####
