@@ -49,7 +49,7 @@ mpt.efficient.frontier <- function(r, sigma, labels=names(r), target.returns=seq
 x <- load.data('~/Documents/investments/data/historical-data-standard.rda')
 
 duration <- 180
-ms <- 0:4
+ms <- 0:8
 symbols <- c('BND','EDV','IAU','VAW','VB',
              'VCR','VDC','VDE','VEU','VFH',
              'VGK','VGT','VHT','VIS','VNQ',
@@ -63,7 +63,6 @@ d <- csplat(rbind,
        lapply(sort(ms,decreasing=T), function(m) {
          stdt <- max(x$date) - duration * (m + 1)
          eddt <- max(x$date) - duration * m
-         print(stdt)
          stats <- yfin.stats(x, symbols, start.date=stdt, end.date=eddt)
          dd <- cbind(mpt.efficient.frontier(stats$mean, stats$cov, target.returns=target.returns), type='ef')
 
@@ -82,7 +81,6 @@ d <- csplat(rbind,
          }
 
          selected <<- unlist(as.vector(dd[which.min(abs(dd$mean - 0.1 / 260)), stats$symbols]))
-         print(selected)
 
          dd <- rbind(dd, baseline.70.30,baseline.30.70,baseline.selected)
 
@@ -90,8 +88,11 @@ d <- csplat(rbind,
        }))
 d$date <- factor(d$date, levels=sort(unique(d$date)), ordered=T)
 d$type <- factor(d$type)
-print(head(d))
+d[grep('^2013-07-07',as.character(d$date),value='logical') & (d$type != 'ef'),]
 ggplot(d, aes(260 * mean, sqrt(260) * sd, group=type, color=type)) + geom_point() + geom_line() + facet_wrap(~ date) + coord_flip()
+
+
+
 
 
 
