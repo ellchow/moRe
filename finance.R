@@ -49,21 +49,21 @@ mpt.efficient.frontier <- function(r, sigma, labels=names(r), target.returns=seq
 x <- load.data('~/Documents/investments/data/historical-data-standard.rda')
 
 duration <- 180
-ms <- 1:4
+ms <- 0:4
 symbols <- c('BND','EDV','IAU','VAW','VB',
              'VCR','VDC','VDE','VEU','VFH',
              'VGK','VGT','VHT','VIS','VNQ',
              'VOX','VPL','VPU','VSS','VTI',
              'VUG','VWO','VXF')
 target.returns <- yfin.stats(x, symbols, start.date=max(x$date) - duration * (max(ms) + 1), end.date=max(x$date) - duration * min(ms))$mean
-target.returns <- seq(max(min(target.returns),0), max(target.returns), length=10)
-
-mvp <- NA
+target.returns <- c(0.1 / 260, seq(max(min(target.returns),0), max(target.returns), length=10))
+selected <<- NA
 
 d <- csplat(rbind,
-       lapply(ms, function(m) {
+       lapply(sort(ms,decreasing=T), function(m) {
          stdt <- max(x$date) - duration * (m + 1)
          eddt <- max(x$date) - duration * m
+         print(stdt)
          stats <- yfin.stats(x, symbols, start.date=stdt, end.date=eddt)
          dd <- cbind(mpt.efficient.frontier(stats$mean, stats$cov, target.returns=target.returns), type='ef')
 
@@ -75,13 +75,35 @@ d <- csplat(rbind,
          baseline.30.70 <- as.data.frame(rbind(c(baseline.30.70, baseline.30.70 %*% stats$mean, sqrt(t(baseline.30.70) %*% stats$cov %*% baseline.30.70))))
          baseline.30.70 <- cbind(baseline.30.70, type='30-70') %named% names(dd)
 
-         dd <- rbind(dd,baseline.70.30,baseline.30.70)
+         baseline.selected <- NULL
+         if (!any(is.na(selected))) {
+           baseline.selected <- as.data.frame(rbind(c(selected, selected %*% stats$mean, sqrt(t(selected) %*% stats$cov %*% selected))))
+           baseline.selected <- cbind(baseline.selected, type='selected') %named% names(dd)
+         }
+
+         selected <<- unlist(as.vector(dd[which.min(abs(dd$mean - 0.1 / 260)), stats$symbols]))
+         print(selected)
+
+         dd <- rbind(dd, baseline.70.30,baseline.30.70,baseline.selected)
 
          cbind(date=rep(paste(stdt,eddt,sep=' : '), nrow(dd)), dd)
        }))
 d$date <- factor(d$date, levels=sort(unique(d$date)), ordered=T)
 d$type <- factor(d$type)
+print(head(d))
 ggplot(d, aes(260 * mean, sqrt(260) * sd, group=type, color=type)) + geom_point() + geom_line() + facet_wrap(~ date) + coord_flip()
+
+
+
+
+         ## if (!is.na(selected)) {
+         ##   baseline.selected <- as.data.frame(rbind(c(selected, selected %*% stats$mean, sqrt(t(selected) %*% stats$cov %*% selected))))
+         ##   baseline.selected <- cbind(selected, type='selected') %named% names(dd)
+         ## }
+
+         ## next.selected <- which.min(abs(dd$mean - 0.1))
+         ## print(dd[next.selected,])
+         ## selected <- dd[next.selected,]
 
 
 
