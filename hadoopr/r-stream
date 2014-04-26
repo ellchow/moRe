@@ -86,3 +86,7 @@ if __name__ == '__main__':
   if not options.print_only:
     hadoop_job_process = subprocess.call(run_job_cmd, shell=True)
 
+## cat R-$R_VERSION.tar.gz | ssh cli "hadoop fs -put - R-$R_VERSION.tar.gz"
+## hadoop jar `find $HADOOP_HOME -name "*streaming*jar"` -input $input -output $output -cacheFile R-$R_VERSION
+## import('utils')
+## print(load.data(pipe('cat /dev/stdin')))
