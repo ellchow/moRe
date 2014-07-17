@@ -13,7 +13,7 @@
 ## limitations under the License.
 
 source('import.R',chdir=T)
-import('utils', 'RJDBC')
+import('utils', 'RJDBC', 'RPostgreSQL')
 
 #options(java.parameters = "-Xmx4g")
 #set JAVA_HOME environment variable (MAC -> export JAVA_HOME=$(/usr/libexec/java_home), ...)
@@ -33,23 +33,33 @@ MYSQL_JDBC_CONFIG <- list(class='com.mysql.jdbc.Driver',
 ORACLE_JDBC_CONFIG <- list(class='oracle.jdbc.OracleDriver',
                            protocol='jdbc:oracle:thin:@',
                            jar='/usr/lib/java/ojdbc6.jar',
-                           type='mysql')
+                           type='oracle'
+                           )
 
-connect.to.db <- function(host, jdbc.config, ..., log.level=SimpleLog.ERROR){
-  logger <- SimpleLog('jdbc.connect',level=log.level)
+POSTGRES_CONFIG <- list(type='postgres')
+
+
+
+connect.to.db <- function(host, config, ..., log.level=SimpleLog.ERROR){
+  logger <- SimpleLog('connect.to.db',level=log.level)
   timer <- Timer(logger)
 
-  driver <- JDBC(jdbc.config$class,jdbc.config$jar)
-  uri <- paste(jdbc.config$protocol,host,sep="//")
-  write.msg(logger, 'uri: %s', uri)
+  if (config$type == 'postgres') {
+    driver <- dbDriver("PostgreSQL")
+    uri <- "<postgres>"
+    conn <- dbConnect(driver, ...)
+  } else {
+    driver <- JDBC(config$class,config$jar)
+    uri <- paste(config$protocol,host,sep="//")
+    write.msg(logger, 'uri: %s', uri)
+    conn <- dbConnect(driver, uri, ...)
+  }
 
-  conn <- dbConnect(driver, uri, ...)
-  type <- jdbc.config$type
-
+  type <- config$type
 
   list(driver=driver,
        connection=conn,
-       type=jdbc.config$type,
+       type=config$type,
 
        get.query=function(s,...,pretty=TRUE){
          write.msg(logger,'on %s, execute query and get:\n%s',uri,if(pretty) pprint.sql(s) else s)
@@ -189,4 +199,3 @@ sql.seq.stmts <- function(stmts,table.gen=function(...) sql.mk.tmp.table(...), a
     }
   }
 }
-
