@@ -39,7 +39,6 @@ ORACLE_JDBC_CONFIG <- list(class='oracle.jdbc.OracleDriver',
 POSTGRES_CONFIG <- list(type='postgres')
 
 
-
 connect.to.db <- function(host, config, ..., log.level=SimpleLog.ERROR){
   logger <- SimpleLog('connect.to.db',level=log.level)
   timer <- Timer(logger)
@@ -61,7 +60,7 @@ connect.to.db <- function(host, config, ..., log.level=SimpleLog.ERROR){
        connection=conn,
        type=config$type,
 
-       get.query=function(s,...,pretty=TRUE){
+       get.query=function(s,...,pretty=FALSE){
          write.msg(logger,'on %s, execute query and get:\n%s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          z <- dbGetQuery(conn, s, ...)
@@ -75,7 +74,7 @@ connect.to.db <- function(host, config, ..., log.level=SimpleLog.ERROR){
          stop.timer(timer)
          z
        },
-       exec.update=function(s,...,pretty=TRUE){
+       exec.update=function(s,...,pretty=FALSE){
          write.msg(logger,'on %s, execute update:\n%s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          z <- dbSendUpdate(conn,s,...)
@@ -83,14 +82,14 @@ connect.to.db <- function(host, config, ..., log.level=SimpleLog.ERROR){
          z
        },
 
-       list.tables=function(...,pretty=TRUE){
+       list.tables=function(...,pretty=FALSE){
          write.msg(logger,'on %s, list tables',uri)
          start.timer(timer)
          z <- dbListTables(conn,...)
          stop.timer(timer)
          z
        },
-       list.fields=function(s,...,pretty=TRUE){
+       list.fields=function(s,...,pretty=FALSE){
          write.msg(logger,'on %s, list fields on %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          z <- dbListFields(conn,s,...)
@@ -98,28 +97,28 @@ connect.to.db <- function(host, config, ..., log.level=SimpleLog.ERROR){
          z
        },
 
-       exists.table=function(s,...,pretty=TRUE){
+       exists.table=function(s,...,pretty=FALSE){
          write.msg(logger,'on %s, check if table %s exists',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          z <- dbExistsTable(conn,s,...)
          stop.timer(timer)
          z
        },
-       read.table=function(s,...,pretty=TRUE){
+       read.table=function(s,...,pretty=FALSE){
          write.msg(logger,'on %s, read table %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          z <- dbReadTable(conn,s,...)
          stop.timer(timer)
          z
        },
-       write.table=function(s,...,pretty=TRUE){
+       write.table=function(s,...,pretty=FALSE){
          write.msg(logger,'on %s, write table %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          z <- dbWriteTable(conn,s,...)
          stop.timer(timer)
          z
        },
-       remove.table=function(s,...,pretty=TRUE){
+       remove.table=function(s,...,pretty=FALSE){
          write.msg(logger,'on %s, remove table %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          z <- dbRemoveTable(conn,s,...)
@@ -127,7 +126,7 @@ connect.to.db <- function(host, config, ..., log.level=SimpleLog.ERROR){
          z
        },
 
-       explain=function(s,...,pretty=TRUE){
+       explain=function(s,...,pretty=FALSE){
          write.msg(logger,'on %s, explain SQL:\n %s',uri,if(pretty) pprint.sql(s) else s)
          start.timer(timer)
          cat(pprint.dataframe(dbGetQuery(conn,paste('explain ',if(pretty) pprint.sql(s) else s),...)))
@@ -187,7 +186,7 @@ sql.seq.stmts <- function(stmts,table.gen=function(...) sql.mk.tmp.table(...), a
          function(x){
            table.gen %wargs% x
          })
-  function(db=NULL,...,delay=5,pretty=TRUE){
+  function(db=NULL,...,delay=5,pretty=FALSE){
     no.action <- is.null(db)
     for(i in 1:length(tmp.tables)){
       if(i > 1 && !no.action) system(sprintf('sleep %ds',delay))
