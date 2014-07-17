@@ -32,110 +32,111 @@ options(scipen=6, menu.graphics=FALSE)
 ####################
 #### Logging
 ####################
-options(warn=-1)
-setConstructorS3('SimpleLog',
-                 ## logging object
-                 ## id: id of the logger
-                 ## level: recognized logging levels
-                 ## colors: colors to use if colorizing logs
-                 function(id='log',
-                          level=c('info','warning','error','debug'),
-                          colors = c('info'='light gray','warning'='yellow','error'='red','debug'='dark gray')
-                          ## outputs=stderr(),
-                          ##overwrite=TRUE
-                          ){
-                   ## if(overwrite){
-                   ##   sapply(outputs[is.character(outputs) & outputs != ""],
-                   ##          function(x){
-                   ##            if(is.character(x)){
-                   ##              file.remove(x)
-                   ##            }
-                   ##          })
-                   ## }
-                   extend(Object(), 'SimpleLog',
-                          id=id,
-                          level=level,
-                          colors=colors,
-                          ## outputs=outputs
-                          outputs=stderr()
-                          )
-                 })
 
-## logging levels
-SimpleLog.INFO <- 'info'
-SimpleLog.WARNING <- c(SimpleLog.INFO, 'warning')
-SimpleLog.ERROR <- c(SimpleLog.WARNING, 'error')
-SimpleLog.DEBUG <- c(SimpleLog.ERROR, 'debug')
+if (!"SimpleLog" %in% ls()) {
+  setConstructorS3('SimpleLog',
+                   ## logging object
+                   ## id: id of the logger
+                   ## level: recognized logging levels
+                   ## colors: colors to use if colorizing logs
+                   function(id='log',
+                            level=c('info','warning','error','debug'),
+                            colors = c('info'='light gray','warning'='yellow','error'='red','debug'='dark gray')
+                            ## outputs=stderr(),
+                            ## overwrite=TRUE
+                            ){
+                     ## if(overwrite){
+                     ##   sapply(outputs[is.character(outputs) & outputs != ""],
+                     ##          function(x){
+                     ##            if(is.character(x)){
+                     ##              file.remove(x)
+                     ##            }
+                     ##          })
+                     ## }
+                     extend(Object(), 'SimpleLog',
+                            id=id,
+                            level=level,
+                            colors=colors,
+                            ## outputs=outputs
+                            outputs=stderr()
+                            )
+                   })
 
-if(!exists('SimpleLog.CONFIG', envir = globalenv())){
-  ## global var to hold SimpleLog configuration
-  assign('SimpleLog.CONFIG', new.env(), envir=globalenv())
+  ## logging levels
+  SimpleLog.INFO <- 'info'
+  SimpleLog.WARNING <- c(SimpleLog.INFO, 'warning')
+  SimpleLog.ERROR <- c(SimpleLog.WARNING, 'error')
+  SimpleLog.DEBUG <- c(SimpleLog.ERROR, 'debug')
+
+  if(!exists('SimpleLog.CONFIG', envir = globalenv())){
+    ## global var to hold SimpleLog configuration
+    assign('SimpleLog.CONFIG', new.env(), envir=globalenv())
+  }
+
+  setMethodS3('write.msg','SimpleLog',
+              ## write a message to standard error
+              ## log: SimpleLog object
+              ## ...: message (and string formatting parameters)
+              ## level: level of the message
+              ## sep: separating chars in log
+              ## return.success: set to true if you should return whether or not the message was successfully written
+
+              function(log, ..., level=SimpleLog.INFO, sep=' - ', return.success=FALSE){
+
+                check <- TRUE
+
+                lvl <- intersect(tail(level,1), log$level)
+                if(length(lvl) > 0){
+                  msg <- paste(list(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)), collapse = sep)
+
+                  success <- all(sapply(log$outputs,
+                                        function(o) {
+                                          if((!is.null(globalenv()$SimpleLog.CONFIG$colorize) && globalenv()$SimpleLog.CONFIG$colorize) && (o %in% c(stderr(), stdout()))){
+                                            color <- log$colors[lvl]
+                                            if(!is.na(color))
+                                              msg <- colourise(msg, color)
+                                          }
+
+                                          tryCatch(is.null(cat(msg, '\n', file=o, append=TRUE)),
+                                                   error = function(e) FALSE)
+                                        }))
+
+                  if(return.success) success else invisible(success)
+                }
+              })
+
+  setConstructorS3('Timer',
+                   ## timer object
+                   function(log=NULL){
+                     if(is.null(log)){
+                       log <- SimpleLog('timerLog')
+                     }
+                     extend(Object(), 'Timer',
+                            log=log)
+                   })
+  setMethodS3('start.timer', 'Timer',
+              ## start timing
+              ## msg: message to print on start
+              ## ...: args for write.msg
+              function(self, msg=NULL, ...){
+                if(!is.null(msg)){
+                  write.msg(self$log,msg, ...)
+                }
+                self$startTime <- proc.time()[3]
+              })
+  setMethodS3('stop.timer', 'Timer',
+              ## stop timing
+              ## ...: args for write.msg
+              function(self, ...){
+                self$stopTime <- proc.time()[3]
+                dt <- self$stopTime - self$startTime
+                m <- as.integer(dt / 60)
+                s <- round(dt - 60 * m,1)
+                write.msg(self$log,
+                          sprintf('elapsed time: %s', paste(m, 'm', s, 's')),
+                          ...)
+              })
 }
-
-setMethodS3('write.msg','SimpleLog',
-            ## write a message to standard error
-            ## log: SimpleLog object
-            ## ...: message (and string formatting parameters)
-            ## level: level of the message
-            ## sep: separating chars in log
-            ## return.success: set to true if you should return whether or not the message was successfully written
-
-            function(log, ..., level=SimpleLog.INFO, sep=' - ', return.success=FALSE){
-
-              check <- TRUE
-
-              lvl <- intersect(tail(level,1), log$level)
-              if(length(lvl) > 0){
-                msg <- paste(list(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), lvl, log$id, sprintf(...)), collapse = sep)
-
-                success <- all(sapply(log$outputs,
-                                      function(o) {
-                                        if((!is.null(globalenv()$SimpleLog.CONFIG$colorize) && globalenv()$SimpleLog.CONFIG$colorize) && (o %in% c(stderr(), stdout()))){
-                                          color <- log$colors[lvl]
-                                          if(!is.na(color))
-                                            msg <- colourise(msg, color)
-                                        }
-
-                                        tryCatch(is.null(cat(msg, '\n', file=o, append=TRUE)),
-                                                 error = function(e) FALSE)
-                                      }))
-
-                if(return.success) success else invisible(success)
-              }
-            })
-
-setConstructorS3('Timer',
-                 ## timer object
-                 function(log=NULL){
-                   if(is.null(log)){
-                     log <- SimpleLog('timerLog')
-                   }
-                   extend(Object(), 'Timer',
-                          log=log)
-                 })
-setMethodS3('start.timer', 'Timer',
-            ## start timing
-            ## msg: message to print on start
-            ## ...: args for write.msg
-            function(self, msg=NULL, ...){
-              if(!is.null(msg)){
-                write.msg(self$log,msg, ...)
-              }
-              self$startTime <- proc.time()[3]
-            })
-setMethodS3('stop.timer', 'Timer',
-            ## stop timing
-            ## ...: args for write.msg
-            function(self, ...){
-              self$stopTime <- proc.time()[3]
-              dt <- self$stopTime - self$startTime
-              m <- as.integer(dt / 60)
-              s <- round(dt - 60 * m,1)
-              write.msg(self$log,
-                        sprintf('elapsed time: %s', paste(m, 'm', s, 's')),
-                        ...)
-            })
-options(warn=0)
 
 
 timer <- function(expr){
