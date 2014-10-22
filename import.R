@@ -43,7 +43,7 @@ better.library <- function(...,repos='http://cran.cnr.Berkeley.edu/',lib=.Librar
 system.os <- function(){.Platform$OS.type}
 
 import <- function(..., as.library=NULL){
-  available <- c('utils', 'mdls', 'yahoofin', 'cmdargs', 'math', 'plots', 'sql', 'infor', 'postgres')
+  available <- c('utils', 'mdls', 'yahoofin', 'cmdargs', 'math', 'plots', 'sql', 'infor', 'postgres', 'quickcheck')
   from.source <- c('rstan')
 
   selected <- c(...)
@@ -63,4 +63,3 @@ import <- function(..., as.library=NULL){
   invisible(sapply(intersect(from.source, selected), function(s) install.packages(s, type='source')))
 
 }
-
