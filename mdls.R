@@ -1439,7 +1439,7 @@ optimx.model.def <- function(id, target.gen, features,
                              loss = function(y, y.hat) mean((y - y.hat)^2),
                              par = vector('double', length(features)),
                              method = 'BFGS',
-                             report=function(..., log.level=SimpleLog.INFO){logger <- SimpleLog('optimx.model.report', log.level); write.msg(logger, 'nothing to report for optimx model')}, ...){
+                             report = function(..., log.level=SimpleLog.INFO){ logger <- SimpleLog('optimx.model.report', log.level); write.msg(logger, 'nothing to report for optimx model') }, ...){
   params <- list(par=par, ..., method=method)
 
   stop.if.not(length(method) == 1, 'optimx.model.def "%d" must have length 1', id)
@@ -1649,7 +1649,3 @@ clsfy.accuracy <- function(confusion)
 
 clsfy.fallout <- function(confusion)
   confusion$false.positive / (confusion$false.positive + confusion$true.negative)
-
-
-
-

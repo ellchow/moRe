@@ -177,7 +177,7 @@ compute.values <- function(z, init=1){
 yfin.report <- function(root.dir = '~/Documents/investments/data',
                         symbols.list = list(
                           market=c('VTI','VB','VEU','BND','EDV','IAU'),
-                          sector=c('VDC','VCR','VDE','VNQ','VGT'),
+                          sector=c('VDC','VCR','VDE','VNQ','VGT')## ,
                           ## tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD',
                           ##   'TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ',
                           ##   'INTC','AMD','NVDA','SSNLF'),
