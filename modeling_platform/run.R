@@ -152,10 +152,9 @@ main <- function(raw.args){
     stop.timer(timer)
   }
 
-
+  models <- mdls.fit(config$training.datasets, )
 
 }
 
 
 main(commandArgs(T))
-
