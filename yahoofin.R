@@ -174,14 +174,15 @@ compute.values <- function(z, init=1){
   zz
 }
 
-yfin.report <- function(root.dir = '~/Documents/investments/data',
+yfin.report <- function(root.dir = 'data',
                         symbols.list = list(
-                          market=c('VTI','VB','VEU','BND','EDV','IAU'),
-                          sector=c('VDC','VCR','VDE','VNQ','VGT')## ,
-                          ## tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD',
-                          ##   'TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ',
-                          ##   'INTC','AMD','NVDA','SSNLF'),
-                          ## consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K')
+                            market=c('VTI','VB','VEU','BND','EDV','IAU'),
+                            sector=c('VDC','VCR','VDE','VNQ','VGT'),
+                            tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD',
+                                'TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ',
+                                'INTC','AMD','NVDA','SSNLF'),
+                            consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K','M'),
+                            bond=c('BLV','BIV','BSV')
                           ),
                         time.intervals = list('03-months' = 90, '01-year' = 260),
                         log.level = SimpleLog.INFO,
