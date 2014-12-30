@@ -193,3 +193,7 @@ yfin.report <- function(root.dir = 'data',
 
   file.path(root.dir, today)
 }
+
+yfin.wide.format <- function(x, symbol.list = yfin.standard.symbols, value.var = 'adj.close') {
+  dcast(subset(x, symbol %in% symbol.list), date ~ symbol, value.var = value.var)
+}
