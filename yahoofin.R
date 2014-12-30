@@ -33,13 +33,16 @@ yfin.monthly <- 'm'
 yfin.weekly <- 'w'
 yfin.daily <- 'd'
 
-yfin.standard.symbols <- c('AGG','BIV','BLV','BND','BSV','EDV','^FTSE','GLD','^GSPC','^HSI','IAU','^MID','SLV','^SML','VAW','VB','^VIX',
-                           'VCR','VDC','VDE','VEU','VFH','VGK','VGT','VHT','VIS','VNQ','VOX','VPL','VPU','VSS','VTI','VUG','VWO','VXF',
-                           'AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD','TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ','INTC','AMD','NVDA','SSNLF',
-                           'PG','JNJ','PEP','KO','WMT','TGT','KSS','K'
-                           )
+yfin.standard.symbol.groups <- list(
+    market = c('^FTSE','^GSPC','^HSI','^MID','^SML','VAW','VB','^VIX'),
+    bond = c('AGG','BIV','BLV','BND','BSV','EDV'),
+    other = c('GLD','SLV','IAU'),
+    sector = c('VCR','VDC','VDE','VEU','VFH','VGK','VGT','VHT','VIS','VNQ','VOX','VPL','VPU','VSS','VTI','VUG','VWO','VXF'),
+    tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD','TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ','INTC','AMD','NVDA','SSNLF'),
+    consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K','M')
+)
 
-
+yfin.standard.symbols <- unique(flatten(yfin.standard.symbol.groups))
 
 yfin.url <- function(symbol, start.date = '1900-01-01',
                      end.date = format(Sys.time(), yfin.date.fmt),
@@ -142,59 +145,21 @@ yfin.archive <- function(symbols, path, ...,
   y
 }
 
-compute.returns <- function(z){
-  zz <- cbind(tail(z$date,-1),
-              as.data.frame(do.call(cbind, lapply(setdiff(names(z),'date'),
-                                                  function(i) diff(z[[i]]) / head(z[[i]],1)
-                                                  ))))
-  names(zz) <- names(z)
-  zz
-}
-
-compute.portfolio.returns <- function(z, allocation){
-  total <- Reduce(function(x,y) x + y, allocation, init = 0)
-  Reduce(function(x,y) x + y,
-         lapply(lzip(names(allocation), allocation),
-                function(a){
-                  z[[a[[1]]]] * as.numeric(a[[2]]) / total
-                }),
-         init = 0
-         )
-}
-
-compute.values <- function(z, init=1){
-  cols <- setdiff(names(z),'date')
-  values <- list(rep(init, length(cols)))
-  for(i in 1:nrow(z)){
-    values <- c(values, list((z[,cols][i,] + 1) * tail(values,1)[[1]]))
-  }
-  zz <- do.call(rbind,values)
-  zz$date <- c(seq(z$date[1], y$date[1] - 31,by="-1 month")[2],
-               z$date)
-  zz
-}
-
 yfin.report <- function(root.dir = 'data',
-                        symbols.list = list(
-                            market=c('VTI','VB','VEU','BND','EDV','IAU'),
-                            sector=c('VDC','VCR','VDE','VNQ','VGT'),
-                            tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD',
-                                'TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ',
-                                'INTC','AMD','NVDA','SSNLF'),
-                            consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K','M'),
-                            bond=c('BLV','BIV','BSV')
-                          ),
+                        symbols.list = yfin.standard.symbol.groups,
+                        update.symbols.list = yfin.standard.symbols,
                         time.intervals = list('03-months' = 90, '01-year' = 260),
                         log.level = SimpleLog.INFO,
+                        file.name = 'historical-data',
                         .parallel = FALSE){
   ## import('yahoofin'); registerDoMC(2); out <- yfin.report() ;system(sprintf('open %s && open `ls %s/plots/*.png`', out, out))
   logger <- SimpleLog('yfin.download', log.level)
 
   ## get data
   dir.create(root.dir)
-  archive.path <- file.path(root.dir, 'historical-data-standard.rda')
+  archive.path <- file.path(root.dir, sprintf('%s.rda', file.name))
   write.msg(logger, 'archive to %s', archive.path)
-  x <- yfin.archive(yfin.standard.symbols, archive.path, log.level = log.level, .parallel=.parallel)
+  x <- yfin.archive(update.symbols.list, archive.path, log.level = log.level, .parallel=.parallel)
 
   ## calculate returns
   write.msg(logger, 'calculating returns')
