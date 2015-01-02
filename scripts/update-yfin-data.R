@@ -1,8 +1,13 @@
 #!/usr/bin/env Rscript
 
-import('yahoofin')
+import('cmdargs','yahoofin')
 registerDoMC(2)
-out <- yfin.report()
-if ("openplots" %in% commandArgs(T)) {
-    system(sprintf('open %s && open `ls %s/plots/*.png`', out, out))
-}
+raw.args <- commandArgs(TRUE)
+args <- parse.args('update-yfin-data.R',
+                   list(
+                       list(name = 'd',
+                            desc = 'data directory',
+                            default = 'data')
+                   ),
+                   raw.args)
+invisible(yfin.archive(yfin.standard.symbols, sprintf('%s/historical-data.rda',args[['d']]), log.level = SimpleLog.INFO, .parallel=TRUE))
