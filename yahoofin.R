@@ -203,13 +203,12 @@ yfin.ggplot.values.and.returns <- function(x, symbols.list,
   multi.plot(pv,pr,nrow=2,ncol=1)
 }
 
-yfin.portfolio.returns <- function(x, allocation,
-                                   start.date = end.date - 3 * yfin.num.days.in('m'),
-                                   end.date = max(x$date[x$symbol %in% symbols.list]),
-                                   value.col = 'adj.close',
-                                   return.col = '.return',
-                                       init = 1
-                                   ) {
+yfin.portfolio.return <- function(x, allocation,
+                                  start.date = end.date - 3 * yfin.num.days.in('m'),
+                                  end.date = max(x$date[x$symbol %in% symbols.list]),
+                                  value.col = 'adj.close',
+                                  return.col = '.return'
+                                  ) {
   symbols.list <- names(allocation)
   allocation <- allocation / sum(allocation)
   y <- x[(as.character(x$symbol) %in% symbols.list) & !((x$date < start.date) | (x$date > end.date)), ]
@@ -222,10 +221,32 @@ yfin.portfolio.returns <- function(x, allocation,
                lapply(names(allocation), function(s) {
                  allocation[[s]] * y[[s]]
                }))
-  pv <- compute.values(pr, init = init)
 
+  data.frame(date = y$date, 'return' = pr)
+}
+
+yfin.portfolio.returns <- function(x,
+                                   allocations,
+                                   value.col = 'adj.close',
+                                   return.col = '.return'
+                                   ) {
+  y <- lapply(allocations, function(a) {
+    yfin.portfolio.return(x, a$allocation, a$start.date, a$end.date, value.col, return.col)
+  })
+
+  csplat(rbind, y)
+}
+
+yfin.portfolio.values <- function(x,
+                                  allocations,
+                                  value.col = 'adj.close',
+                                  return.col = '.return',
+                                  init = 1
+                                  ) {
+  r <- yfin.portfolio.returns(x,allocations,value.col,return.col)
+  v <- compute.values(r[['return']], init = init)
   data.frame(
-      date = c(y$date[1] - 1,y$date),
-      value = pv
+      date = c(r$date[1] - 1, r$date),
+      value = v
   )
 }
