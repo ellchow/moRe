@@ -48,10 +48,10 @@ yfin.num.days.in <- function(x) {
 }
 
 yfin.standard.symbol.groups <- list(
-    market = c('^FTSE','^GSPC','^HSI','^MID','^SML','VAW','VB','^VIX'),
+    market = c('^FTSE','^GSPC','^HSI','^MID','^SML','VB','^VIX'),
     bond = c('AGG','BIV','BLV','BND','BSV','EDV'),
     other = c('GLD','SLV','IAU'),
-    sector = c('VCR','VDC','VDE','VEU','VFH','VGK','VGT','VHT','VIS','VNQ','VOX','VPL','VPU','VSS','VTI','VUG','VWO','VXF'),
+    sector = c('VCR','VDC','VDE','VEU','VFH','VGK','VGT','VHT','VIS','VNQ','VOX','VPL','VPU','VSS','VTI','VUG','VWO','VXF','VAW'),
     tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD','TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ','INTC','AMD','NVDA','SSNLF'),
     consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K','M'),
     mutual.funds=c(
@@ -219,7 +219,7 @@ yfin.portfolio.return <- function(x, allocation,
 
   pr <- Reduce(function(a,b) a + b,
                lapply(names(allocation), function(s) {
-                 allocation[[s]] * y[[s]]
+                 allocation[[s]] * ifelse(is.na(y[[s]]), 0, y[[s]])
                }))
 
   data.frame(date = y$date, 'return' = pr)
@@ -230,6 +230,12 @@ yfin.portfolio.returns <- function(x,
                                    value.col = 'adj.close',
                                    return.col = '.return'
                                    ) {
+  dates.ok <- unlist(lapply(lzip(allocations, tail(allocations,-1)), function(a) {
+    (a[[1]]$start.date <= a[[1]]$end.date) &&
+        (a[[2]]$start.date <= a[[2]]$end.date) &&
+            (a[[2]]$start.date > a[[1]]$end.date)
+  }))
+  stop.if.not(all(dates.ok), 'invalid date ranges in allocations')
   y <- lapply(allocations, function(a) {
     yfin.portfolio.return(x, a$allocation, a$start.date, a$end.date, value.col, return.col)
   })
@@ -237,16 +243,49 @@ yfin.portfolio.returns <- function(x,
   csplat(rbind, y)
 }
 
-yfin.portfolio.values <- function(x,
+yfin.portfolio.value <- function(x,
                                   allocations,
                                   value.col = 'adj.close',
                                   return.col = '.return',
+                                  symbol = 'portfolio',
                                   init = 1
                                   ) {
   r <- yfin.portfolio.returns(x,allocations,value.col,return.col)
   v <- compute.values(r[['return']], init = init)
-  data.frame(
-      date = c(r$date[1] - 1, r$date),
-      value = v
-  )
+  y <- data.frame(date = c(r$date[1] - 1, r$date))
+  y[[value.col]] <- v
+  y$symbol <- symbol
+  y
+}
+
+yfin.portfolio.values <- function(x,
+                                  portfolio.allocations,
+                                  value.col = 'adj.close',
+                                  return.col = '.return',
+                                  init = 1,
+                                  log.level = SimpleLog.INFO) {
+  pvs <- lapply(names(portfolio.allocations),
+                function(p) yfin.portfolio.value(x, portfolio.allocations[[p]], value.col = value.col, return.col = return.col, init = init, symbol = p))
+  symbols.list <- unique(unlist(lapply(portfolio.allocations, function(a) unlist(lapply(a, function(b) names(b$allocation))))))
+  start.date <- min(unlist(lapply(portfolio.allocations, function(a) unlist(lapply(a, function(b) b$start.date)))))
+  end.date <- max(unlist(lapply(portfolio.allocations, function(a) unlist(lapply(a, function(b) b$end.date)))))
+  y <- x[(as.character(x$symbol) %in% symbols.list) & !((x$date < start.date) | (x$date > end.date)), ]
+  y <- csplat(rbind.fill, c(list(y), pvs))
+  y
+}
+
+yfin.ggplot.portfolio.values.with.components <- function(x,
+                                                         portfolio.allocations,
+                                                         value.col = 'adj.close',
+                                                         return.col = '.return',
+                                                         init = 1,
+                                                         layout = '',
+                                                         as.return = FALSE,
+                                                         log.level = SimpleLog.INFO) {
+  y <- yfin.portfolio.values(x, portfolio.allocations, value.col = value.col, return.col = return.col, init = 1)
+  start.date <- min(unlist(lapply(portfolio.allocations, function(a) unlist(lapply(a, function(b) b$start.date)))))
+  end.date <- max(unlist(lapply(portfolio.allocations, function(a) unlist(lapply(a, function(b) b$end.date)))))
+
+  p <- yfin.ggplot.symbol.values(y, unique(y$symbol), start.date = start.date, end.date = end.date, normalize = TRUE, value.col = value.col, as.return = as.return, layout = layout)
+  p
 }
