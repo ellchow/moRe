@@ -21,5 +21,5 @@ compute.returns <- function(z, pad.with.na = TRUE) {
 }
 
 compute.values <- function(r, init = 1) {
-  cumprod(1 + r) * init
+  c(init, cumprod(1 + r) * init)
 }

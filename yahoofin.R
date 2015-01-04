@@ -21,7 +21,8 @@ import('utils',
        'doMC',
        'foreach',
        'Hmisc',
-       'ggplot2'
+       'ggplot2',
+       'reshape2'
        )
 
 yfin.tags <- named(c('t8','m4','m3','k','j','w','c8','g3','a','b2','a5','a2','b','b3','b6','b4','c1','m5','m7','k4','j5','p2','c','k2','c6','c3','h','g','m','m2','w1','w4','r1','d','e','j4','e7','e9','e8','e1','q','f6','l2','g4','g1','g5','g6','v1','v7','d1','l1','k1','k3','t1','l','l3','j1','j3','i','n','n4','o','i5','r5','r','r2','k5','m6','m8','j6','p','p6','r6','r7','p1','p5','s1','s7','x','s','t7','d2','t6','v'),
@@ -200,4 +201,31 @@ yfin.ggplot.values.and.returns <- function(x, symbols.list,
   pr <- yfin.ggplot.symbol.values(x, symbols.list, as.return=T, start.date=start.date, end.date=end.date) + geom_hline(yintercept=0,size=0.2) + geom_smooth(size=0.5) + geom_line(alpha=0.5,size=0.2) ## + facet_grid(symbol ~ ., )
 
   multi.plot(pv,pr,nrow=2,ncol=1)
+}
+
+yfin.portfolio.returns <- function(x, allocation,
+                                   start.date = end.date - 3 * yfin.num.days.in('m'),
+                                   end.date = max(x$date[x$symbol %in% symbols.list]),
+                                   value.col = 'adj.close',
+                                   return.col = '.return',
+                                       init = 1
+                                   ) {
+  symbols.list <- names(allocation)
+  allocation <- allocation / sum(allocation)
+  y <- x[(as.character(x$symbol) %in% symbols.list) & !((x$date < start.date) | (x$date > end.date)), ]
+  y <- drop.levels(y)
+  y[[return.col]] <- tapply(y[[value.col]], y$symbol, compute.returns, ret.type = 'par')
+  y <- y[!is.invalid(y[[return.col]]),]
+  y <- yfin.wide.format(y, symbols.list, value.var = return.col)
+
+  pr <- Reduce(function(a,b) a + b,
+               lapply(names(allocation), function(s) {
+                 allocation[[s]] * y[[s]]
+               }))
+  pv <- compute.values(pr, init = init)
+
+  data.frame(
+      date = c(y$date[1] - 1,y$date),
+      value = pv
+  )
 }
