@@ -52,7 +52,18 @@ yfin.standard.symbol.groups <- list(
     other = c('GLD','SLV','IAU'),
     sector = c('VCR','VDC','VDE','VEU','VFH','VGK','VGT','VHT','VIS','VNQ','VOX','VPL','VPU','VSS','VTI','VUG','VWO','VXF'),
     tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD','TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ','INTC','AMD','NVDA','SSNLF'),
-    consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K','M')
+    consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K','M'),
+    mutual.funds=c(
+        'VLCS', # large cap
+        'ARTQX', # mid cap
+        'MFLLX', # small cap
+        'VBTIX', # total bond
+
+        'VBMPX', # total bond
+        'VWNAX', # windsor admiral
+        'NSCRX', # small cap
+        'VTPSX' # total intl stock
+    )
 )
 
 yfin.standard.symbols <- unique(flatten(yfin.standard.symbol.groups))
@@ -106,54 +117,33 @@ yfin.download <- function(symbol, ..., start.date = '1900-01-01',
 yfin.archive <- function(symbols, path, ...,
                          frequency = yfin.daily,
                          log.level = SimpleLog.DEBUG,
-                         .parallel = FALSE){
-  ## import('yahoofin'); registerDoMC(2); yfin.archive(yfin.standard.symbols, 'yfin-archive', log.level = SimpleLog.DEBUG, .parallel=T)
+                         start.date = as.Date('1900-01-01', yfin.date.fmt),
+                         end.date = format(Sys.time(), yfin.date.fmt),
+                         .parallel = FALSE) {
   logger <- SimpleLog('yfin.archive', log.level)
-
-  end.date <- format(Sys.time(), yfin.date.fmt)
   current.timestamp <- format(Sys.time(), '%Y%m%d%H%M%S')
   cache.path <- paste('.yfin-download', current.timestamp, sep='-')
   dir.create(cache.path, recursive = TRUE)
-
   write.msg(logger, 'temporary data directory %s', cache.path)
-  if(file.exists(path))
-    z <- load.data(path)
-  else
-    z <- NA
 
   y <- llply(symbols,
              function(symbol){
-               start.date <- if(any(is.na(z))) as.Date('1900-01-01', yfin.date.fmt) else max(z$date[z$symbol == symbol])
-               write.msg(logger, 'download %s starting from %s', symbol, start.date)
-
-               if(start.date < end.date){
-                 x <- yfin.download(symbol, ..., start.date = as.character(start.date), end.date = as.character(end.date), frequency = frequency, cache.path = cache.path, log.level = log.level)
-
-                 if(!is.na(x) && nrow(x) > 0)
-                   subset(x, date > start.date)
-                 else
-                   NA
-               }else
-                 NA
+               x <- yfin.download(symbol, ..., start.date = as.character(start.date), end.date = as.character(end.date), frequency = frequency, cache.path = cache.path, log.level = log.level)
+               if(!is.na(x) && nrow(x) > 0) x else NA
              },
              .parallel = .parallel)
-
   y <- rbind.fill %wargs% y[!is.na(y)]
 
-  if(is.null(y) || nrow(y) == 0){
-    write.msg(logger, 'no data added')
-    y <- z
-  }else{
-    write.msg(logger, 'adding %d rows', nrow(y))
+  write.msg(logger, '%d rows downloaded', nrow(y))
+  if (file.exists(path)) {
     backup.path <- paste(path, 'bak', current.timestamp, sep='.')
     write.msg(logger, 'backup previous data to %s', backup.path)
     file.rename(path, backup.path)
-    y <- if(!any(is.na(z))) rbind.fill(z,y) else y
-
-    y <- y[order(y$symbol, y$date),]
-    write.msg(logger, 'saving to %s', path)
-    save(y, file = path)
   }
+
+  y <- y[order(y$symbol, y$date),]
+  write.msg(logger, 'saving to %s', path)
+  save(y, file = path)
   rrmdir(cache.path)
   y
 }
@@ -199,52 +189,15 @@ yfin.ggplot.symbol.values <- function(x, symbols.list,
   p
 }
 
+yfin.ggplot.values.and.returns <- function(x, symbols.list,
+                                           start.date = end.date - 3 * yfin.num.days.in('m'),
+                                           end.date = max(x$date[x$symbol %in% symbols.list]),
+                                           normalize = TRUE,
+                                           value.col = 'adj.close',
+                                           as.return = FALSE,
+                                           log.level = SimpleLog.INFO) {
+  pv <- yfin.ggplot.symbol.values(x, symbols.list, normalize=normalize, start.date=start.date, end.date=end.date) + geom_hline(yintercept=1,size=0.2) + geom_line(size=0.5) ## + facet_grid(symbol ~ ., )
+  pr <- yfin.ggplot.symbol.values(x, symbols.list, as.return=T, start.date=start.date, end.date=end.date) + geom_hline(yintercept=0,size=0.2) + geom_smooth(size=0.5) + geom_line(alpha=0.5,size=0.2) ## + facet_grid(symbol ~ ., )
 
-## yfin.report <- function(root.dir = 'data',
-##                         symbols.list = yfin.standard.symbol.groups,
-##                         update.symbols.list = yfin.standard.symbols,
-##                         time.intervals = list('03-months' = 90, '01-year' = 260),
-##                         log.level = SimpleLog.INFO,
-##                         file.name = 'historical-data',
-##                         .parallel = FALSE){
-##   ## import('yahoofin'); registerDoMC(2); out <- yfin.report() ;system(sprintf('open %s && open `ls %s/plots/*.png`', out, out))
-##   logger <- SimpleLog('yfin.download', log.level)
-
-##   ## get data
-##   dir.create(root.dir)
-##   archive.path <- file.path(root.dir, sprintf('%s.rda', file.name))
-##   write.msg(logger, 'archive to %s', archive.path)
-##   x <- yfin.archive(update.symbols.list, archive.path, log.level = log.level, .parallel=.parallel)
-
-##   ## calculate returns
-##   write.msg(logger, 'calculating returns')
-##   x$ret <- tapply(x$adj.close, x$symbol, compute.returns, ret.type = 'par')
-
-##   ## create output dir
-##   today <- max(x$date)
-##   write.msg(logger, 'most recent data from %s', today)
-##   output.dir <- file.path(root.dir, today, 'plots')
-
-##   if(!file.exists(file.path(root.dir, today, '_SUCCESS'))){
-##     write.msg(logger,'saving plots to %s', output.dir)
-##     dir.create(output.dir, recursive = TRUE)
-
-##     ## market and sector plots
-##     foreach(s = names(symbols.list)) %dopar% {
-##       foreach(t = names(time.intervals)) %dopar% {
-##         symbols <- symbols.list[[s]]
-##         time.interval <- time.intervals[[t]]
-##         ## value
-##         ggsave(ggplot(subset(x, date > (today - time.interval) & symbol %in% symbols), aes(x = date, y = adj.close, color = symbol)) + geom_line() + geom_smooth() + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-value-past-%s.png',s,t)))
-##         ## returns
-##         ggsave(ggplot(subset(x, date > (today - time.interval) & symbol %in% symbols), aes(x = date, y = ret)) + geom_line(aes(color = symbol)) + geom_smooth() + geom_hline(size=0.2,aes(yintercept=0)) + facet_grid(symbol ~ ., scale = 'free_y'), file = file.path(output.dir,sprintf('%s-return-past-%s.png',s,t)))
-##       }
-##     }
-##   } else {
-##     write.msg(logger,'%s already exists', output.dir)
-##   }
-
-##   file.create(file.path(root.dir,today,'_SUCCESS'))
-
-##   file.path(root.dir, today)
-## }
+  multi.plot(pv,pr,nrow=2,ncol=1)
+}
