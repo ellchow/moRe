@@ -55,15 +55,17 @@ yfin.standard.symbol.groups <- list(
     tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD','TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ','INTC','AMD','NVDA','SSNLF'),
     consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K','M'),
     mutual.funds=c(
-        'VLCS', # large cap
+        #### ebay
+        'VLCSX', # large cap
         'ARTQX', # mid cap
         'MFLLX', # small cap
         'VBTIX', # total bond
 
-        'VBMPX', # total bond
-        'VWNAX', # windsor admiral
+        #### apple
+        'FCNTX', # large cap growth
+        'VWNAX', # large cap value
         'NSCRX', # small cap
-        'VTPSX' # total intl stock
+        'VBMPX' ## total bond
     )
 )
 
@@ -127,6 +129,8 @@ yfin.archive <- function(symbols, path, ...,
   dir.create(cache.path, recursive = TRUE)
   write.msg(logger, 'temporary data directory %s', cache.path)
 
+  write.msg(logger, 'symbols: %s', paste(symbols, collapse=','))
+
   y <- llply(symbols,
              function(symbol){
                x <- yfin.download(symbol, ..., start.date = as.character(start.date), end.date = as.character(end.date), frequency = frequency, cache.path = cache.path, log.level = log.level)
@@ -149,8 +153,14 @@ yfin.archive <- function(symbols, path, ...,
   y
 }
 
-yfin.wide.format <- function(x, symbol.list = yfin.standard.symbols, value.var = 'adj.close') {
-  dcast(subset(x, symbol %in% symbol.list), date ~ symbol, value.var = value.var)
+yfin.wide.format <- function(x, symbol.list = yfin.standard.symbols, value.var = 'adj.close', only.all.valid=FALSE) {
+  y <- dcast(subset(x, symbol %in% symbol.list), date ~ symbol, value.var = value.var)
+
+  if (only.all.valid) {
+    y[apply(y, 1, function(z) !any(is.invalid(z))),]
+  } else {
+    y
+  }
 }
 
 yfin.ggplot.symbol.values <- function(x, symbols.list,
@@ -274,18 +284,19 @@ yfin.portfolio.values <- function(x,
   y
 }
 
-yfin.ggplot.portfolio.values.with.components <- function(x,
-                                                         portfolio.allocations,
-                                                         value.col = 'adj.close',
-                                                         return.col = '.return',
-                                                         init = 1,
-                                                         layout = '',
-                                                         as.return = FALSE,
-                                                         log.level = SimpleLog.INFO) {
+yfin.ggplot.portfolio.values <- function(x,
+                                         portfolio.allocations,
+                                         value.col = 'adj.close',
+                                         return.col = '.return',
+                                         init = 1,
+                                         layout = '',
+                                         as.return = FALSE,
+                                         components = unique(c(csplat(c,lapply(portfolio.allocations, function(ps) sapply(ps, function (p) names(p$allocation)))), names(portfolio.allocations))),
+                                         log.level = SimpleLog.INFO) {
   y <- yfin.portfolio.values(x, portfolio.allocations, value.col = value.col, return.col = return.col, init = 1)
   start.date <- min(unlist(lapply(portfolio.allocations, function(a) unlist(lapply(a, function(b) b$start.date)))))
   end.date <- max(unlist(lapply(portfolio.allocations, function(a) unlist(lapply(a, function(b) b$end.date)))))
 
-  p <- yfin.ggplot.symbol.values(y, unique(y$symbol), start.date = start.date, end.date = end.date, normalize = TRUE, value.col = value.col, as.return = as.return, layout = layout)
+  p <- yfin.ggplot.symbol.values(y, components, start.date = start.date, end.date = end.date, normalize = TRUE, value.col = value.col, as.return = as.return, layout = layout)
   p
 }
