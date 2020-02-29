@@ -22,7 +22,8 @@ import('utils',
        'foreach',
        'Hmisc',
        'ggplot2',
-       'reshape2'
+       'reshape2'##,
+       ## 'highcharter'
        )
 
 yfin.tags <- named(c('t8','m4','m3','k','j','w','c8','g3','a','b2','a5','a2','b','b3','b6','b4','c1','m5','m7','k4','j5','p2','c','k2','c6','c3','h','g','m','m2','w1','w4','r1','d','e','j4','e7','e9','e8','e1','q','f6','l2','g4','g1','g5','g6','v1','v7','d1','l1','k1','k3','t1','l','l3','j1','j3','i','n','n4','o','i5','r5','r','r2','k5','m6','m8','j6','p','p6','r6','r7','p1','p5','s1','s7','x','s','t7','d2','t6','v'),
@@ -52,7 +53,7 @@ yfin.standard.symbol.groups <- list(
     bond = c('AGG','BIV','BLV','BND','BSV','EDV'),
     other = c('GLD','SLV','IAU'),
     sector = c('VCR','VDC','VDE','VEU','VFH','VGK','VGT','VHT','VIS','VNQ','VOX','VPL','VPU','VSS','VTI','VUG','VWO','VXF','VAW'),
-    tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD','TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ','INTC','AMD','NVDA','SSNLF'),
+    tech=c('AAPL','GOOG','FB','EBAY','AMZN','YHOO','MSFT','LNKD','TSLA','TRLA','YELP','Z','NFLX','ORCL','TDC','IBM','HPQ','INTC','AMD','NVDA','SSNLF', 'NFLX'),
     consumer=c('PG','JNJ','PEP','KO','WMT','TGT','KSS','K','M'),
     mutual.funds=c(
         #### ebay
@@ -60,12 +61,16 @@ yfin.standard.symbol.groups <- list(
         'ARTQX', # mid cap
         'MFLLX', # small cap
         'VBTIX', # total bond
+        'FSEMX', # extended mkt
 
         #### apple
         'FCNTX', # large cap growth
         'VWNAX', # large cap value
         'NSCRX', # small cap
         'VBMPX' ## total bond
+
+
+
     )
 )
 
@@ -163,56 +168,6 @@ yfin.wide.format <- function(x, symbol.list = yfin.standard.symbols, value.var =
   }
 }
 
-yfin.ggplot.symbol.values <- function(x, symbols.list,
-                                      start.date = end.date - 3 * yfin.num.days.in('m'),
-                                      end.date = max(x$date[x$symbol %in% symbols.list]),
-                                      layout = '',
-                                      normalize = FALSE,
-                                      value.col = 'adj.close',
-                                      as.return = FALSE,
-                                      log.level = SimpleLog.INFO) {
-  y <- x[(as.character(x$symbol) %in% symbols.list) & !((x$date < start.date) | (x$date > end.date)), ]
-  y <- drop.levels(y)
-  if (as.return) {
-    y[[value.col]] <- tapply(y[[value.col]], y$symbol, compute.returns, ret.type = 'par')
-    y <- y[!is.invalid(y[[value.col]]),]
-  }
-  if (normalize && !as.return) {
-    min.idx <- tapply(y$date, y$symbol, which.min, ret.type = 'par')
-    init.value <- tapply(list(min.idx, y[[value.col]]), y$symbol, function(i, z) z[i], ret.type = 'par')
-    y$value <- y[[value.col]] / init.value
-  } else {
-    y$value <- y[[value.col]]
-  }
-
-  p <- ggplot(y, aes(x = date, y = value, color = symbol))
-
-  if (layout == 'line.single') {
-    p <- p + geom_line(size=0.2, aes(group = symbol))
-  } else if (layout == 'smooth.single') {
-    p <- p + stat_smooth(alpha=0.1, size=0.2,aes(fill=symbol))
-  } else if (layout == 'line.facet') {
-    p <- p + geom_line(aes(group = symbol)) + facet_grid(symbol ~ ., scale = 'free_y')
-  } else if (layout == 'point.smooth.facet') {
-    p <- p + geom_smooth(size=0.2, aes(group = symbol)) + geom_point(alpha=0.2, size=1) + facet_grid(symbol ~ ., scale = 'free_y')
-  }
-
-  p
-}
-
-yfin.ggplot.values.and.returns <- function(x, symbols.list,
-                                           start.date = end.date - 3 * yfin.num.days.in('m'),
-                                           end.date = max(x$date[x$symbol %in% symbols.list]),
-                                           normalize = TRUE,
-                                           value.col = 'adj.close',
-                                           as.return = FALSE,
-                                           log.level = SimpleLog.INFO) {
-  pv <- yfin.ggplot.symbol.values(x, symbols.list, normalize=normalize, start.date=start.date, end.date=end.date) + geom_hline(yintercept=1,size=0.2) + geom_line(size=0.5) ## + facet_grid(symbol ~ ., )
-  pr <- yfin.ggplot.symbol.values(x, symbols.list, as.return=T, start.date=start.date, end.date=end.date) + geom_hline(yintercept=0,size=0.2) + geom_smooth(size=0.5) + geom_line(alpha=0.5,size=0.2) ## + facet_grid(symbol ~ ., )
-
-  multi.plot(pv,pr,nrow=2,ncol=1)
-}
-
 yfin.portfolio.return <- function(x, allocation,
                                   start.date = end.date - 3 * yfin.num.days.in('m'),
                                   end.date = max(x$date[x$symbol %in% symbols.list]),
@@ -282,6 +237,92 @@ yfin.portfolio.values <- function(x,
   y <- x[(as.character(x$symbol) %in% symbols.list) & !((x$date < start.date) | (x$date > end.date)), ]
   y <- csplat(rbind.fill, c(list(y), pvs))
   y
+}
+
+
+yfin.setup.plot.symbol.values <- function(x, symbols.list,
+                                          start.date = end.date - 3 * yfin.num.days.in('m'),
+                                          end.date = max(x$date[x$symbol %in% symbols.list]),
+                                          normalize = FALSE,
+                                          value.col = 'adj.close',
+                                          as.return = FALSE,
+                                          log.level = SimpleLog.INFO) {
+  y <- x[(as.character(x$symbol) %in% symbols.list) & !((x$date < start.date) | (x$date > end.date)), ]
+  y <- drop.levels(y)
+  if (as.return) {
+    y[[value.col]] <- tapply(y[[value.col]], y$symbol, compute.returns, ret.type = 'par')
+    y <- y[!is.invalid(y[[value.col]]),]
+  }
+  if (normalize && !as.return) {
+    min.idx <- tapply(y$date, y$symbol, which.min, ret.type = 'par')
+    init.value <- tapply(list(min.idx, y[[value.col]]), y$symbol, function(i, z) z[i], ret.type = 'par')
+    y$value <- y[[value.col]] / init.value
+  } else {
+    y$value <- y[[value.col]]
+  }
+
+  y
+}
+
+######################################################################################################
+yfin.highcharts.symbol.values <- function(x, symbols.list,
+                                      start.date = end.date - 3 * yfin.num.days.in('m'),
+                                      end.date = max(x$date[x$symbol %in% symbols.list]),
+                                      layout = '',
+                                      normalize = FALSE,
+                                      value.col = 'adj.close',
+                                      as.return = FALSE,
+                                      log.level = SimpleLog.INFO) {
+  y <- yfin.setup.plot.symbol.values(x, symbols.list, start.date, end.date, normalize, value.col, as.return, log.level)
+
+
+  hchart(y, "point", x = date, y = value) ## %>%
+  ## hc_xAxis() %>%
+  ## hc_yAxis(type = "logarithmic") %>%
+  ## hc_title(text = "Our nearest Stars") %>%
+  ## hc_subtitle(text = "In a Hertzsprung-Russell diagram") %>%
+  ## hc_add_theme(thm) %>%
+  ## hc_tooltip(useHTML = TRUE, headerFormat = "", pointFormat = tltip)
+}
+
+######################################################################################################
+
+yfin.ggplot.symbol.values <- function(x, symbols.list,
+                                      start.date = end.date - 3 * yfin.num.days.in('m'),
+                                      end.date = max(x$date[x$symbol %in% symbols.list]),
+                                      layout = '',
+                                      normalize = FALSE,
+                                      value.col = 'adj.close',
+                                      as.return = FALSE,
+                                      log.level = SimpleLog.INFO) {
+  y <- yfin.setup.plot.symbol.values(x, symbols.list, start.date, end.date, normalize, value.col, as.return, log.level)
+
+  p <- ggplot(y, aes(x = date, y = value, color = symbol))
+
+  if (layout == 'line.single') {
+    p <- p + geom_line(size=0.2, aes(group = symbol))
+  } else if (layout == 'smooth.single') {
+    p <- p + stat_smooth(alpha=0.1, size=0.2,aes(fill=symbol))
+  } else if (layout == 'line.facet') {
+    p <- p + geom_line(aes(group = symbol)) + facet_grid(symbol ~ ., scale = 'free_y')
+  } else if (layout == 'point.smooth.facet') {
+    p <- p + geom_smooth(size=0.2, aes(group = symbol)) + geom_point(alpha=0.2, size=1) + facet_grid(symbol ~ ., scale = 'free_y')
+  }
+
+  p
+}
+
+yfin.ggplot.values.and.returns <- function(x, symbols.list,
+                                           start.date = end.date - 3 * yfin.num.days.in('m'),
+                                           end.date = max(x$date[x$symbol %in% symbols.list]),
+                                           normalize = TRUE,
+                                           value.col = 'adj.close',
+                                           as.return = FALSE,
+                                           log.level = SimpleLog.INFO) {
+  pv <- yfin.ggplot.symbol.values(x, symbols.list, normalize=normalize, start.date=start.date, end.date=end.date) + geom_hline(yintercept=1,size=0.2) + geom_line(size=0.5) ## + facet_grid(symbol ~ ., )
+  pr <- yfin.ggplot.symbol.values(x, symbols.list, as.return=T, start.date=start.date, end.date=end.date) + geom_hline(yintercept=0,size=0.2) + geom_smooth(size=0.5) + geom_line(alpha=0.5,size=0.2) ## + facet_grid(symbol ~ ., )
+
+  multi.plot(pv,pr,nrow=2,ncol=1)
 }
 
 yfin.ggplot.portfolio.values <- function(x,
